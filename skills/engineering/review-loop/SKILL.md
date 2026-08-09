@@ -2,6 +2,7 @@
 name: review-loop
 description: Run a bounded review-and-fix loop with fresh, read-only reviewer subagents.
 license: MIT-0
+disable-model-invocation: true
 ---
 
 # Review Loop

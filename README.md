@@ -38,18 +38,17 @@ npx skills@latest add wufei-png/skills \
 ### Engineering
 
 - [`review-loop`](./skills/engineering/review-loop/SKILL.md) — Run a bounded review-and-fix loop with fresh, read-only reviewer subagents.
-- [`delegated-code-review`](./skills/engineering/delegated-code-review/SKILL.md) — Run the original single-pass review workflow from `agent-review-skills`.
 - [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — Perform the single read-only review gate used by `review-gated-implementation`.
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — Execute an authorized change as dependency-ordered, independently verified, reviewed, and committed stages.
 
-The review skills are Codex-first. They expect a fresh subagent mechanism and the built-in `$review-agent` skill where referenced. Reviewers do not edit implementation files; whether they run tests or checks is a review-strategy decision based on the concrete problem. The implementation owner still adjudicates findings, applies accepted fixes, and owns final verification.
+All skills in the current catalog are manual-only: their `SKILL.md` files set `disable-model-invocation: true`, and their `agents/openai.yaml` files set `policy.allow_implicit_invocation: false`. The review skills are Codex-first. They expect a fresh subagent mechanism and the built-in `$review-agent` skill where referenced. Reviewers do not edit implementation files; whether they run tests or checks is a review-strategy decision based on the concrete problem. The implementation owner still adjudicates findings, applies accepted fixes, and owns final verification.
 
 ## Sources
 
 | Imported content | Source snapshot |
 | --- | --- |
 | `grilling` | [`wufei-png/grilling@64853fe`](https://github.com/wufei-png/grilling/tree/64853fedfc2d02f53013bb8c1666c6316760d289) |
-| `review-loop`, `delegated-code-review` | [`wufei-png/agent-review-skills@df3a8e6`](https://github.com/wufei-png/agent-review-skills/tree/df3a8e6c76cab0433d10529b50cc6dae573eb9c0) |
+| `review-loop` | Based on [`wufei-png/agent-review-skills@df3a8e6`](https://github.com/wufei-png/agent-review-skills/tree/df3a8e6c76cab0433d10529b50cc6dae573eb9c0), with the manual-only invocation field restored |
 | `delegated-change-review` | `SKILL.md` from local user-skill snapshot, SHA-256 `e6266516eacc80eb6fdd1859a0d52e457edb2fa3f2c499655a713fd2e92fea44`; UI metadata updated to remove the standalone commit request |
 | `review-gated-implementation` | Local user-skill snapshot, SHA-256 `3e9f33b12e135d8491a0d31b70413c576f4ba0582c90713894e646c89d31608a` |
 
