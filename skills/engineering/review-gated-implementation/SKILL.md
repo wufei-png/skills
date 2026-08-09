@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Implement an already-authorized change as a sequence of small, reviewed commits. Assume the task, scope, repository context, and implementation and commit authority are already established.
 
-Use `$delegated-change-review` for every stage review and the final whole-change review.
+Use `[$delegated-change-review](~/.agents/skills/delegated-change-review/SKILL.md)` for every stage review and the final whole-change review.
 
 ## 1. Plan the stages
 
@@ -44,7 +44,7 @@ For each stage:
 2. Implement only the stage. Run narrow checks while working, then all checks required by its acceptance criteria.
 3. Stage the changes with explicit paths. Inspect `git diff --cached --stat` and `git diff --cached`.
 4. Use `$delegated-change-review` on the staged diff. Provide the stage goal, acceptance criteria, non-goals, `STAGE_BASE`, and fresh verification evidence. Keep the staged diff current after accepted fixes.
-5. Re-run required verification against the final candidate, re-inspect the staged diff, and commit using the repository's convention. Record the commit SHA and any deferred non-blocking finding.
+5. Re-run required verification against the final candidate, re-inspect the staged diff, and commit using the repository's convention. Do not review this stage again after fixes. Record the commit SHA and any deferred non-blocking finding, then continue to the next stage.
 
 Do not start the next stage until the current stage is committed and passes its required verification. If the stage boundary becomes unsound, split or redesign only unfinished work.
 
