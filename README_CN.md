@@ -42,7 +42,7 @@ npx skills@latest add wufei-png/skills \
 - [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — 为 `review-gated-implementation` 提供单轮只读审查门。
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — 将已授权变更拆成依赖有序、可独立验证、逐阶段审查并提交的实现过程。
 
-这些审查 skill 以 Codex 为主要运行环境，需要全新子 Agent 机制，并在标明的位置依赖内置 `$review-agent` skill。
+这些审查 skill 以 Codex 为主要运行环境，需要全新子 Agent 机制，并在标明的位置依赖内置 `$review-agent` skill。Reviewer 不编辑实现文件；是否运行测试或检查由 reviewer 根据具体问题自行决定。实现 owner 仍负责裁决发现、应用接受的修复及最终验证。
 
 ## 来源
 
@@ -50,10 +50,10 @@ npx skills@latest add wufei-png/skills \
 | --- | --- |
 | `grilling` | [`wufei-png/grilling@64853fe`](https://github.com/wufei-png/grilling/tree/64853fedfc2d02f53013bb8c1666c6316760d289) |
 | `review-loop`、`delegated-code-review` | [`wufei-png/agent-review-skills@df3a8e6`](https://github.com/wufei-png/agent-review-skills/tree/df3a8e6c76cab0433d10529b50cc6dae573eb9c0) |
-| `delegated-change-review` | 本地用户 skill 快照，SHA-256 `e6266516eacc80eb6fdd1859a0d52e457edb2fa3f2c499655a713fd2e92fea44` |
+| `delegated-change-review` | `SKILL.md` 来自本地用户 skill 快照，SHA-256 `e6266516eacc80eb6fdd1859a0d52e457edb2fa3f2c499655a713fd2e92fea44`；UI 元数据已移除独立提交请求 |
 | `review-gated-implementation` | 本地用户 skill 快照，SHA-256 `3e9f33b12e135d8491a0d31b70413c576f4ba0582c90713894e646c89d31608a` |
 
-两个来源仓库的原始文档保存在 [`docs/archive`](./docs/archive/) 中；上表保留了来源仓库及其完整 Git 历史的链接。
+两个来源仓库的原始文档原样保存在 [`docs/archive`](./docs/archive/) 中，作为历史来源材料；当前策略以上文为准。上表保留了来源仓库及其完整 Git 历史的链接。
 
 ## 许可证
 

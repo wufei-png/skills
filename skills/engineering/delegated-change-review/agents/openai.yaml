@@ -1,7 +1,7 @@
 interface:
   display_name: "Delegated Change Review"
-  short_description: "Delegate review, verify findings, fix, test, and commit"
-  default_prompt: "Use $delegated-change-review to review the current change with a read-only subagent, verify findings, fix as needed, test, summarize, and commit."
+  short_description: "Delegate review, verify findings, fix, and test"
+  default_prompt: "Use $delegated-change-review to review the current change with a read-only subagent, verify findings, apply accepted fixes, rerun relevant tests, and summarize."
 
 policy:
   allow_implicit_invocation: false
