@@ -21,7 +21,7 @@ jobs:
           node-version: "22"
       - name: Discover installable skills
         run: |
-          npx -y skills@latest add . --list | tee /tmp/skills-list.txt
+          NO_COLOR=1 npx -y skills@latest add . --list | tee /tmp/skills-list.txt
           grep -F "Found 8 skills" /tmp/skills-list.txt
           for skill in \
             delegated-change-review \
