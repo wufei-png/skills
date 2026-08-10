@@ -1,0 +1,7 @@
+interface:
+  display_name: "Review Tests"
+  short_description: "Audit test suites for actionable defects"
+  default_prompt: "Use $review-tests to audit this project test suite and return prioritized, evidence-backed findings."
+
+policy:
+  allow_implicit_invocation: false

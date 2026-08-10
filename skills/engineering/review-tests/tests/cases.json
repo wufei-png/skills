@@ -1,0 +1,77 @@
+{
+  "skill": "review-tests",
+  "execution": {
+    "isolation": "For each case, copy only SKILL.md and that case's fixture into a new temporary root. Do not expose this manifest or sibling cases to the review agent.",
+    "context": "Start a fresh subagent with fork_turns set to none and pass only the copied skill path, copied project path, and the case prompt.",
+    "evaluation": "Compare the final report with required and forbidden criteria only after the subagent finishes, then remove the temporary root."
+  },
+  "cases": [
+    {
+      "id": "wrong-oracle",
+      "fixture": "fixtures/wrong-oracle",
+      "prompt": "Use $review-tests to review this project's full test suite. Return every actionable finding, then the overall assessment, scope, commands, and residual risks.",
+      "expectations": {
+        "required": [
+          {
+            "issue": "The premium-price expectation reproduces the current five-percent formula instead of using the independent ninety-dollar contract value, so the test approves an overcharge.",
+            "anchor": "tests/test_pricing.py",
+            "priorities": ["P1"]
+          }
+        ],
+        "forbidden": [
+          "Modify source or tests",
+          "Treat the passing suite as proof that pricing is correct",
+          "Report arbitrary assertion-count or coverage-percentage targets"
+        ]
+      }
+    },
+    {
+      "id": "false-confidence",
+      "fixture": "fixtures/false-confidence",
+      "prompt": "Use $review-tests to review this project's full test suite. Return every actionable finding, then the overall assessment, scope, commands, and residual risks.",
+      "expectations": {
+        "required": [
+          {
+            "issue": "The primary authorization test replaces the function under test with a mock and therefore proves only the configured mock result.",
+            "anchor": "tests/test_access.py",
+            "priorities": ["P1", "P2"]
+          },
+          {
+            "issue": "No test protects the contract that a non-owner without the admin role must be denied.",
+            "anchor": "access.py",
+            "priorities": ["P1", "P2"]
+          },
+          {
+            "issue": "Two admin tests exercise the same input and outcome without protecting distinct behavior.",
+            "anchor": "tests/test_access.py",
+            "priorities": ["P3"]
+          }
+        ],
+        "forbidden": [
+          "Report the correct production implementation as a production-code bug",
+          "Modify source or tests",
+          "Recommend a blanket ban on mocks"
+        ]
+      }
+    },
+    {
+      "id": "healthy-suite",
+      "fixture": "fixtures/healthy-suite",
+      "prompt": "Use $review-tests to review this project's full test suite. Return every actionable finding, then the overall assessment, scope, commands, and residual risks.",
+      "expectations": {
+        "required": [
+          {
+            "issue": "Return exactly 'No findings.' before the assessment because all specified branches and boundaries have independent behavioral assertions.",
+            "anchor": "tests/test_usernames.py",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Invent unspecified Unicode, locale, integration, performance, or coverage requirements",
+          "Modify source or tests",
+          "Create a finding solely to fill the report"
+        ]
+      }
+    }
+  ]
+}
