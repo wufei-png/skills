@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Discover installable skills
+        run: |
+          npx -y skills@latest add . --list | tee /tmp/skills-list.txt
+          grep -F "Found 8 skills" /tmp/skills-list.txt
+          for skill in \
+            delegated-change-review \
+            review-gated-implementation \
+            review-loop \
+            review-tests \
+            grilling \
+            improve-code-comments \
+            codex-session-recovery \
+            opencode-session-toolkit
+          do
+            grep -F "$skill" /tmp/skills-list.txt
+          done
+      - name: Validate manual-only metadata
+        run: |
+          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 8
+          for metadata in $(find skills -path '*/agents/openai.yaml')
+          do
+            grep -F "allow_implicit_invocation: false" "$metadata"
+          done
+      - name: Test Codex session recovery
+        run: python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
+      - name: Test OpenCode session toolkit
+        run: python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
