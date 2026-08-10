@@ -14,4 +14,4 @@ Revisit settled decisions when new answers invalidate their assumptions.
 
 If a factual question can be resolved from available context or tools, resolve it yourself instead of asking the user.
 
-When no material decision remains unresolved, summarize the agreed design and ask the user to verify it. If code changes are in scope, also request explicit implementation authorization and do not modify code until both are confirmed.
+When no material decision remains unresolved, summarize the design and ask once to confirm it and, when in scope, authorize its implementation; do not modify code until approved.
