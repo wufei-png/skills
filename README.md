@@ -47,6 +47,25 @@ npx skills@latest add wufei-png/skills \
 
 All skills in the current catalog are manual-only in Codex: their `agents/openai.yaml` files set `policy.allow_implicit_invocation: false`. Skills that already carried `disable-model-invocation: true` retain that compatibility field for runtimes that recognize it. The review skills are Codex-first. They expect a fresh subagent mechanism and the built-in `$review-agent` skill where referenced. Reviewers do not edit implementation files; whether they run tests or checks is a review-strategy decision based on the concrete problem. The implementation owner still adjudicates findings, applies accepted fixes, and owns final verification.
 
+## External projects
+
+These skill-backed projects remain in their own repositories because their skills evolve atomically with dedicated CLIs, installers, services, tests, or runtime assets. They are linked here for discovery rather than copied into this lightweight catalog.
+
+### Standalone skill products
+
+- [`AgentRepoRouter`](https://github.com/wufei-png/AgentRepoRouter) — Routes coding tasks across repositories, project skills and agents, and native coding CLIs while keeping repository scanning, generated mappings, multi-host installation, and symlink management in one product.
+- [`animated-sticker-maker`](https://github.com/wufei-png/animated-sticker-maker) — Turns a static reference image and motion prompt into a validated transparent animated sticker.
+- [`codex-native-scheduler`](https://github.com/wufei-png/codex-native-scheduler) — Schedules and manages unattended Codex CLI jobs through native OS schedulers.
+- [`DocMate`](https://github.com/wufei-png/DocMate) — Answers questions against a configured documentation repository catalog and can prepare tightly scoped documentation repairs.
+
+### Skill-driven systems
+
+- [`obsidian-vault-pr`](https://github.com/wufei-png/obsidian-vault-pr) — Provides safe, agent-driven change management for existing Git-managed Obsidian vaults through a dedicated CLI and review workflow.
+- [`reviewworthy`](https://github.com/wufei-png/reviewworthy) — Provides policy-aware, maintainer-first workflows for human-owned, AI-assisted open-source contributions.
+- [`git-evidence`](https://github.com/wufei-png/git-evidence) — Produces evidence-first engineering activity reports across GitHub, GitLab, and Gitee.
+- [`review-agent-flow`](https://github.com/wufei-png/review-agent-flow) — Orchestrates GitLab human and AI review with local agent support and its own durable execution workflow.
+- [`AI-Codereview-Gitlab-Opencode`](https://github.com/wufei-png/AI-Codereview-Gitlab-Opencode) — Runs multi-platform AI code review with an OpenCode Agent Review backend.
+
 ## Sources
 
 | Imported content | Source snapshot |

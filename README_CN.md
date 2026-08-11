@@ -47,6 +47,25 @@ npx skills@latest add wufei-png/skills \
 
 当前目录中的所有 skill 在 Codex 中都只能手动调用：各自的 `agents/openai.yaml` 都设置了 `policy.allow_implicit_invocation: false`。原本已经带有 `disable-model-invocation: true` 的 skill 继续保留该兼容字段，供识别它的运行时使用。这些审查 skill 以 Codex 为主要运行环境，需要全新子 Agent 机制，并在标明的位置依赖内置 `$review-agent` skill。Reviewer 不编辑实现文件；是否运行测试或检查由 reviewer 根据具体问题自行决定。实现 owner 仍负责裁决发现、应用接受的修复及最终验证。
 
+## 外部项目
+
+以下由 skill 驱动的项目继续在各自仓库维护，因为其 skill 需要与专用 CLI、安装器、服务、测试或运行时资产原子演进。这里仅提供发现入口，不将代码复制进这个轻量目录。
+
+### 独立 Skill 产品
+
+- [`AgentRepoRouter`](https://github.com/wufei-png/AgentRepoRouter) — 在仓库、项目级 skill/agent 与原生 coding CLI 之间路由任务，并将仓库扫描、映射配置生成、多 host 安装及软链接管理保留为一个完整产品。
+- [`animated-sticker-maker`](https://github.com/wufei-png/animated-sticker-maker) — 将静态参考图与动作提示转换为经过验证的透明动态贴纸。
+- [`codex-native-scheduler`](https://github.com/wufei-png/codex-native-scheduler) — 通过操作系统原生调度器安排和管理无人值守的 Codex CLI 任务。
+- [`DocMate`](https://github.com/wufei-png/DocMate) — 基于配置好的文档仓库目录回答问题，并可准备范围严格受控的文档修复。
+
+### Skill 驱动系统
+
+- [`obsidian-vault-pr`](https://github.com/wufei-png/obsidian-vault-pr) — 通过专用 CLI 与审查流程，为已有 Git 管理的 Obsidian vault 提供安全的 Agent 驱动变更管理。
+- [`reviewworthy`](https://github.com/wufei-png/reviewworthy) — 为人类主导、AI 辅助的开源贡献提供策略感知、维护者优先的工作流。
+- [`git-evidence`](https://github.com/wufei-png/git-evidence) — 跨 GitHub、GitLab 与 Gitee 生成证据优先的工程活动报告。
+- [`review-agent-flow`](https://github.com/wufei-png/review-agent-flow) — 结合本地 Agent 支持和独立的持久化执行流程，编排 GitLab 人工与 AI 审查。
+- [`AI-Codereview-Gitlab-Opencode`](https://github.com/wufei-png/AI-Codereview-Gitlab-Opencode) — 以 OpenCode Agent Review 为后端运行多平台 AI 代码审查。
+
 ## 来源
 
 | 迁移内容 | 来源快照 |
