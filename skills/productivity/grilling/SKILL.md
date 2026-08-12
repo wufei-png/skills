@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Interview me relentlessly, working through the decision tree in dependency order.
 
-When one option is clearly preferable under the established constraints, choose it without discussion. Ask only about decisions that involve genuine tradeoffs; for each, list the viable options, compare their tradeoffs, and recommend one.
+When one option is clearly preferable under the established constraints, choose it without discussion. Ask only about decisions that involve genuine tradeoffs; for each, list the viable options and compare their tradeoffs. Recommend one only when the established constraints and priorities support it; otherwise explain which scenarios favor each option and let the user choose.
 
 Ask one question at a time and wait for feedback. If the user gives a per-turn maximum, treat it as a ceiling: ask multiple questions only when they are tightly related, their prerequisites are settled, and none depends on another's answer.
 
