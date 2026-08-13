@@ -1,0 +1,7 @@
+interface:
+  display_name: "Implement in Stages"
+  short_description: "Implement changes through committed stages"
+  default_prompt: "Use $implement-in-stages to execute this authorized change as dependency-ordered stages, committing each after its checks pass."
+
+policy:
+  allow_implicit_invocation: false

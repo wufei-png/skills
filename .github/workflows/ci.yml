@@ -22,10 +22,11 @@ jobs:
       - name: Discover installable skills
         run: |
           NO_COLOR=1 npx -y skills@latest add . --list | tee /tmp/skills-list.txt
-          grep -F "Found 9 skills" /tmp/skills-list.txt
+          grep -F "Found 10 skills" /tmp/skills-list.txt
           for skill in \
             delegated-change-review \
             review-gated-implementation \
+            implement-in-stages \
             review-loop \
             review-tests \
             grilling \
@@ -38,7 +39,7 @@ jobs:
           done
       - name: Validate manual-only metadata
         run: |
-          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 9
+          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 10
           for metadata in $(find skills -path '*/agents/openai.yaml')
           do
             grep -F "allow_implicit_invocation: false" "$metadata"
