@@ -1,6 +1,7 @@
 ---
 name: opencode-session-toolkit
 description: Inspect, search, diagnose, and export local OpenCode SQLite sessions across projects. Use for session discovery, transcript reading, literal content search, live schema inspection, and safe Markdown or JSONL archives.
+disable-model-invocation: true
 ---
 
 # OpenCode Session Toolkit

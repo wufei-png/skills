@@ -1,6 +1,7 @@
 ---
 name: improve-code-comments
 description: Use when auditing, adding, removing, or improving code comments, docstrings, JSDoc/TSDoc, TODO/FIXME/HACK notes, public API comments, inline rationale, stale/comment rot, redundant comments, documentation gaps, or "why not what" comment quality.
+disable-model-invocation: true
 ---
 
 # Improve Code Comments

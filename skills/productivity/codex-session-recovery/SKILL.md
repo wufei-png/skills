@@ -1,6 +1,7 @@
 ---
 name: codex-session-recovery
 description: Find Codex session and thread IDs from read-only local Codex session history or copied fixtures, then produce CLI-first recovery instructions. Use when Codex history appears lost after account or provider changes, Codex Desktop does not show older threads, or the user asks to find, resume, fork, recover, pin, or make visible a prior Codex session. Optionally, when the current Codex environment exposes the required thread tools and the user explicitly requests Desktop visibility, create, title, and pin a helper thread.
+disable-model-invocation: true
 ---
 
 # Codex Session Recovery
@@ -100,11 +101,11 @@ If any required tool is missing or `fork_thread` cannot access the recovered id,
 
 Decision table:
 
-| Runtime capability | User request | Action |
-| --- | --- | --- |
-| Missing required thread tools | Any request | Output CLI commands only. |
-| Required tools available | User did not ask for Desktop visibility | Output CLI commands and mention Desktop visibility as optional. |
-| Required tools available | User asked for Desktop visibility | Show the proposed fork/title/pin actions first, then execute only when authorized. Verify with `list_threads` or `read_thread`. |
+| Runtime capability            | User request                            | Action                                                                                                                          |
+| ----------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Missing required thread tools | Any request                             | Output CLI commands only.                                                                                                       |
+| Required tools available      | User did not ask for Desktop visibility | Output CLI commands and mention Desktop visibility as optional.                                                                 |
+| Required tools available      | User asked for Desktop visibility       | Show the proposed fork/title/pin actions first, then execute only when authorized. Verify with `list_threads` or `read_thread`. |
 
 When creating Desktop-visible helper threads, make titles explicit, for example:
 

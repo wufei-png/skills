@@ -1,6 +1,7 @@
 ---
 name: review-tests
 description: Review existing tests as a read-only, defect-first auditor and return prioritized findings about missing protection, false confidence, invalid oracles, redundancy, implementation coupling, isolation, and tests that endorse incorrect behavior. Use only when explicitly invoked; do not write or fix tests.
+disable-model-invocation: true
 ---
 
 # Review Tests
