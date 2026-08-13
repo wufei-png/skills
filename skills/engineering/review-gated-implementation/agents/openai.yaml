@@ -1,7 +1,7 @@
 interface:
   display_name: "Review-Gated Implementation"
-  short_description: "Implement changes through reviewed, verified stages"
-  default_prompt: "Use $review-gated-implementation to execute this authorized change as dependency-ordered, verified, reviewed, and committed stages."
+  short_description: "Implement changes through reviewed, committed stages"
+  default_prompt: "Use $review-gated-implementation to execute this authorized change as dependency-ordered stages, reviewing and committing each after its checks pass."
 
 policy:
   allow_implicit_invocation: false
