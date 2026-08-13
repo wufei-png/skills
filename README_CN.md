@@ -33,7 +33,8 @@ npx skills@latest add wufei-png/skills \
 
 ### Productivity
 
-- [`grilling`](./skills/productivity/grilling/SKILL.md) — 沿依赖顺序收敛决策树，只询问包含真实取舍且已具备前置条件的问题。
+- [`grilling`](./skills/productivity/grilling/SKILL.md) — 沿依赖顺序收敛真实取舍，仅在既有约束足以支持时给出推荐。
+- [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — 每次向用户提问前，先通过独立、辩证的 subagent 审查门审核候选问题。
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — 只读查找本地 Codex 会话，并生成 CLI 优先的恢复步骤。
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — 安全检查、搜索、诊断及导出本地 OpenCode SQLite 会话。
 
@@ -45,7 +46,7 @@ npx skills@latest add wufei-png/skills \
 - [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — 为 `review-gated-implementation` 提供单轮只读审查门。
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — 将已授权变更拆成依赖有序、可独立验证、逐阶段审查并提交的实现过程。
 
-当前目录中的所有 skill 在 Codex 中都只能手动调用：各自的 `agents/openai.yaml` 都设置了 `policy.allow_implicit_invocation: false`。原本已经带有 `disable-model-invocation: true` 的 skill 继续保留该兼容字段，供识别它的运行时使用。这些审查 skill 以 Codex 为主要运行环境，需要全新子 Agent 机制，并在标明的位置依赖内置 `$review-agent` skill。Reviewer 不编辑实现文件；是否运行测试或检查由 reviewer 根据具体问题自行决定。实现 owner 仍负责裁决发现、应用接受的修复及最终验证。
+当前目录中的所有 skill 都只能手动调用。每个 `SKILL.md` 都通过 `disable-model-invocation: true` 管理 Claude Code 与 Pi；配套的 `agents/openai.yaml` 则通过 `policy.allow_implicit_invocation: false` 管理 ChatGPT 与 Codex，两处字段必须保持同步。前者是宿主扩展，并非 Agent Skills 基础规范的一部分，因此严格的基础规范校验器可能拒绝这种有意支持多宿主的布局。`review-gated-grilling` 与审查 skill 以 Codex 为主要运行环境，因为它们需要全新 subagent 机制；代码审查 skill 还会在标明的位置依赖内置 `$review-agent`。Reviewer 不编辑实现文件，也不直接向用户提问；代码 reviewer 是否运行测试或检查，由具体问题的审查策略决定。主 Agent 仍负责裁决发现并对面向用户的最终结果负责。
 
 ## 外部项目
 
@@ -81,6 +82,8 @@ npx skills@latest add wufei-png/skills \
 来源仓库的原始文档保存在 [`docs/archive`](./docs/archive/) 中，作为历史来源材料；当前策略以上文为准。上表保留了来源仓库及其完整 Git 历史链接。合并完成后，`improve-code-comments`、`codex-session-recovery` 和 `opencode-session-toolkit` 的旧仓库只作为冻结分发源；后续开发和安装统一使用本仓库，本仓库不再维护它们的独立 installer、版本、Release 压缩包或 ClawHub 发布流程。
 
 `review-tests` 是原创综合设计，参考了 [OpenAI Codex `review-agent@83a4187`](https://github.com/openai/codex/blob/83a418783707f4446aa832b2799d6cacfef75011/codex-rs/skills/src/assets/samples/review-agent/SKILL.md) 的 defect-first 合同、[levnikolaevich/claude-code-skills@ac4f240](https://github.com/levnikolaevich/claude-code-skills/blob/ac4f240070065a8fcebb8ada19a93e07cdd12266/plugins/codebase-audit-suite/skills/ln-23-test-suite-auditor/SKILL.md) 的证据规则、[posit-dev/skills@6d48d6b](https://github.com/posit-dev/skills/blob/6d48d6bef92ff3f2194d5b00e61974e61125711e/posit-dev/review-testing/SKILL.md) 的测试设计审查维度，以及 [obra/superpowers@caa1826](https://github.com/obra/superpowers/blob/caa1826cbadeb88f88c7ad7b3f66178cba01e57d/skills/test-driven-development/writing-good-tests.md) 的独立 oracle 指导。未直接迁入上游文件。
+
+`review-gated-grilling` 是从当前 `grilling` 契约派生的自包含变体。其“先独立判断、再基于证据有限讨论、按材料性自适应停止”的审查门参考了 [Liang 等人的多 Agent 辩论研究](https://aclanthology.org/2024.emnlp-main.992/)、[Zhu 等人对置信度与多样性的分析](https://aclanthology.org/2026.findings-acl.1694/)、[Baltaji 等人的从众效应研究](https://aclanthology.org/2024.c3nlp-1.2/) 及 [gstack 的全新上下文 second-opinion 工作流](https://github.com/garrytan/gstack/blob/main/office-hours/SKILL.md)。未直接迁入上游文件。
 
 ## 许可证
 

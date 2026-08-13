@@ -14,7 +14,9 @@ class RepositoryTest(unittest.TestCase):
         text = skill_md.read_text(encoding="utf-8")
         self.assertLessEqual(len(text.splitlines()), 120, skill_md)
         self.assertRegex(
-            text, r"\A---\nname: opencode-session-toolkit\ndescription: .+\n---"
+            text,
+            r"\A---\nname: opencode-session-toolkit\ndescription: .+\n"
+            r"disable-model-invocation: true\n---",
         )
         for relative in re.findall(r"`(references/[^`]+\.md)`", text):
             self.assertTrue(

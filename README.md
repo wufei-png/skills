@@ -33,7 +33,8 @@ npx skills@latest add wufei-png/skills \
 
 ### Productivity
 
-- [`grilling`](./skills/productivity/grilling/SKILL.md) — Resolve a decision tree by asking only dependency-ready questions with genuine tradeoffs.
+- [`grilling`](./skills/productivity/grilling/SKILL.md) — Resolve a decision tree through genuine tradeoffs and recommend only when established constraints support it.
+- [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — Gate every candidate user question through independent, dialectical subagent review before asking it.
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — Find local Codex sessions read-only and produce CLI-first recovery steps.
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — Inspect, search, diagnose, and export local OpenCode SQLite sessions safely.
 
@@ -45,7 +46,7 @@ npx skills@latest add wufei-png/skills \
 - [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — Perform the single read-only review gate used by `review-gated-implementation`.
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — Execute an authorized change as dependency-ordered, independently verified, reviewed, and committed stages.
 
-All skills in the current catalog are manual-only in Codex: their `agents/openai.yaml` files set `policy.allow_implicit_invocation: false`. Skills that already carried `disable-model-invocation: true` retain that compatibility field for runtimes that recognize it. The review skills are Codex-first. They expect a fresh subagent mechanism and the built-in `$review-agent` skill where referenced. Reviewers do not edit implementation files; whether they run tests or checks is a review-strategy decision based on the concrete problem. The implementation owner still adjudicates findings, applies accepted fixes, and owns final verification.
+All skills in the current catalog are manual-only. Each `SKILL.md` sets `disable-model-invocation: true` for Claude Code and Pi, while the paired `agents/openai.yaml` sets `policy.allow_implicit_invocation: false` for ChatGPT and Codex. Keep both fields in sync. The former is a host extension rather than part of the base Agent Skills specification, so strict base-spec validators may reject this deliberately cross-host layout. `review-gated-grilling` and the review skills are Codex-first because they expect a fresh subagent mechanism; the code review skills additionally use the built-in `$review-agent` skill where referenced. Reviewers do not edit implementation files or ask the user questions directly. Whether code reviewers run tests or checks is a review-strategy decision based on the concrete problem. The primary agent still adjudicates findings and owns the user-facing result.
 
 ## External projects
 
@@ -81,6 +82,8 @@ These skill-backed projects remain in their own repositories because their skill
 The original repository documentation is retained under [`docs/archive`](./docs/archive/) as historical source material; the current policy is documented above. The source repositories and their complete histories are linked above. `improve-code-comments`, `codex-session-recovery`, and `opencode-session-toolkit` are frozen distribution sources after this consolidation: future development and installation use this repository, with no independent installer, version, release archive, or ClawHub publishing flow maintained here.
 
 `review-tests` is an original synthesis informed by the defect-first contract in [OpenAI Codex `review-agent@83a4187`](https://github.com/openai/codex/blob/83a418783707f4446aa832b2799d6cacfef75011/codex-rs/skills/src/assets/samples/review-agent/SKILL.md), the portfolio evidence rules in [levnikolaevich/claude-code-skills@ac4f240](https://github.com/levnikolaevich/claude-code-skills/blob/ac4f240070065a8fcebb8ada19a93e07cdd12266/plugins/codebase-audit-suite/skills/ln-23-test-suite-auditor/SKILL.md), the test-design review areas in [posit-dev/skills@6d48d6b](https://github.com/posit-dev/skills/blob/6d48d6bef92ff3f2194d5b00e61974e61125711e/posit-dev/review-testing/SKILL.md), and the independent-oracle guidance in [obra/superpowers@caa1826](https://github.com/obra/superpowers/blob/caa1826cbadeb88f88c7ad7b3f66178cba01e57d/skills/test-driven-development/writing-good-tests.md). No upstream files were imported.
+
+`review-gated-grilling` is a self-contained variant derived from the current `grilling` contract. Its independent-first, evidence-led, adaptively stopped discussion gate is informed by [Liang et al.'s multi-agent debate](https://aclanthology.org/2024.emnlp-main.992/), [Zhu et al.'s analysis of confidence and diversity](https://aclanthology.org/2026.findings-acl.1694/), [Baltaji et al.'s conformity findings](https://aclanthology.org/2024.c3nlp-1.2/), and [gstack's fresh-context second-opinion workflow](https://github.com/garrytan/gstack/blob/main/office-hours/SKILL.md). No upstream files were imported.
 
 ## License
 

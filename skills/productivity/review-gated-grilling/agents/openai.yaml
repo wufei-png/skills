@@ -1,0 +1,7 @@
+interface:
+  display_name: "Review-Gated Grilling"
+  short_description: "Gate user questions through independent agent review"
+  default_prompt: "Use $review-gated-grilling to resolve this decision through independently reviewed questions."
+
+policy:
+  allow_implicit_invocation: false

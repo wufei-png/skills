@@ -22,13 +22,14 @@ jobs:
       - name: Discover installable skills
         run: |
           NO_COLOR=1 npx -y skills@latest add . --list | tee /tmp/skills-list.txt
-          grep -F "Found 8 skills" /tmp/skills-list.txt
+          grep -F "Found 9 skills" /tmp/skills-list.txt
           for skill in \
             delegated-change-review \
             review-gated-implementation \
             review-loop \
             review-tests \
             grilling \
+            review-gated-grilling \
             improve-code-comments \
             codex-session-recovery \
             opencode-session-toolkit
@@ -37,10 +38,12 @@ jobs:
           done
       - name: Validate manual-only metadata
         run: |
-          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 8
+          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 9
           for metadata in $(find skills -path '*/agents/openai.yaml')
           do
             grep -F "allow_implicit_invocation: false" "$metadata"
+            skill_dir="$(dirname "$(dirname "$metadata")")"
+            grep -F "disable-model-invocation: true" "$skill_dir/SKILL.md"
           done
       - name: Test Codex session recovery
         run: python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
