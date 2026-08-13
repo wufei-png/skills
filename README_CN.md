@@ -29,6 +29,25 @@ npx skills@latest add wufei-png/skills \
   -g -y --agent codex
 ```
 
+`implement-in-stages` 可以单独安装：
+
+```bash
+npx skills@latest add wufei-png/skills \
+  --skill implement-in-stages \
+  -g -y --agent codex
+```
+
+## 校验
+
+在仓库根目录校验 skill 发现及已修改文件的空白格式：
+
+```bash
+NO_COLOR=1 npx -y skills@latest add . --list
+git diff --check
+```
+
+对于只能手动调用的 skill，还需保持 `disable-model-invocation: true` 与 `policy.allow_implicit_invocation: false` 成对存在。OpenAI 的基础 schema `quick_validate.py` 不接受 Claude Code 与 Pi 的调用字段，因此不作为这个跨宿主目录的通过门禁。
+
 ## Skill 索引
 
 ### Productivity
@@ -44,9 +63,17 @@ npx skills@latest add wufei-png/skills \
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — 以只读方式审查项目测试套件，返回按优先级排序、有证据支持的缺陷。
 - [`review-loop`](./skills/engineering/review-loop/SKILL.md) — 使用全新、只读审查子 Agent 运行有轮次上限的审查与修复循环。
 - [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — 为 `review-gated-implementation` 提供单轮只读审查门。
-- [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — 将已授权变更拆成依赖有序、可独立验证、逐阶段审查并提交的实现过程。
+- [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — 将已授权变更拆成依赖有序的阶段，每阶段检查通过后审查并提交。
+- [`implement-in-stages`](./skills/engineering/implement-in-stages/SKILL.md) — 将已授权变更拆成依赖有序的阶段，每阶段检查通过后提交。
 
-当前目录中的所有 skill 都只能手动调用。每个 `SKILL.md` 都通过 `disable-model-invocation: true` 管理 Claude Code 与 Pi；配套的 `agents/openai.yaml` 则通过 `policy.allow_implicit_invocation: false` 管理 ChatGPT 与 Codex，两处字段必须保持同步。前者是宿主扩展，并非 Agent Skills 基础规范的一部分，因此严格的基础规范校验器可能拒绝这种有意支持多宿主的布局。`review-gated-grilling` 与审查 skill 以 Codex 为主要运行环境，因为它们需要全新 subagent 机制；代码审查 skill 还会在标明的位置依赖内置 `$review-agent`。Reviewer 不编辑实现文件，也不直接向用户提问；代码 reviewer 是否运行测试或检查，由具体问题的审查策略决定。主 Agent 仍负责裁决发现并对面向用户的最终结果负责。
+## 配对变体
+
+| 基础 skill                    | 变体                    | 有意保留的差异                                                             | 维护规则                                                                         |
+| ----------------------------- | ----------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `grilling`                    | `review-gated-grilling` | 每个候选问题或允许的问题批次展示给用户前，增加全新、只读的 subagent 审查。 | 访谈和授权契约保持平行；reviewer 行为只放在 gated 变体中。                       |
+| `review-gated-implementation` | `implement-in-stages`   | 删除逐阶段和最终 delegated review，包括 review finding 与 outcome 报告。   | 阶段规划、边界、检查、提交及风险报告保持平行；review 行为只放在 gated skill 中。 |
+
+当前目录中的所有 skill 都只能手动调用。每个 `SKILL.md` 都通过 `disable-model-invocation: true` 管理 Claude Code 与 Pi；配套的 `agents/openai.yaml` 则通过 `policy.allow_implicit_invocation: false` 管理 ChatGPT 与 Codex，两处字段必须保持同步。`review-gated-grilling` 与审查 skill 以 Codex 为主要运行环境，因为它们需要全新 subagent 机制；代码审查 skill 还会在标明的位置依赖内置 `$review-agent`。Reviewer 不编辑实现文件，也不直接向用户提问；代码 reviewer 是否运行测试或检查，由具体问题的审查策略决定。主 Agent 仍负责裁决发现并对面向用户的最终结果负责。
 
 ## 外部项目
 
@@ -69,21 +96,23 @@ npx skills@latest add wufei-png/skills \
 
 ## 来源
 
-| 迁移内容 | 来源快照 |
-| --- | --- |
-| `grilling` | [`wufei-png/grilling@64853fe`](https://github.com/wufei-png/grilling/tree/64853fedfc2d02f53013bb8c1666c6316760d289) |
-| `review-loop` | 基于 [`wufei-png/agent-review-skills@df3a8e6`](https://github.com/wufei-png/agent-review-skills/tree/df3a8e6c76cab0433d10529b50cc6dae573eb9c0)，并恢复了仅手动调用字段 |
-| `delegated-change-review` | `SKILL.md` 来自本地用户 skill 快照，SHA-256 `e6266516eacc80eb6fdd1859a0d52e457edb2fa3f2c499655a713fd2e92fea44`；UI 元数据已移除独立提交请求 |
-| `review-gated-implementation` | 本地用户 skill 快照，SHA-256 `3e9f33b12e135d8491a0d31b70413c576f4ba0582c90713894e646c89d31608a` |
-| `improve-code-comments` | [`wufei-png/improve-code-comments@f8d0199`](https://github.com/wufei-png/improve-code-comments/tree/f8d019954c05b458c2fef11b3f6e555f5af733ed)；直接复制可安装文件，并增加仅手动调用 metadata |
-| `codex-session-recovery` | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71)；复制后仅调整手动调用策略、monorepo 路径及当前 CLI-first 能力表述 |
-| `opencode-session-toolkit` | 英文运行包和测试来自 [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9)；中文包及独立发布机制不迁入 |
+| 迁移内容                      | 来源快照                                                                                                                                                                                                          |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grilling`                    | [`wufei-png/grilling@64853fe`](https://github.com/wufei-png/grilling/tree/64853fedfc2d02f53013bb8c1666c6316760d289)                                                                                               |
+| `review-loop`                 | 基于 [`wufei-png/agent-review-skills@df3a8e6`](https://github.com/wufei-png/agent-review-skills/tree/df3a8e6c76cab0433d10529b50cc6dae573eb9c0)，并恢复了仅手动调用字段                                            |
+| `delegated-change-review`     | `SKILL.md` 来自本地用户 skill 快照，SHA-256 `e6266516eacc80eb6fdd1859a0d52e457edb2fa3f2c499655a713fd2e92fea44`；UI 元数据已移除独立提交请求                                                                       |
+| `review-gated-implementation` | 本地用户 skill 快照，SHA-256 `3e9f33b12e135d8491a0d31b70413c576f4ba0582c90713894e646c89d31608a`                                                                                                                   |
+| `improve-code-comments`       | [`wufei-png/improve-code-comments@f8d0199`](https://github.com/wufei-png/improve-code-comments/tree/f8d019954c05b458c2fef11b3f6e555f5af733ed)；直接复制可安装文件，并增加仅手动调用 metadata                      |
+| `codex-session-recovery`      | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71)；复制后仅调整手动调用策略、monorepo 路径及当前 CLI-first 能力表述 |
+| `opencode-session-toolkit`    | 英文运行包和测试来自 [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9)；中文包及独立发布机制不迁入              |
 
 来源仓库的原始文档保存在 [`docs/archive`](./docs/archive/) 中，作为历史来源材料；当前策略以上文为准。上表保留了来源仓库及其完整 Git 历史链接。合并完成后，`improve-code-comments`、`codex-session-recovery` 和 `opencode-session-toolkit` 的旧仓库只作为冻结分发源；后续开发和安装统一使用本仓库，本仓库不再维护它们的独立 installer、版本、Release 压缩包或 ClawHub 发布流程。
 
 `review-tests` 是原创综合设计，参考了 [OpenAI Codex `review-agent@83a4187`](https://github.com/openai/codex/blob/83a418783707f4446aa832b2799d6cacfef75011/codex-rs/skills/src/assets/samples/review-agent/SKILL.md) 的 defect-first 合同、[levnikolaevich/claude-code-skills@ac4f240](https://github.com/levnikolaevich/claude-code-skills/blob/ac4f240070065a8fcebb8ada19a93e07cdd12266/plugins/codebase-audit-suite/skills/ln-23-test-suite-auditor/SKILL.md) 的证据规则、[posit-dev/skills@6d48d6b](https://github.com/posit-dev/skills/blob/6d48d6bef92ff3f2194d5b00e61974e61125711e/posit-dev/review-testing/SKILL.md) 的测试设计审查维度，以及 [obra/superpowers@caa1826](https://github.com/obra/superpowers/blob/caa1826cbadeb88f88c7ad7b3f66178cba01e57d/skills/test-driven-development/writing-good-tests.md) 的独立 oracle 指导。未直接迁入上游文件。
 
 `review-gated-grilling` 是从当前 `grilling` 契约派生的自包含变体。其“先独立判断、再基于证据有限讨论、按材料性自适应停止”的审查门参考了 [Liang 等人的多 Agent 辩论研究](https://aclanthology.org/2024.emnlp-main.992/)、[Zhu 等人对置信度与多样性的分析](https://aclanthology.org/2026.findings-acl.1694/)、[Baltaji 等人的从众效应研究](https://aclanthology.org/2024.c3nlp-1.2/) 及 [gstack 的全新上下文 second-opinion 工作流](https://github.com/garrytan/gstack/blob/main/office-hours/SKILL.md)。未直接迁入上游文件。
+
+`implement-in-stages` 是从 `review-gated-implementation` 派生的自包含变体。两者共有的规划、执行、检查、提交与报告措辞有意保持平行，便于直接同步通用更新。
 
 ## 许可证
 
