@@ -1,6 +1,6 @@
 ---
 name: review-gated-grilling
-description: Interview the user about a plan, decision, or idea after subagents review each candidate question and recommendation. Use only when explicitly invoked for multi-agent decision clarification.
+description: Interview the user about a plan, decision, or idea after subagents review each candidate question and recommendation.
 disable-model-invocation: true
 ---
 
