@@ -1,101 +1,31 @@
-# CLI guide
+# CLI behavior
 
-Run commands from the skill directory. Put `--db-path` after the subcommand when overriding automatic `opencode db path` resolution.
+Run commands from the skill directory. Put `--db-path` after the subcommand when overriding `opencode db path`. Treat `<command> --help` as the option authority.
 
-## Route by intent
+`doctor` reads schema metadata only, not transcript content.
 
-| Need | Command |
-| --- | --- |
-| Verify the database is usable | `doctor` |
-| Find sessions by metadata | `list` |
-| Read one session | `show SESSION_ID` |
-| Find literal text | `search TEXT` |
-| Write an archive | `export` |
-| Diagnose fields or indexes | `schema` |
+## Filters and output
 
-Use `<command> --help` as the option authority.
+Repeated values for one filter are OR alternatives; different filter categories combine with AND. Text filters are literal, case-insensitive substrings, so `%` and `_` are not SQL wildcards.
 
-## Diagnose first
+`list` excludes archived sessions by default and returns 20 rows ordered by update time and session id. Displayed times are UTC ISO-8601. Naive datetimes and date-only bounds use the machine's local timezone; a date-only end includes that whole day.
 
-```bash
-./scripts/opencode_sessions.py doctor
-./scripts/opencode_sessions.py schema --table session --format json
-```
+Table output is for people and JSON is stable for tools. User errors exit with code 2 and a concise `error:` on stderr.
 
-`doctor` reads schema metadata only; it does not read transcript content.
+## Transcripts and search
 
-## Discover sessions
+`show SESSION_ID` includes text and short tool summaries. It omits reasoning, complete tool inputs and outputs, raw message JSON, and other non-display parts unless `--include-sensitive` is explicit.
 
-```bash
-./scripts/opencode_sessions.py list
-./scripts/opencode_sessions.py list --project toolkit --start 2026-08-01
-./scripts/opencode_sessions.py list --directory /path/to/worktree --format json
-./scripts/opencode_sessions.py list --archived only
-```
-
-Repeated values for the same filter are OR alternatives. Different filter categories combine with AND. Text filters are literal, case-insensitive substrings: `%` and `_` are not SQL wildcards.
-
-The default list excludes archived sessions and returns 20 rows ordered by update time and session ID.
-
-## Read or search
-
-```bash
-./scripts/opencode_sessions.py show ses_example
-./scripts/opencode_sessions.py show ses_example --format json
-./scripts/opencode_sessions.py search 'exact % text' --scope all
-./scripts/opencode_sessions.py search 'tool name' --scope messages --format json
-```
-
-Default `show` output includes text and concise tool summaries. It omits reasoning, complete tool inputs/outputs, raw message JSON, and other non-display parts.
-
-Only use this after the user explicitly asks for complete payloads:
-
-```bash
-./scripts/opencode_sessions.py show ses_example --include-sensitive
-```
-
-Search reports matching sessions without printing matching message snippets. Use `show` on an intended session rather than exposing surrounding payloads automatically.
+`search TEXT` reports matching sessions without surrounding message snippets. Use `show` on a selected session to avoid exposing unrelated payloads.
 
 ## Export
 
-Select sessions with the same filters as `list`:
+`export` uses the same filters as `list`; require `--all` when no filter is present. Use `--dry-run` to preview matched paths and conflicts without writing.
 
-```bash
-./scripts/opencode_sessions.py export \
-  --project opencode-session-toolkit \
-  --output-dir ./exports/toolkit
+Markdown creates one file per session using a sanitized title, UTC creation time, and session id. JSONL creates `sessions.jsonl`. Exports are preflighted before any write:
 
-./scripts/opencode_sessions.py export \
-  --start 2026-08-01 \
-  --end 2026-08-09 \
-  --group-by-project \
-  --output-dir ./exports/week
-```
+- identical files remain unchanged;
+- changed files stop the entire export before new files are written;
+- `--overwrite` replaces changed files through same-directory atomic renames.
 
-Use `--all` to acknowledge an unfiltered full-database export. Date-only `--end` includes the entire local calendar day.
-
-Preview matched output paths and conflict status without creating files:
-
-```bash
-./scripts/opencode_sessions.py export \
-  --project opencode-session-toolkit \
-  --output-dir ./exports/toolkit \
-  --dry-run
-```
-
-Markdown creates one file per session. Filenames contain a sanitized title, UTC creation time, and session ID. JSONL creates `sessions.jsonl`.
-
-Exports are preflighted before writing:
-
-- Identical existing files are reported as unchanged.
-- Changed existing files stop the whole export before new files are written.
-- `--overwrite` explicitly replaces changed outputs through same-directory atomic renames.
-
-`--include-sensitive` applies the same opt-in boundary as `show` and emits a warning on stderr.
-
-## Output rules
-
-- Displayed times are UTC ISO-8601.
-- Naive datetimes and date-only bounds are interpreted in the machine's local timezone.
-- Table output is for humans; JSON output is stable for downstream tools.
-- Errors use exit code 2 and a concise `error:` message on stderr.
+`--include-sensitive` keeps the same explicit opt-in as `show` and emits a warning on stderr.

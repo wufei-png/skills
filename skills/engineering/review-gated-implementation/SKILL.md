@@ -1,18 +1,18 @@
 ---
 name: review-gated-implementation
-description: Implement an already-defined code change as dependency-ordered, independently checkable stages, reviewing and committing each before continuing.
+description: Implement an authorized change in dependency order, reviewing, checking, and committing each independently valid stage.
 disable-model-invocation: true
 ---
 
 # Review-Gated Implementation
 
-Implement an already-authorized change as a sequence of small commits.
+Implement an already-authorized change as a sequence of reviewed commits.
 
-## Plan the stages
+## Plan
 
 Use the user's stage limit when provided; otherwise use at most 10 stages. If a sound breakdown requires more, stop and report why rather than forcing unrelated work together.
 
-Record the current commit as `START_BASE` for the final review.
+Record `START_BASE=$(git rev-parse HEAD)` and the current worktree status so the final review can exclude unrelated pre-existing changes.
 
 Split the change into dependency-ordered stages. Each stage must:
 
@@ -29,7 +29,7 @@ Use a preparatory-refactor stage only when it creates a materially safer seam fo
 State the plan briefly:
 
 ```text
-1. <Stage> — delivers <observable result>; depends on <earlier stages or none>; check with <commands>.
+1. <Stage> — delivers <result>; depends on <earlier stages or none>; check with <commands>.
 ```
 
 If implementation evidence invalidates the plan, revise only unfinished stages.
@@ -40,18 +40,13 @@ Work one stage at a time in the current tree. Never stage or commit unrelated pr
 
 For each stage:
 
-1. Record `STAGE_BASE=$(git rev-parse HEAD)`.
-2. Implement only that stage and run its checks.
-3. Stage explicit paths and inspect the staged diff.
-4. Use `$delegated-change-review` on the staged diff with the stage goal, acceptance criteria, non-goals, `STAGE_BASE`, and check results.
-5. After accepted fixes, restage, re-run those checks, then commit and continue. Run only one review per stage.
+1. Record `STAGE_BASE=$(git rev-parse HEAD)`, implement only that stage, and run its checks.
+2. Stage explicit paths and inspect the staged diff.
+3. Use `$delegated-change-review` on that staged diff with the stage goal, acceptance criteria, non-goals, `STAGE_BASE`, and check results.
+4. After accepted fixes are applied, restage, rerun the checks, and commit. Run only one review per stage.
 
-After the final stage:
-
-1. Confirm the complete change against the task requirements and run the full applicable checks.
-2. Use `$delegated-change-review` on the complete candidate from `START_BASE` with the requirements and check results.
-3. Apply needed fixes, re-run the full applicable checks, then commit any remaining fixes.
+After the final stage, check the complete task and run the full applicable checks. Use `$delegated-change-review` once on the task-related change from `START_BASE`, rerun the checks after accepted fixes, and commit any remaining fixes.
 
 ## Report
 
-Report the commits, checks and results, review outcomes, deferred findings, and any remaining risks or blockers.
+Report the commits, checks and results, review outcomes, deferred findings, and remaining risks or blockers.

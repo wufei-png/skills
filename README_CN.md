@@ -4,7 +4,7 @@
 
 一组小而可组合的 Agent Skills，用于澄清决策、委托只读审查，以及通过分阶段验证交付变更。
 
-本仓库采用了 [mattpocock/skills](https://github.com/mattpocock/skills) 中适合当前规模的结构：按用途组织 skill、保持每个 skill 可独立安装，并由根目录文档提供完整索引。包发布、插件元数据、ADR 等基础设施会等到确有需要时再引入。
+本仓库采用了 [mattpocock/skills](https://github.com/mattpocock/skills) 中适合当前规模的结构：按用途组织 skill、保持每个 skill 可单独发现、明确说明必要的配套 skill，并由根目录文档提供完整索引。包发布、插件元数据、ADR 等基础设施会等到确有需要时再引入。
 
 ## 安装
 
@@ -39,10 +39,11 @@ npx skills@latest add wufei-png/skills \
 
 ## 校验
 
-在仓库根目录校验 skill 发现及已修改文件的空白格式：
+在仓库根目录校验 skill 发现、仓库契约及已修改文件的空白格式：
 
 ```bash
 NO_COLOR=1 npx -y skills@latest add . --list
+python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
 git diff --check
 ```
 
@@ -52,8 +53,8 @@ git diff --check
 
 ### Productivity
 
-- [`grilling`](./skills/productivity/grilling/SKILL.md) — 沿依赖顺序收敛真实取舍，仅在既有约束足以支持时给出推荐。
-- [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — 每次向用户提问前，先通过独立、辩证的 subagent 审查门审核候选问题。
+- [`grilling`](./skills/productivity/grilling/SKILL.md) — 通过依赖有序的问题收敛决策中的真实取舍。
+- [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — 每次提问前由全新、只读的 subagent 审核候选问题。
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — 只读查找本地 Codex 会话，并生成 CLI 优先的恢复步骤。
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — 安全检查、搜索、诊断及导出本地 OpenCode SQLite 会话。
 
@@ -62,7 +63,7 @@ git diff --check
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — 在不修改可执行代码的前提下审查和改进注释与 docstring。
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — 以只读方式审查项目测试套件，返回按优先级排序、有证据支持的缺陷。
 - [`review-loop`](./skills/engineering/review-loop/SKILL.md) — 使用全新、只读审查子 Agent 运行有轮次上限的审查与修复循环。
-- [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — 为 `review-gated-implementation` 提供单轮只读审查门。
+- [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — 为 `review-gated-implementation` 提供单轮委托审查门。
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — 将已授权变更拆成依赖有序的阶段，每阶段检查通过后审查并提交。
 - [`implement-in-stages`](./skills/engineering/implement-in-stages/SKILL.md) — 将已授权变更拆成依赖有序的阶段，每阶段检查通过后提交。
 

@@ -1,2 +1,7 @@
+interface:
+  display_name: "Grilling"
+  short_description: "Clarify decisions through genuine tradeoffs"
+  default_prompt: "Use $grilling to resolve this decision through dependency-ordered questions."
+
 policy:
   allow_implicit_invocation: false

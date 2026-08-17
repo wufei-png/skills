@@ -1,23 +1,12 @@
 ---
 name: delegated-change-review
-description: Perform a single, read-only subagent review.
+description: Run one fresh, read-only code-review subagent, adjudicate its findings, apply accepted fixes, and verify them.
 disable-model-invocation: true
 ---
 
 # Delegated Change Review
 
-## Review
-
-1. Start one fresh subagent with `fork_turns: "none"` and `[$review-agent](~/.codex/skills/.system/review-agent/SKILL.md)`. The reviewer may inspect code, tests, and call sites, but must only review. Wait patiently for its conclusion; unless the reviewer is confirmed to be in an abnormal state, do not send prompts to rush or wrap up the review.
-2. Ask the reviewer to focus on Critical, Important, and clearly worthwhile issues. Record Minor issues as non-blocking. Every finding must include:
-   - Issue
-   - File/line number
-   - Reason
-   - Recommendation
-3. Close the subagent after its report. If there are no findings, only Minor findings, or all findings are not accepted, finalize. Otherwise, verify each finding yourself:
-   - Record invalid or unaccepted findings as `Not accepted` with the reason.
-   - If an implementation subagent owns the change, delegate accepted fixes to it; otherwise fix them yourself. In either case, rerun the relevant tests after each fix.
-
-## Finalize
-
-Summarize the implementation, findings and decisions, fixes, verification results, unverified items, and remaining risks.
+1. Start one fresh subagent with `fork_turns: "none"` and `$review-agent` skill. Give it the review target, goal, acceptance criteria, comparison base, and check results. It may inspect relevant code, tests, and call sites but must only review.
+2. Wait for its conclusion without rushing a healthy reviewer.
+3. Verify every P0-P3 finding yourself. Record rejected findings with the reason. If none are accepted, skip to the summary. Otherwise apply accepted findings one at a time through the implementation owner when one exists, or fix them yourself, then rerun the relevant checks after each fix.
+4. Summarize the change, findings and decisions, fixes, verification, unverified items, and remaining risks.

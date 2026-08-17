@@ -1,20 +1,19 @@
 ---
 name: improve-code-comments
-description: Use when auditing, adding, removing, or improving code comments, docstrings, JSDoc/TSDoc, TODO/FIXME/HACK notes, public API comments, inline rationale, stale/comment rot, redundant comments, documentation gaps, or "why not what" comment quality.
+description: Audit or improve code comments and docstrings without changing executable logic. Use for stale, misleading, redundant, missing, or low-value comments and TODO/FIXME/HACK notes.
 disable-model-invocation: true
 ---
 
 # Improve Code Comments
 
-Improve comments with the smallest durable change. Only edit comments and docstrings; do not change code, tests, configuration, or external docs.
+Improve comments with the smallest durable change. Only edit comments and docstrings; do not change executable logic, tests, configuration, or external docs.
 
 ## Default Workflow
 
 1. Read local guidance first: `AGENTS.md`, existing docstring style, lint rules, generated/vendor paths, and nearby examples.
-2. Audit before editing unless the user explicitly asks for a narrow direct fix.
+2. For a broad request, audit first and let the user choose targets. For a narrow request or already approved targets, edit directly. In either case, change only requested or confirmed targets; do not perform repository-wide rewrites.
 3. Report findings with `file:line`, severity, evidence, and proposed action.
-4. Edit only confirmed or clearly requested comment targets. Avoid whole-repo rewrites.
-5. Run the narrow formatter/check command when comment edits can affect syntax or generated docs.
+4. Run the narrow formatter/check command when comment edits can affect syntax or generated docs.
 
 ## What To Change
 
@@ -58,4 +57,4 @@ For audits, return:
 4. Recommended Removals
 5. Good Existing Patterns
 
-For edits, summarize changed paths and validation. If the user asks to "add comments" broadly, stop after the audit report and ask which candidates to apply.
+For edits, summarize changed paths and validation.

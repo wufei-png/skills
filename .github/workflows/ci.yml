@@ -46,6 +46,8 @@ jobs:
             skill_dir="$(dirname "$(dirname "$metadata")")"
             grep -F "disable-model-invocation: true" "$skill_dir/SKILL.md"
           done
+      - name: Test repository contracts
+        run: python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
       - name: Test Codex session recovery
         run: python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
       - name: Test OpenCode session toolkit

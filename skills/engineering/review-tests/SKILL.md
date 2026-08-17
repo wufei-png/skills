@@ -1,12 +1,12 @@
 ---
 name: review-tests
-description: Review existing tests as a read-only, defect-first auditor and return prioritized findings about missing protection, false confidence, invalid oracles, redundancy, implementation coupling, isolation, and tests that endorse incorrect behavior. do not write or fix tests.
+description: Review existing tests as a read-only, defect-first auditor and return prioritized findings about missing protection, false confidence, invalid oracles, redundancy, implementation coupling, isolation, and tests that endorse incorrect behavior. Do not write or fix tests.
 disable-model-invocation: true
 ---
 
 # Review Tests
 
-Inspect the requested tests firsthand. Report every qualifying test-suite defect supported by the reviewed evidence. Stay read-only: never edit files, commit, update snapshots or fixtures, post comments, or hand the audit to another agent.
+Inspect the requested tests firsthand. Report every qualifying test-suite defect supported by the reviewed evidence. Stay read-only: never edit files, commit, update snapshots, golden files, or fixtures, post comments, or hand the audit to another agent.
 
 ## Set the scope
 
@@ -36,7 +36,7 @@ For each deeply reviewed behavior, ask:
 - Are material negative, boundary, authorization, concurrency, timeout, retry, and recovery paths protected?
 - Can tests run independently and deterministically without leaked state, uncontrolled time or randomness, fixed sleeps, or external availability assumptions?
 
-Coverage proves execution, not defect detection. Counts, pass rates, level ratios, assertion counts, and mock counts are never findings by themselves. Several assertions may jointly prove one behavior, and a slow integration test may uniquely protect a critical boundary.
+Coverage proves execution, not defect detection. Counts, pass rates, test-level ratios, assertion counts, and mock counts are never findings by themselves. Several assertions may jointly prove one behavior, and a slow integration test may uniquely protect a critical boundary.
 
 ## Run only discriminating checks
 
@@ -48,7 +48,7 @@ Do not install dependencies, run destructive commands, accept changed output, up
 
 Report an issue only when:
 
-- it materially weakens correctness, security, reliability, performance, or maintainability;
+- it materially weakens the reviewed evidence;
 - it is discrete and actionable;
 - a concrete missed defect, false-confidence path, unprotected behavior, or recurring maintenance cost can be demonstrated;
 - the defect belongs to the test system rather than production code;

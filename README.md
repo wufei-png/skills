@@ -4,7 +4,7 @@
 
 Small, composable agent skills for clarifying decisions, delegating read-only reviews, and shipping changes through verified stages.
 
-This repository borrows the useful shape of [mattpocock/skills](https://github.com/mattpocock/skills): skills are grouped by purpose, every skill remains independently installable, and the root documentation acts as the catalog. Package release machinery, plugin metadata, ADRs, and other infrastructure are intentionally omitted until this collection needs them.
+This repository borrows the useful shape of [mattpocock/skills](https://github.com/mattpocock/skills): skills are grouped by purpose, each skill is individually discoverable, required companions are stated explicitly, and the root documentation acts as the catalog. Package release machinery, plugin metadata, ADRs, and other infrastructure are intentionally omitted until this collection needs them.
 
 ## Install
 
@@ -39,10 +39,11 @@ npx skills@latest add wufei-png/skills \
 
 ## Validate
 
-Validate catalog discovery and changed-file whitespace from the repository root:
+Validate catalog discovery, repository contracts, and changed-file whitespace from the repository root:
 
 ```bash
 NO_COLOR=1 npx -y skills@latest add . --list
+python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
 git diff --check
 ```
 
@@ -52,8 +53,8 @@ For manual-only skills, also keep `disable-model-invocation: true` paired with `
 
 ### Productivity
 
-- [`grilling`](./skills/productivity/grilling/SKILL.md) — Resolve a decision tree through genuine tradeoffs and recommend only when established constraints support it.
-- [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — Gate every candidate user question through independent, dialectical subagent review before asking it.
+- [`grilling`](./skills/productivity/grilling/SKILL.md) — Resolve a decision through dependency-ordered questions about genuine tradeoffs.
+- [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — Review each candidate question with fresh, read-only subagents before asking it.
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — Find local Codex sessions read-only and produce CLI-first recovery steps.
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — Inspect, search, diagnose, and export local OpenCode SQLite sessions safely.
 
@@ -62,7 +63,7 @@ For manual-only skills, also keep `disable-model-invocation: true` paired with `
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — Audit and improve comments and docstrings without changing executable code.
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — Audit a project test suite for prioritized, evidence-backed defects without modifying it.
 - [`review-loop`](./skills/engineering/review-loop/SKILL.md) — Run a bounded review-and-fix loop with fresh, read-only reviewer subagents.
-- [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — Perform the single read-only review gate used by `review-gated-implementation`.
+- [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — Run the single delegated review gate used by `review-gated-implementation`.
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — Execute an authorized change as dependency-ordered stages, reviewing and committing each after its checks pass.
 - [`implement-in-stages`](./skills/engineering/implement-in-stages/SKILL.md) — Execute an authorized change as dependency-ordered stages, committing each after its checks pass.
 

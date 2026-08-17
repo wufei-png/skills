@@ -1,28 +1,21 @@
 ---
 name: review-loop
-description: Run a bounded review-and-fix loop with fresh, read-only reviewer subagents.
+description: Run a bounded code-review and fix loop with fresh, read-only reviewer subagents.
 license: MIT-0
 disable-model-invocation: true
 ---
 
 # Review Loop
 
-Set `max_rounds` to the user's positive integer, or `3` when no limit is given.
+Use the user's positive round limit, or `3` by default.
 
-## Each round
+For each round:
 
-1. Start one fresh subagent with `fork_turns: "none"` and `$review-agent`. The reviewer may inspect code, tests, and call sites, but must only review. Wait patiently for its conclusion; unless the reviewer is confirmed to be in an abnormal state, do not send prompts to rush or wrap up the review.
-2. Ask the reviewer to focus on Critical, Important, and clearly worthwhile issues. Record Minor issues as non-blocking. Every finding must include:
-   - Issue
-   - File/line number
-   - Reason
-   - Recommendation
-3. Close the subagent after its report. If there are no findings, only Minor findings, or all findings are not accepted, finalize. Otherwise, verify each finding yourself:
-   - Record invalid or unaccepted findings as `Not accepted` with the reason.
-   - If an implementation subagent owns the change, delegate accepted fixes to it; otherwise fix them yourself. In either case, rerun the relevant tests after each fix.
-   - If at least one fix was made and `round < max_rounds`, start a different fresh reviewer for the next round.
-4. On the final configured round, apply and test accepted fixes but do not start another reviewer. Report any resulting review boundary or residual risk.
+1. Start one fresh subagent with `fork_turns: "none"` and `$review-agent` skill. Give it the current review target, goal, acceptance criteria, comparison base, and check results. It may inspect relevant code, tests, and call sites but must only review.
+2. Wait for its conclusion without rushing a healthy reviewer. Verify every P0-P3 finding yourself. Record rejected findings with the reason.
+3. Apply accepted findings one at a time through the implementation owner when one exists, or fix them yourself, then rerun the relevant checks after each fix.
+4. Repeat with another fresh reviewer only if a P0-P2 finding was accepted and rounds remain. After the last allowed round, report that boundary as a residual risk.
 
 ## Finalize
 
-Summarize the implementation, each round's findings and decisions, fixes, verification results, unverified items, and remaining risks.
+Summarize each round's findings and decisions, fixes, verification, unverified items, and remaining risks.

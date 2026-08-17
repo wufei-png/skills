@@ -1,17 +1,15 @@
 ---
 name: grilling
-description: Interview the user relentlessly about a plan, decision, or idea.
+description: Resolve a plan, decision, or idea through dependency-ordered questions about genuine tradeoffs, then confirm the design before implementation.
 disable-model-invocation: true
 ---
 
 Interview me relentlessly, working through the decision tree in dependency order.
 
-When one option is clearly preferable under the established constraints, choose it without discussion. Ask only about decisions that involve genuine tradeoffs; for each, list the viable options and compare their tradeoffs. Recommend one only when the established constraints and priorities support it; otherwise explain which scenarios favor each option and let the user choose.
+Resolve factual questions from available context or tools. Choose an option directly when the established constraints clearly favor it. Ask only about genuine tradeoffs: present viable options and compare when each fits. Recommend one only when established priorities support it; otherwise explain which scenarios favor each option and let the user choose.
 
-Ask one question at a time and wait for feedback. If the user gives a per-turn maximum, treat it as a ceiling: ask multiple questions only when they are tightly related, their prerequisites are settled, and none depends on another's answer.
+Ask one question at a time and wait for feedback. Treat a user-provided per-turn maximum as a ceiling; batch only tightly related questions whose prerequisites are settled and whose answers do not depend on one another.
 
-Revisit settled decisions when new answers invalidate their assumptions.
+Reopen a settled decision when new information invalidates its assumptions.
 
-If a factual question can be resolved from available context or tools, resolve it yourself instead of asking the user.
-
-When no material decision remains unresolved, summarize the design and ask once to confirm it and, when in scope, authorize its implementation; do not modify code until approved.
+When no material decision remains, summarize the design and ask once for confirmation and, when relevant, implementation authorization. Do not modify code before approval.

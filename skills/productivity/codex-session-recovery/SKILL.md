@@ -1,54 +1,26 @@
 ---
 name: codex-session-recovery
-description: Find Codex session and thread IDs from read-only local Codex session history or copied fixtures, then produce CLI-first recovery instructions. Use when Codex history appears lost after account or provider changes, Codex Desktop does not show older threads, or the user asks to find, resume, fork, recover, pin, or make visible a prior Codex session. Optionally, when the current Codex environment exposes the required thread tools and the user explicitly requests Desktop visibility, create, title, and pin a helper thread.
+description: Find local Codex sessions read-only and provide CLI recovery commands. Use for missing history, prior thread lookup, resume or fork help, and explicitly requested Desktop visibility.
 disable-model-invocation: true
 ---
 
 # Codex Session Recovery
 
-## Purpose
+Recover access to local Codex history without mutating live state by default.
 
-Recover practical access to local Codex session history without mutating live Codex state by default.
+## Safety
 
-Default to CLI-first recovery:
+- Read local Codex JSONL only. Prefer copied fixtures or temporary copies for testing.
+- Exclude archived and subagent sessions unless requested. Show only short prompt snippets unless the user requests more.
+- Never edit `$CODEX_HOME`, SQLite-backed state, rollout files, or provider or account metadata. Never copy or import JSONL into live Codex state.
+- Do not create or manage Desktop threads unless the user explicitly requests Desktop visibility. A Codex Desktop context is not enough.
 
-- Find candidate local sessions from `CODEX_HOME`.
-- Explain confidence and matching reasons.
-- Output recovery suggestions such as `codex resume active-main` and `codex fork active-main`.
+## Find sessions
 
-Desktop visibility is optional. It is not inferred from being in a Codex Desktop context.
-
-## Safety Rules
-
-Do this by default:
-
-- Read local Codex JSONL state only.
-- Prefer copied fixtures or temporary copies for testing.
-- Exclude archived sessions unless the user requests them.
-- Exclude subagent sessions unless the user requests them.
-- Print short prompt snippets only when useful; do not dump full transcripts by default.
-
-Do not do this unless the user explicitly requests it:
-
-- Include archived sessions.
-- Include subagent sessions.
-- Print longer transcript excerpts.
-- Create, rename, pin, unpin, archive, or unarchive Desktop threads.
-
-Never do this as part of this skill:
-
-- Edit real `$CODEX_HOME`.
-- Edit SQLite-backed state, including a local `state_5.sqlite` file if present.
-- Copy rollout JSONL files into live Codex state.
-- Import arbitrary JSONL history into Codex Desktop.
-- Rewrite provider or account metadata.
-
-## Scanner
-
-Use the bundled scanner for deterministic discovery:
+Use the bundled scanner. Resolve `<skill-directory>` from this loaded skill's location; do not assume it is installed under `$CODEX_HOME/skills`.
 
 ```bash
-python "${CODEX_HOME:-$HOME/.codex}/skills/codex-session-recovery/scripts/scan_codex_sessions.py" \
+python "<skill-directory>/scripts/scan_codex_sessions.py" \
   --codex-home "${CODEX_HOME:-$HOME/.codex}" \
   --cwd "/Users/example/project" \
   --since "2026-06-10" \
@@ -56,7 +28,7 @@ python "${CODEX_HOME:-$HOME/.codex}/skills/codex-session-recovery/scripts/scan_c
   --format table
 ```
 
-When using the skill from this repository's development checkout, run:
+From this repository checkout:
 
 ```bash
 python skills/productivity/codex-session-recovery/scripts/scan_codex_sessions.py \
@@ -64,69 +36,10 @@ python skills/productivity/codex-session-recovery/scripts/scan_codex_sessions.py
   --format json
 ```
 
-Useful options:
+Use `--help` for all options. The main filters are `--cwd`, `--since`, `--until`, `--timezone`, and `--query`; archived sessions, subagents, and prompt snippets require explicit include flags. Prefer JSON when another tool consumes the result.
 
-- `--cwd PATH`: filter by session working directory.
-- `--since DATE_OR_DATETIME`: include sessions at or after this time.
-- `--until DATE_OR_DATETIME`: include sessions at or before this time.
-- `--timezone NAME`: interpret date-only filters in this timezone.
-- `--query TEXT`: match user prompts, paths, and summaries.
-- `--include-archived`: include archived sessions.
-- `--include-subagents`: include subagent sessions.
-- `--show-prompts`: show short prompt snippets.
-- `--format table|json`: choose human or automation output.
+For each likely session, report its thread id, cwd, time, archived or subagent status, matching reasons, confidence, source path, and exact `codex resume` and `codex fork` commands. If nothing matches, state the filters and suggest relaxing one at a time.
 
-## Desktop Visibility Flow
+## Desktop visibility
 
-Desktop actions are capability-gated. A Codex Desktop context is not enough.
-
-Before any Desktop-visible action, inspect the tools exposed in the current conversation or use its tool-discovery mechanism. Continue only when it provides the exact capabilities needed:
-
-- `fork_thread`: create a Desktop-visible fork from the recovered thread id.
-- `set_thread_title`: give the visible fork a clear recovery title.
-- `set_thread_pinned`: pin the visible fork in the sidebar.
-- `list_threads` or `read_thread`: verify the visible fork exists.
-
-Desktop-visible recovery steps:
-
-1. Select one candidate thread id from scanner output and keep the original id in the response.
-2. Prepare a dry-run with the target id, proposed title, and pin action.
-3. If the user already authorized Desktop visibility, call `fork_thread` for the selected thread id; otherwise show the dry-run first and wait.
-4. Call `set_thread_title` on the new visible thread.
-5. Call `set_thread_pinned` with pin enabled on the new visible thread.
-6. Verify with `list_threads` or `read_thread`.
-7. Report the visible thread id, original recovered thread id, and CLI fallbacks.
-
-If any required tool is missing or `fork_thread` cannot access the recovered id, do not edit local state or SQLite-backed state. Fall back to CLI commands. Create a fresh pointer thread only when the user explicitly asks for that and `create_thread` is available in the current conversation.
-
-Decision table:
-
-| Runtime capability            | User request                            | Action                                                                                                                          |
-| ----------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Missing required thread tools | Any request                             | Output CLI commands only.                                                                                                       |
-| Required tools available      | User did not ask for Desktop visibility | Output CLI commands and mention Desktop visibility as optional.                                                                 |
-| Required tools available      | User asked for Desktop visibility       | Show the proposed fork/title/pin actions first, then execute only when authorized. Verify with `list_threads` or `read_thread`. |
-
-When creating Desktop-visible helper threads, make titles explicit, for example:
-
-```text
-Recovered Codex session: upload flow investigation
-```
-
-Report that the helper thread is a visible fork or pointer, not a byte-for-byte import of JSONL history into Desktop state.
-
-## Output Shape
-
-For each likely session, report:
-
-- thread id
-- cwd
-- updated time
-- archived/subagent flags
-- matching reasons
-- confidence
-- source JSONL path
-- `codex resume active-main`
-- `codex fork active-main`
-
-If no matches are found, report the exact filters used and suggest relaxing one filter at a time.
+A Codex Desktop context is not enough. When the user explicitly requests Desktop visibility and the candidate is unique or already selected, follow `references/desktop.md`. If the candidate is ambiguous, ask the user to choose first. Otherwise remain CLI-first.

@@ -1,6 +1,6 @@
 ---
 name: implement-in-stages
-description: Implement an already-defined code change as dependency-ordered, independently checkable stages, committing each before continuing.
+description: Implement an authorized change in dependency order, checking and committing each independently valid stage.
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Implement an already-authorized change as a sequence of small commits.
 
-## Plan the stages
+## Plan
 
 Use the user's stage limit when provided; otherwise use at most 10 stages. If a sound breakdown requires more, stop and report why rather than forcing unrelated work together.
 
@@ -27,7 +27,7 @@ Use a preparatory-refactor stage only when it creates a materially safer seam fo
 State the plan briefly:
 
 ```text
-1. <Stage> — delivers <observable result>; depends on <earlier stages or none>; check with <commands>.
+1. <Stage> — delivers <result>; depends on <earlier stages or none>; check with <commands>.
 ```
 
 If implementation evidence invalidates the plan, revise only unfinished stages.
@@ -40,13 +40,10 @@ For each stage:
 
 1. Implement only that stage and run its checks.
 2. Stage explicit paths and inspect the staged diff.
-3. Commit and continue once the checks pass.
+3. Commit once the checks pass.
 
-After the final stage:
-
-1. Confirm the complete change against the task requirements and run the full applicable checks.
-2. Apply needed fixes, re-run the full applicable checks, then commit any remaining fixes.
+After the final stage, check the complete change against the task, run the full applicable checks, and commit any resulting verified fixes.
 
 ## Report
 
-Report the commits, checks and results, and any remaining risks or blockers.
+Report the commits, checks and results, and remaining risks or blockers.
