@@ -96,6 +96,118 @@ class ScanCodexSessionsTest(unittest.TestCase):
         duplicate = next(record for record in result["records"] if record["thread_id"] == "duplicate-main")
         self.assertIn("appears in active and archived sources", "\n".join(duplicate["warnings"]))
 
+    def test_current_metadata_fields_are_exposed_and_searchable(self):
+        session_index = self.codex_home / "session_index.jsonl"
+        with session_index.open("a", encoding="utf-8") as handle:
+            handle.write(
+                '\n{"id":"named-main","thread_name":"Named recovery session",'
+                '"updated_at":"2026-06-12T12:00:00+08:00",'
+                '"path":"sessions/2026/06/12/rollout-2026-06-12T12-00-00-named-main.jsonl"}\n'
+            )
+        path = (
+            self.codex_home
+            / "sessions"
+            / "2026"
+            / "06"
+            / "12"
+            / "rollout-2026-06-12T12-00-00-named-main.jsonl"
+        )
+        path.write_text(
+            '{"timestamp":"2026-06-12T12:00:00+08:00","type":"session_meta",'
+            '"payload":{"id":"named-main","session_id":"named-session-id",'
+            '"cwd":"/Users/example/project","parent_thread_id":"parent-main",'
+            '"agent_role":"subagent"}}\n',
+            encoding="utf-8",
+        )
+
+        result = self.scan(
+            cwd=None,
+            query="named recovery session",
+            include_subagents=True,
+        )
+        record = next(item for item in result["records"] if item["thread_id"] == "named-main")
+
+        self.assertEqual("Named recovery session", record["thread_name"])
+        self.assertIn("named-session-id", record["aliases"])
+        self.assertEqual("parent-main", record["parent_thread_id"])
+        self.assertEqual("subagent", record["agent_role"])
+        self.assertTrue(record["subagent"])
+
+    def test_index_and_transcript_aliases_merge_to_index_canonical_id(self):
+        session_index = self.codex_home / "session_index.jsonl"
+        with session_index.open("a", encoding="utf-8") as handle:
+            handle.write(
+                '\n{"id":"canonical-main","thread_name":"Canonical session",'
+                '"updated_at":"2026-06-12T12:30:00+08:00",'
+                '"path":"sessions/2026/06/12/rollout-2026-06-12T12-30-00-transcript-alias.jsonl"}\n'
+            )
+        path = (
+            self.codex_home
+            / "sessions"
+            / "2026"
+            / "06"
+            / "12"
+            / "rollout-2026-06-12T12-30-00-transcript-alias.jsonl"
+        )
+        path.write_text(
+            '{"timestamp":"2026-06-12T12:30:00+08:00","type":"session_meta",'
+            '"payload":{"session_id":"canonical-main","cwd":"/Users/example/project"}}\n',
+            encoding="utf-8",
+        )
+
+        result = self.scan(cwd=None, query="Canonical session")
+        matching = [item for item in result["records"] if item["thread_id"] == "canonical-main"]
+
+        self.assertEqual(1, len(matching))
+        self.assertIn("transcript-alias", matching[0]["aliases"])
+
+    def test_unknown_time_requires_explicit_opt_in_when_date_filtered(self):
+        session_index = self.codex_home / "session_index.jsonl"
+        with session_index.open("a", encoding="utf-8") as handle:
+            handle.write('\n{"id":"unknown-time","cwd":"/Users/example/project"}\n')
+
+        filtered = self.scan(since="2026-06-12", cwd=None)
+        included = self.scan(
+            since="2026-06-12", cwd=None, include_unknown_time=True
+        )
+
+        self.assertNotIn("unknown-time", self.ids(filtered))
+        self.assertIn("unknown-time", self.ids(included))
+
+    def test_referenced_paths_are_opt_in(self):
+        default = self.scan(cwd=None)
+        explicit = self.scan(cwd=None, show_paths=True)
+        active_default = next(
+            item for item in default["records"] if item["thread_id"] == "active-main"
+        )
+        active_explicit = next(
+            item for item in explicit["records"] if item["thread_id"] == "active-main"
+        )
+
+        self.assertNotIn("referenced_paths", active_default)
+        self.assertIn("referenced_paths", active_explicit)
+        self.assertTrue(active_explicit["referenced_paths"])
+
+    def test_multiple_active_transcripts_are_reported(self):
+        path = (
+            self.codex_home
+            / "sessions"
+            / "2026"
+            / "06"
+            / "12"
+            / "rollout-2026-06-12T12-45-00-active-alias.jsonl"
+        )
+        path.write_text(
+            '{"timestamp":"2026-06-12T12:45:00+08:00","type":"session_meta",'
+            '"payload":{"id":"active-main","cwd":"/Users/example/project"}}\n',
+            encoding="utf-8",
+        )
+
+        result = self.scan(cwd=None)
+        active = next(item for item in result["records"] if item["thread_id"] == "active-main")
+
+        self.assertIn("multiple active transcript sources", "\n".join(active["warnings"]))
+
     def test_date_filter_uses_configured_timezone(self):
         result = self.scan(since="2026-06-12", include_archived=True)
         self.assertIn("active-main", self.ids(result))

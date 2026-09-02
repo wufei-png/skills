@@ -36,9 +36,9 @@ python skills/productivity/codex-session-recovery/scripts/scan_codex_sessions.py
   --format json
 ```
 
-Use `--help` for all options. The main filters are `--cwd`, `--since`, `--until`, `--timezone`, and `--query`; archived sessions, subagents, and prompt snippets require explicit include flags. Prefer JSON when another tool consumes the result.
+Use `--help` for all options. The main filters are `--cwd`, `--since`, `--until`, `--timezone`, and `--query`; archived sessions, subagents, prompt snippets, unknown-time records under date filters, and index-referenced paths require explicit flags (`--include-archived`, `--include-subagents`, `--show-prompts`, `--include-unknown-time`, and `--show-paths`). Prefer JSON when another tool consumes the result.
 
-For each likely session, report its thread id, cwd, time, archived or subagent status, matching reasons, confidence, source path, and exact `codex resume` and `codex fork` commands. If nothing matches, state the filters and suggest relaxing one at a time.
+The index or transcript filename provides the canonical thread id; other observed `id`, `thread_id`, or `session_id` values are reported as aliases and merged into that record. Report its thread name, cwd, time, archived or subagent status, matching reasons, confidence, source path, and exact `codex resume` and `codex fork` commands. If nothing matches, state the filters and suggest relaxing one at a time.
 
 ## Desktop visibility
 

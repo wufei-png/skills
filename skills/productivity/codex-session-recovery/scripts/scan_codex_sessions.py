@@ -22,12 +22,18 @@ UUID_RE = re.compile(
 @dataclass
 class MutableRecord:
     thread_id: str
+    thread_name: str | None = None
     cwd: str | None = None
     started_at: datetime | None = None
     updated_at: datetime | None = None
     archived_sources: int = 0
     active_sources: int = 0
+    archived_transcript_sources: int = 0
+    active_transcript_sources: int = 0
     subagent: bool = False
+    parent_thread_id: str | None = None
+    agent_role: str | None = None
+    aliases: set[str] = field(default_factory=set)
     source_paths: set[str] = field(default_factory=set)
     referenced_paths: set[str] = field(default_factory=set)
     evidence_types: set[str] = field(default_factory=set)
@@ -48,15 +54,31 @@ class MutableRecord:
             self.archived_sources += 1
         else:
             self.active_sources += 1
+        if evidence_type == "transcript":
+            if archived:
+                self.archived_transcript_sources += 1
+            else:
+                self.active_transcript_sources += 1
 
     def absorb(self, other: "MutableRecord") -> None:
+        if other.thread_id != self.thread_id:
+            self.aliases.add(other.thread_id)
+        self.aliases.update(other.aliases)
+        if other.thread_name is not None:
+            self.thread_name = other.thread_name
         if self.cwd is None and other.cwd is not None:
             self.cwd = other.cwd
         self.started_at = earlier(self.started_at, other.started_at)
         self.updated_at = later(self.updated_at, other.updated_at)
         self.archived_sources += other.archived_sources
         self.active_sources += other.active_sources
+        self.archived_transcript_sources += other.archived_transcript_sources
+        self.active_transcript_sources += other.active_transcript_sources
         self.subagent = self.subagent or other.subagent
+        if self.parent_thread_id is None and other.parent_thread_id is not None:
+            self.parent_thread_id = other.parent_thread_id
+        if self.agent_role is None and other.agent_role is not None:
+            self.agent_role = other.agent_role
         self.source_paths.update(other.source_paths)
         self.referenced_paths.update(other.referenced_paths)
         self.evidence_types.update(other.evidence_types)
@@ -230,12 +252,53 @@ def extract_content_text(content: Any) -> str | None:
     return None
 
 
+def string_value(value: Any) -> str | None:
+    if isinstance(value, str) and value:
+        return value
+    return None
+
+
+def identity_values(obj: dict[str, Any]) -> list[str]:
+    values: list[str] = []
+    for key in ("id", "thread_id", "session_id"):
+        value = string_value(obj.get(key))
+        if value is not None and value not in values:
+            values.append(value)
+    return values
+
+
+def add_aliases(record: MutableRecord, values: list[str]) -> None:
+    record.aliases.update(value for value in values if value != record.thread_id)
+
+
+def apply_thread_metadata(record: MutableRecord, obj: dict[str, Any]) -> None:
+    thread_name = string_value(obj.get("thread_name"))
+    if thread_name is not None:
+        record.thread_name = thread_name
+    parent_thread_id = string_value(obj.get("parent_thread_id"))
+    if parent_thread_id is not None:
+        record.parent_thread_id = parent_thread_id
+    agent_role = string_value(obj.get("agent_role"))
+    if agent_role is not None:
+        record.agent_role = agent_role
+    record.subagent = record.subagent or is_subagent_metadata(obj)
+
+
 def is_subagent_source(source: Any) -> bool:
     if source == "subagent":
         return True
     if isinstance(source, dict):
         return bool(source.get("subagent"))
     return False
+
+
+def is_subagent_metadata(obj: dict[str, Any]) -> bool:
+    if is_subagent_source(obj.get("source")):
+        return True
+    if string_value(obj.get("parent_thread_id")) is not None:
+        return True
+    agent_role = string_value(obj.get("agent_role"))
+    return agent_role is not None and agent_role.casefold() == "subagent"
 
 
 def record_from_index_line(
@@ -245,14 +308,16 @@ def record_from_index_line(
     warnings: list[str],
     fallback_timezone: tzinfo,
 ) -> MutableRecord | None:
-    thread_id = obj.get("id") or obj.get("thread_id") or obj.get("session_id")
-    if not isinstance(thread_id, str):
+    identities = identity_values(obj)
+    thread_id = identities[0] if identities else None
+    if thread_id is None:
         warnings.append(f"{path}:{line_number}: missing thread id; skipped record")
         return None
     path_hint = obj.get("path")
     archived = isinstance(path_hint, str) and path_hint.startswith("archived_sessions/")
     record = MutableRecord(thread_id=thread_id)
     record.merge_source(path, archived, "index")
+    add_aliases(record, identities)
     if isinstance(path_hint, str):
         record.referenced_paths.add(path_hint)
     cwd = obj.get("cwd")
@@ -274,7 +339,7 @@ def record_from_index_line(
         parse_timestamp(obj.get("updated_at") or obj.get("timestamp")),
         fallback_timezone,
     )
-    record.subagent = is_subagent_source(obj.get("source"))
+    apply_thread_metadata(record, obj)
     summary = obj.get("summary") or obj.get("title")
     if isinstance(summary, str):
         record.summaries.append(summary)
@@ -328,76 +393,86 @@ def parse_jsonl(
     current: MutableRecord | None = None
 
     try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError as exc:
+        handle = path.open("r", encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
         return [], [f"{path}: unreadable: {exc}"]
 
-    for line_number, line in enumerate(lines, start=1):
-        if not line.strip():
-            continue
-        try:
-            obj = json.loads(line)
-        except json.JSONDecodeError:
-            warnings.append(f"{path}:{line_number}: malformed JSON")
-            continue
-        if not isinstance(obj, dict):
-            continue
-
-        if path.name == "session_index.jsonl":
-            indexed = record_from_index_line(obj, path, line_number, warnings, fallback_timezone)
-            if indexed is not None and (include_archived or not indexed.archived):
-                records.append(indexed)
-            continue
-
-        payload = payload_for(obj)
-        event_time = parse_timestamp(obj.get("timestamp") or payload.get("timestamp"))
-        event_time = normalize_event_timestamp(
-            current, warnings, path, line_number, event_time, fallback_timezone
-        )
-
-        if obj.get("type") == "session_meta" or "cwd" in payload or "id" in payload:
-            thread_id = payload.get("id") or payload.get("thread_id") or id_from_filename(path)
-            if not isinstance(thread_id, str):
-                warnings.append(f"{path}:{line_number}: missing thread id; skipped record")
+    filename_id = id_from_filename(path)
+    with handle:
+        for line_number, line in enumerate(handle, start=1):
+            if not line.strip():
                 continue
+            try:
+                obj = json.loads(line)
+            except json.JSONDecodeError:
+                warnings.append(f"{path}:{line_number}: malformed JSON")
+                continue
+            if not isinstance(obj, dict):
+                continue
+
+            if path.name == "session_index.jsonl":
+                indexed = record_from_index_line(
+                    obj, path, line_number, warnings, fallback_timezone
+                )
+                if indexed is not None and (include_archived or not indexed.archived):
+                    records.append(indexed)
+                continue
+
+            payload = payload_for(obj)
+            event_time = parse_timestamp(obj.get("timestamp") or payload.get("timestamp"))
+            event_time = normalize_event_timestamp(
+                current, warnings, path, line_number, event_time, fallback_timezone
+            )
+
+            if (
+                obj.get("type") == "session_meta"
+                or "cwd" in payload
+                or any(key in payload for key in ("id", "thread_id", "session_id"))
+            ):
+                identities = identity_values(payload)
+                thread_id = filename_id or (identities[0] if identities else None)
+                if thread_id is None:
+                    warnings.append(
+                        f"{path}:{line_number}: missing thread id; skipped record"
+                    )
+                    continue
+                if current is None:
+                    current = MutableRecord(thread_id=thread_id)
+                    current.merge_source(path, archived, "transcript")
+                    if event_time is None:
+                        apply_filename_timestamp(current, path, fallback_timezone)
+                if not identities:
+                    current.evidence_types.add("filename_identity")
+                add_aliases(current, identities)
+                cwd = payload.get("cwd")
+                if isinstance(cwd, str):
+                    current.cwd = cwd
+                apply_thread_metadata(current, payload)
+                current.started_at = earlier(current.started_at, event_time)
+                current.updated_at = later(current.updated_at, event_time)
+                continue
+
             if current is None:
-                current = MutableRecord(thread_id=thread_id)
+                if filename_id is None:
+                    warnings.append(f"{path}:{line_number}: missing thread id; skipped record")
+                    continue
+                current = MutableRecord(thread_id=filename_id)
                 current.merge_source(path, archived, "transcript")
+                current.evidence_types.add("filename_identity")
                 if event_time is None:
                     apply_filename_timestamp(current, path, fallback_timezone)
-            if payload.get("id") is None and payload.get("thread_id") is None:
-                current.evidence_types.add("filename_identity")
-            current.thread_id = thread_id
-            cwd = payload.get("cwd")
-            if isinstance(cwd, str):
-                current.cwd = cwd
             current.started_at = earlier(current.started_at, event_time)
             current.updated_at = later(current.updated_at, event_time)
-            current.subagent = current.subagent or is_subagent_source(payload.get("source"))
-            continue
 
-        if current is None:
-            fallback_id = id_from_filename(path)
-            if fallback_id is None:
-                warnings.append(f"{path}:{line_number}: missing thread id; skipped record")
-                continue
-            current = MutableRecord(thread_id=fallback_id)
-            current.merge_source(path, archived, "transcript")
-            current.evidence_types.add("filename_identity")
-            if event_time is None:
-                apply_filename_timestamp(current, path, fallback_timezone)
-        current.started_at = earlier(current.started_at, event_time)
-        current.updated_at = later(current.updated_at, event_time)
+            role = payload.get("role")
+            if role == "user":
+                text = extract_content_text(payload.get("content"))
+                if text:
+                    current.user_prompts.append(text)
 
-        role = payload.get("role")
-        if role == "user":
-            text = extract_content_text(payload.get("content"))
-            if text:
-                current.user_prompts.append(text)
-
-        summary = payload.get("summary") or payload.get("title")
-        if isinstance(summary, str):
-            current.summaries.append(summary)
+            summary = payload.get("summary") or payload.get("title")
+            if isinstance(summary, str):
+                current.summaries.append(summary)
 
     if current is not None:
         current.warnings.extend(warnings)
@@ -415,17 +490,35 @@ def parse_jsonl(
 
 
 def merge_records(records: list[MutableRecord]) -> dict[str, MutableRecord]:
-    merged: dict[str, MutableRecord] = {}
+    merged: list[MutableRecord] = []
+    by_identity: dict[str, MutableRecord] = {}
     for record in records:
-        existing = merged.get(record.thread_id)
-        if existing is None:
-            merged[record.thread_id] = record
+        identities = [record.thread_id, *sorted(record.aliases)]
+        matches: list[MutableRecord] = []
+        for identity in identities:
+            match = by_identity.get(identity)
+            if match is not None and all(match is not item for item in matches):
+                matches.append(match)
+        if not matches:
+            target = record
+            merged.append(target)
         else:
-            existing.absorb(record)
-    for record in merged.values():
+            target = matches[0]
+            for other in matches[1:]:
+                target.absorb(other)
+                merged[:] = [item for item in merged if item is not other]
+            target.absorb(record)
+        for identity in [target.thread_id, *sorted(target.aliases)]:
+            by_identity[identity] = target
+    for record in merged:
         if record.active_sources and record.archived_sources:
             record.warnings.append("appears in active and archived sources")
-    return merged
+        if record.active_transcript_sources > 1:
+            record.warnings.append(
+                "multiple active transcript sources: "
+                f"{record.active_transcript_sources}"
+            )
+    return {record.thread_id: record for record in merged}
 
 
 def normalize_path(value: str | None) -> str | None:
@@ -446,6 +539,8 @@ def searchable_blob(record: MutableRecord) -> str:
     return "\n".join(
         [
             record.thread_id,
+            record.thread_name or "",
+            "\n".join(record.aliases),
             record.cwd or "",
             "\n".join(record.user_prompts),
             "\n".join(record.summaries),
@@ -470,11 +565,15 @@ def normalize_stamp(record: MutableRecord, stamp: datetime, fallback_timezone: t
 
 
 def matches_dates(
-    record: MutableRecord, since: datetime | None, until: datetime | None, fallback_timezone: tzinfo
+    record: MutableRecord,
+    since: datetime | None,
+    until: datetime | None,
+    fallback_timezone: tzinfo,
+    include_unknown_time: bool = False,
 ) -> bool:
     stamp = record.updated_at or record.started_at
     if stamp is None:
-        return True
+        return include_unknown_time or (since is None and until is None)
     stamp = normalize_stamp(record, stamp, fallback_timezone)
     if since is not None and stamp < since:
         return False
@@ -518,15 +617,21 @@ def short_prompt(record: MutableRecord, show_prompts: bool) -> tuple[str | None,
     return first, last
 
 
-def serialize_record(record: MutableRecord, show_prompts: bool) -> dict[str, Any]:
+def serialize_record(
+    record: MutableRecord, show_prompts: bool, show_paths: bool
+) -> dict[str, Any]:
     first_prompt, last_prompt = short_prompt(record, show_prompts)
-    return {
+    data: dict[str, Any] = {
         "thread_id": record.thread_id,
+        "thread_name": record.thread_name,
+        "aliases": sorted(record.aliases),
         "cwd": record.cwd,
         "started_at": record.started_at.isoformat() if record.started_at else None,
         "updated_at": record.updated_at.isoformat() if record.updated_at else None,
         "archived": record.archived,
         "subagent": record.subagent,
+        "parent_thread_id": record.parent_thread_id,
+        "agent_role": record.agent_role,
         "source_paths": sorted(record.source_paths),
         "first_user_prompt": first_prompt,
         "last_user_prompt": last_prompt,
@@ -536,6 +641,9 @@ def serialize_record(record: MutableRecord, show_prompts: bool) -> dict[str, Any
         "fork_command": f"codex fork {record.thread_id}",
         "warnings": record.warnings,
     }
+    if show_paths:
+        data["referenced_paths"] = sorted(record.referenced_paths)
+    return data
 
 
 def build_filters(
@@ -544,6 +652,8 @@ def build_filters(
     include_archived: bool,
     include_subagents: bool,
     limit: int,
+    include_unknown_time: bool,
+    show_paths: bool,
 ) -> dict[str, Any]:
     return {
         "codex_home": str(Path(options["codex_home"]).expanduser()),
@@ -555,6 +665,8 @@ def build_filters(
         "include_archived": include_archived,
         "include_subagents": include_subagents,
         "limit": limit,
+        "include_unknown_time": include_unknown_time,
+        "show_paths": show_paths,
     }
 
 
@@ -564,6 +676,8 @@ def scan(options: dict[str, Any]) -> dict[str, Any]:
     include_subagents = bool(options.get("include_subagents", False))
     cwd = options.get("cwd")
     query = options.get("query")
+    include_unknown_time = bool(options.get("include_unknown_time", False))
+    show_paths = bool(options.get("show_paths", False))
     timezone_option = options.get("timezone")
     resolved_timezone = timezone_from_option(timezone_option)
     resolved_timezone_label = timezone_label(timezone_option, resolved_timezone)
@@ -572,7 +686,13 @@ def scan(options: dict[str, Any]) -> dict[str, Any]:
     limit = positive_limit(options.get("limit", 20))
     show_prompts = bool(options.get("show_prompts", False))
     filters = build_filters(
-        options, resolved_timezone_label, include_archived, include_subagents, limit
+        options,
+        resolved_timezone_label,
+        include_archived,
+        include_subagents,
+        limit,
+        include_unknown_time,
+        show_paths,
     )
 
     warnings: list[str] = []
@@ -602,7 +722,13 @@ def scan(options: dict[str, Any]) -> dict[str, Any]:
             continue
         if not matches_query(record, query):
             continue
-        if not matches_dates(record, since, until, resolved_timezone):
+        if not matches_dates(
+            record,
+            since,
+            until,
+            resolved_timezone,
+            include_unknown_time,
+        ):
             continue
         score_record(record, cwd, query)
         filtered.append(record)
@@ -619,7 +745,9 @@ def scan(options: dict[str, Any]) -> dict[str, Any]:
     selected = filtered[:limit]
     return {
         "codex_home": str(codex_home),
-        "records": [serialize_record(record, show_prompts) for record in selected],
+        "records": [
+            serialize_record(record, show_prompts, show_paths) for record in selected
+        ],
         "warnings": warnings,
         "filters": filters,
         "searched_paths": searched_paths(codex_home, include_archived),
@@ -641,6 +769,8 @@ def format_table(result: dict[str, Any]) -> str:
         lines.extend(
             [
                 f"thread_id: {record['thread_id']}",
+                f"thread_name: {record['thread_name'] or ''}",
+                f"aliases: {', '.join(record['aliases']) or 'none'}",
                 f"confidence: {record['confidence']}",
                 f"flags: {', '.join(flags)}",
                 f"cwd: {record['cwd'] or ''}",
@@ -651,6 +781,9 @@ def format_table(result: dict[str, Any]) -> str:
             ]
         )
         lines.extend(f"- {source_path}" for source_path in record["source_paths"])
+        if record.get("referenced_paths"):
+            lines.append("referenced paths:")
+            lines.extend(f"- {path}" for path in record["referenced_paths"])
         lines.extend(
             [
                 f"resume: {record['resume_command']}",
@@ -688,9 +821,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--query")
     parser.add_argument("--include-archived", action="store_true")
     parser.add_argument("--include-subagents", action="store_true")
+    parser.add_argument(
+        "--include-unknown-time",
+        action="store_true",
+        help="Include records without timestamps when using date filters.",
+    )
     parser.add_argument("--limit", type=positive_limit_arg, default=20)
     parser.add_argument("--format", choices=["table", "json"], default="table")
     parser.add_argument("--show-prompts", action="store_true")
+    parser.add_argument(
+        "--show-paths",
+        action="store_true",
+        help="Show index-referenced paths in addition to source paths.",
+    )
     return parser
 
 
