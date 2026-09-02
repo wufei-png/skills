@@ -48,11 +48,13 @@ npx skills@latest add wufei-png/skills \
 
 ## 校验
 
-在仓库根目录校验 skill 发现、仓库契约及已修改文件的空白格式：
+在仓库根目录校验 skill 发现、仓库契约、带脚本的 skill CLI，以及已修改文件的空白格式：
 
 ```bash
 NO_COLOR=1 npx -y skills@latest add . --list
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
+python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
+python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
 git diff --check
 ```
 

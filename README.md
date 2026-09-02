@@ -48,11 +48,13 @@ npx skills@latest add wufei-png/skills \
 
 ## Validate
 
-Validate catalog discovery, repository contracts, and changed-file whitespace from the repository root:
+Validate catalog discovery, repository contracts, scripted skill CLIs, and changed-file whitespace from the repository root:
 
 ```bash
 NO_COLOR=1 npx -y skills@latest add . --list
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
+python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
+python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
 git diff --check
 ```
 

@@ -147,7 +147,7 @@ class SkillRepositoryContractTest(unittest.TestCase):
                     for text in texts:
                         self.assertIn(phrase, text)
 
-    def test_review_tests_manual_cases_reference_real_fixtures(self) -> None:
+    def test_manual_evaluation_cases_reference_real_fixtures(self) -> None:
         manifests = sorted(ROOT.glob("tests/**/cases.json"))
         self.assertTrue(manifests)
         for manifest_path in manifests:
