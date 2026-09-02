@@ -21,6 +21,7 @@ EXPECTED_SKILLS = {
     "review-loop",
     "review-tests",
 }
+VALID_PRIORITIES = {"P0", "P1", "P2", "P3"}
 
 
 def skill_directories() -> list[Path]:
@@ -147,12 +148,82 @@ class SkillRepositoryContractTest(unittest.TestCase):
                         self.assertIn(phrase, text)
 
     def test_review_tests_manual_cases_reference_real_fixtures(self) -> None:
-        root = ROOT / "tests" / "review-tests"
-        manifest = json.loads((root / "cases.json").read_text(encoding="utf-8"))
-        self.assertEqual("review-tests", manifest["skill"])
-        for case in manifest["cases"]:
-            with self.subTest(case=case["id"]):
-                self.assertTrue((root / case["fixture"]).is_dir())
+        manifests = sorted(ROOT.glob("tests/**/cases.json"))
+        self.assertTrue(manifests)
+        for manifest_path in manifests:
+            with self.subTest(manifest=manifest_path):
+                root = manifest_path.parent
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+                skill = manifest.get("skill")
+                self.assertIn(skill, EXPECTED_SKILLS)
+                self.assertEqual(root.name, skill)
+
+                execution = manifest.get("execution")
+                self.assertIsInstance(execution, dict)
+                self.assertEqual(
+                    {"isolation", "context", "evaluation"}, set(execution)
+                )
+                for value in execution.values():
+                    self.assertIsInstance(value, str)
+                    self.assertTrue(value.strip())
+
+                cases = manifest.get("cases")
+                self.assertIsInstance(cases, list)
+                self.assertTrue(cases)
+                case_ids: set[str] = set()
+                for case in cases:
+                    self.assertIsInstance(case, dict)
+                    case_id = case.get("id")
+                    self.assertIsInstance(case_id, str)
+                    self.assertTrue(case_id.strip())
+                    self.assertNotIn(case_id, case_ids)
+                    case_ids.add(case_id)
+
+                    prompt = case.get("prompt")
+                    self.assertIsInstance(prompt, str)
+                    self.assertTrue(prompt.strip())
+                    fixture = case.get("fixture")
+                    self.assertIsInstance(fixture, str)
+                    fixture_path = root / fixture
+                    fixture_root = (root / "fixtures").resolve()
+                    resolved_fixture = fixture_path.resolve()
+                    self.assertTrue(
+                        resolved_fixture.is_relative_to(fixture_root),
+                        f"fixture escapes {fixture_root}: {fixture_path}",
+                    )
+                    self.assertTrue(resolved_fixture.is_dir(), resolved_fixture)
+                    for child in resolved_fixture.rglob("*"):
+                        if child.is_symlink():
+                            self.assertTrue(
+                                child.resolve().is_relative_to(resolved_fixture),
+                                f"fixture symlink escapes its case: {child}",
+                            )
+
+                    expectations = case.get("expectations")
+                    self.assertIsInstance(expectations, dict)
+                    required = expectations.get("required")
+                    forbidden = expectations.get("forbidden")
+                    self.assertIsInstance(required, list)
+                    self.assertIsInstance(forbidden, list)
+                    for forbidden_item in forbidden:
+                        self.assertIsInstance(forbidden_item, str)
+                        self.assertTrue(forbidden_item.strip())
+                    for required_item in required:
+                        self.assertIsInstance(required_item, dict)
+                        criterion = required_item.get("issue") or required_item.get(
+                            "criterion"
+                        )
+                        self.assertIsInstance(criterion, str)
+                        self.assertTrue(criterion.strip())
+                        anchor = required_item.get("anchor")
+                        self.assertIsInstance(anchor, str)
+                        self.assertTrue(anchor.strip())
+                        priorities = required_item.get("priorities")
+                        self.assertIsInstance(priorities, list)
+                        self.assertTrue(
+                            set(priorities).issubset(VALID_PRIORITIES),
+                            required_item,
+                        )
 
 
 if __name__ == "__main__":

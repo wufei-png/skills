@@ -1,0 +1,34 @@
+{
+  "skill": "grilling",
+  "execution": {
+    "isolation": "For each case, expose only the named skill and that case's fixture. Do not expose this manifest or sibling cases.",
+    "context": "Run the case manually in a fresh session and record the assistant response before any implementation authorization.",
+    "evaluation": "Compare the response with required and forbidden criteria after the turn finishes; do not evaluate generic coding etiquette."
+  },
+  "cases": [
+    {
+      "id": "underspecified-tradeoff",
+      "fixture": "fixtures/underspecified-tradeoff",
+      "prompt": "Use $grilling to help decide whether to adopt the proposed repository change in SCENARIO.md. The scenario intentionally does not establish a priority between the two viable options. Do not implement anything yet.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Ask one focused question that resolves the first genuine tradeoff before proceeding.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Do not recommend an option when the scenario supplies no established priority.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Modify repository files before explicit implementation authorization",
+          "Ask multiple independent questions in one turn",
+          "Choose an option solely because it is labeled recommended"
+        ]
+      }
+    }
+  ]
+}
