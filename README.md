@@ -20,6 +20,15 @@ Install one skill non-interactively:
 npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 ```
 
+## Choose a workflow
+
+- Need to resolve a consequential tradeoff before acting? Use `grilling`; use `review-gated-grilling` when each question needs a fresh read-only second opinion.
+- Need an authorized code change in verified stages? Use `implement-in-stages`; use `review-gated-implementation` when each stage also needs the delegated review gate.
+- Need a read-only audit? Use `review-tests` for tests or `improve-code-comments` for comments and docstrings; use `review-loop` for a bounded review-and-fix loop.
+- Need to locate prior local history? Use `codex-session-recovery` for Codex JSONL or `opencode-session-toolkit` for OpenCode SQLite sessions.
+
+Install paired workflows together when the catalog says a companion is required.
+
 `review-gated-implementation` delegates every review gate to `delegated-change-review`, so install them together:
 
 ```bash
@@ -48,6 +57,8 @@ git diff --check
 ```
 
 For manual-only skills, also keep `disable-model-invocation: true` paired with `policy.allow_implicit_invocation: false`. OpenAI's base-schema `quick_validate.py` does not accept the Claude Code and Pi invocation field, so it is not a pass/fail gate for this cross-host catalog.
+
+The `tests/**/cases.json` files are manual evaluation protocols. CI checks their manifests, fixtures, skill structure, and deterministic scripts; it does not run an AI/provider evaluation runner.
 
 ## Catalog
 

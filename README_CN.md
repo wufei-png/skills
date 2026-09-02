@@ -20,6 +20,15 @@ npx skills@latest add wufei-png/skills
 npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 ```
 
+## 选择工作流
+
+- 需要在行动前收敛一个有实质影响的取舍？使用 `grilling`；如果每个问题都需要全新的只读第二意见，使用 `review-gated-grilling`。
+- 需要将已授权的代码变更分阶段并验证交付？使用 `implement-in-stages`；如果每个阶段还需要委托审查门，使用 `review-gated-implementation`。
+- 需要只读审查？测试用 `review-tests`，注释和 docstring 用 `improve-code-comments`；需要有轮次上限的审查修复循环时用 `review-loop`。
+- 需要定位本地历史？Codex JSONL 用 `codex-session-recovery`，OpenCode SQLite 会话用 `opencode-session-toolkit`。
+
+目录声明需要配套 skill 时，应将配对工作流一起安装。
+
 `review-gated-implementation` 会把每个审查门委托给 `delegated-change-review`，因此应一起安装：
 
 ```bash
@@ -48,6 +57,8 @@ git diff --check
 ```
 
 对于只能手动调用的 skill，还需保持 `disable-model-invocation: true` 与 `policy.allow_implicit_invocation: false` 成对存在。OpenAI 的基础 schema `quick_validate.py` 不接受 Claude Code 与 Pi 的调用字段，因此不作为这个跨宿主目录的通过门禁。
+
+`tests/**/cases.json` 是人工评估协议。CI 只检查 manifest、fixture、skill 结构和确定性脚本，不运行 AI/provider 评估 runner。
 
 ## Skill 索引
 
