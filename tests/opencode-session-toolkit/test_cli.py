@@ -184,7 +184,13 @@ class CliTest(unittest.TestCase):
             )
         return result
 
-    def native_environment(self, *, fail_id: str | None = None, invalid_id: str | None = None) -> dict[str, str]:
+    def native_environment(
+        self,
+        *,
+        fail_id: str | None = None,
+        invalid_id: str | None = None,
+        hang_id: str | None = None,
+    ) -> dict[str, str]:
         bin_dir = self.root / "fake-bin"
         bin_dir.mkdir(exist_ok=True)
         executable = bin_dir / "opencode"
@@ -193,6 +199,7 @@ class CliTest(unittest.TestCase):
             "import json\n"
             "import os\n"
             "import sys\n"
+            "import time\n"
             "\n"
             "if sys.argv[1:] == ['db', 'path']:\n"
             "    print(os.environ['TEST_OPENCODE_DB'])\n"
@@ -204,6 +211,9 @@ class CliTest(unittest.TestCase):
             "        raise SystemExit(7)\n"
             "    if session_id == os.environ.get('TEST_OPENCODE_INVALID_ID'):\n"
             "        print('Exporting session: ' + session_id)\n"
+            "        raise SystemExit(0)\n"
+            "    if session_id == os.environ.get('TEST_OPENCODE_HANG_ID'):\n"
+            "        time.sleep(30)\n"
             "        raise SystemExit(0)\n"
             "    print(json.dumps({'native': True, 'session': session_id}, separators=(',', ':')))\n"
             "    raise SystemExit(0)\n"
@@ -219,6 +229,8 @@ class CliTest(unittest.TestCase):
             environment["TEST_OPENCODE_FAIL_ID"] = fail_id
         if invalid_id is not None:
             environment["TEST_OPENCODE_INVALID_ID"] = invalid_id
+        if hang_id is not None:
+            environment["TEST_OPENCODE_HANG_ID"] = hang_id
         return environment
 
     def run_cli_with_env(
@@ -515,7 +527,7 @@ class CliTest(unittest.TestCase):
         self.assertIn("valid JSON", result.stderr)
         self.assertFalse(output_dir.exists())
 
-    def test_batch_write_rolls_back_when_publish_fails(self) -> None:
+    def load_cli_module(self):
         spec = importlib.util.spec_from_file_location("opencode_sessions", CLI)
         self.assertIsNotNone(spec)
         module = importlib.util.module_from_spec(spec)
@@ -525,7 +537,11 @@ class CliTest(unittest.TestCase):
             spec.loader.exec_module(module)
         finally:
             sys.modules.pop(spec.name, None)
-        output_dir = self.root / "rollback"
+        return module
+
+    def test_batch_write_rolls_back_when_publish_fails(self) -> None:
+        module = self.load_cli_module()
+        output_dir = self.root / "nested" / "rollback"
         files = [
             (output_dir / "one.txt", "one"),
             (output_dir / "two.txt", "two"),
@@ -546,6 +562,16 @@ class CliTest(unittest.TestCase):
 
         self.assertFalse((output_dir / "one.txt").exists())
         self.assertFalse((output_dir / "two.txt").exists())
+        self.assertFalse(output_dir.exists())
+        self.assertFalse((self.root / "nested").exists())
+
+    def test_native_sanitized_export_times_out(self) -> None:
+        module = self.load_cli_module()
+        environment = self.native_environment(hang_id="ses_percent")
+        with mock.patch.dict(os.environ, environment, clear=True):
+            with mock.patch.object(module, "NATIVE_EXPORT_TIMEOUT_SECONDS", 1):
+                with self.assertRaisesRegex(module.UserError, "timed out"):
+                    module.run_native_sanitized_export("ses_percent")
 
     def test_list_works_without_optional_project_table(self) -> None:
         connection = sqlite3.connect(self.db_path)

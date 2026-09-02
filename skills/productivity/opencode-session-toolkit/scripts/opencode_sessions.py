@@ -43,6 +43,7 @@ WINDOWS_RESERVED_NAMES = {
     *(f"LPT{i}" for i in range(1, 10)),
 }
 Content = str | bytes
+NATIVE_EXPORT_TIMEOUT_SECONDS = 120
 
 
 def tool_version() -> str:
@@ -902,6 +903,7 @@ def write_files_atomically(
         batch_root = pending[0][0].parent
     batch_root = Path(os.path.abspath(batch_root))
     created_directories: list[Path] = []
+    stage_dir: Path | None = None
 
     def ensure_directory(path: Path) -> None:
         missing: list[Path] = []
@@ -917,9 +919,18 @@ def write_files_atomically(
             directory.mkdir()
             created_directories.append(directory)
 
-    ensure_directory(batch_root.parent)
+    def remove_created_directories() -> None:
+        for directory in sorted(
+            created_directories, key=lambda item: len(item.parts), reverse=True
+        ):
+            try:
+                directory.rmdir()
+            except OSError:
+                pass
+
+    ensure_directory(batch_root)
     stage_dir = Path(
-        tempfile.mkdtemp(prefix=f".{batch_root.name}.staging-", dir=batch_root.parent)
+        tempfile.mkdtemp(prefix=f".{batch_root.name}.staging-", dir=batch_root)
     )
     staged: list[tuple[Path, Path, Content]] = []
     published: list[tuple[Path, Path | None]] = []
@@ -962,19 +973,17 @@ def write_files_atomically(
                     os.replace(backup_path, path)
             except OSError as rollback_exc:
                 rollback_errors.append(f"{path}: {rollback_exc}")
-        for directory in sorted(
-            created_directories, key=lambda item: len(item.parts), reverse=True
-        ):
-            try:
-                directory.rmdir()
-            except OSError:
-                pass
+        if stage_dir is not None:
+            shutil.rmtree(stage_dir, ignore_errors=True)
+            stage_dir = None
+        remove_created_directories()
         detail = str(exc)
         if rollback_errors:
             detail += "; rollback incomplete: " + "; ".join(rollback_errors)
         raise UserError(f"Failed to write export output: {detail}") from exc
     finally:
-        shutil.rmtree(stage_dir, ignore_errors=True)
+        if stage_dir is not None:
+            shutil.rmtree(stage_dir, ignore_errors=True)
 
 
 def output_status(path: Path, content: Content, *, overwrite: bool) -> str:
@@ -1296,10 +1305,16 @@ def run_native_sanitized_export(session_id: str) -> bytes:
                     stdout=stdout,
                     stderr=subprocess.PIPE,
                     check=False,
+                    timeout=NATIVE_EXPORT_TIMEOUT_SECONDS,
                 )
         except FileNotFoundError as exc:
             raise UserError(
                 "`opencode` was not found; native sanitized export is unavailable."
+            ) from exc
+        except subprocess.TimeoutExpired as exc:
+            raise UserError(
+                f"`opencode export {session_id} --sanitize` timed out after "
+                f"{NATIVE_EXPORT_TIMEOUT_SECONDS}s."
             ) from exc
         stderr = completed.stderr.decode("utf-8", errors="replace").strip()
         if completed.returncode != 0:
