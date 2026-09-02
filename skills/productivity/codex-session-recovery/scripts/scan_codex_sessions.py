@@ -64,7 +64,8 @@ class MutableRecord:
         if other.thread_id != self.thread_id:
             self.aliases.add(other.thread_id)
         self.aliases.update(other.aliases)
-        if other.thread_name is not None:
+        self.aliases.discard(self.thread_id)
+        if self.thread_name is None and other.thread_name is not None:
             self.thread_name = other.thread_name
         if self.cwd is None and other.cwd is not None:
             self.cwd = other.cwd
@@ -295,8 +296,6 @@ def is_subagent_source(source: Any) -> bool:
 def is_subagent_metadata(obj: dict[str, Any]) -> bool:
     if is_subagent_source(obj.get("source")):
         return True
-    if string_value(obj.get("parent_thread_id")) is not None:
-        return True
     agent_role = string_value(obj.get("agent_role"))
     return agent_role is not None and agent_role.casefold() == "subagent"
 
@@ -391,88 +390,90 @@ def parse_jsonl(
     warnings: list[str] = []
     records: list[MutableRecord] = []
     current: MutableRecord | None = None
+    filename_id = id_from_filename(path)
 
     try:
-        handle = path.open("r", encoding="utf-8")
-    except (OSError, UnicodeError) as exc:
-        return [], [f"{path}: unreadable: {exc}"]
-
-    filename_id = id_from_filename(path)
-    with handle:
-        for line_number, line in enumerate(handle, start=1):
-            if not line.strip():
-                continue
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError:
-                warnings.append(f"{path}:{line_number}: malformed JSON")
-                continue
-            if not isinstance(obj, dict):
-                continue
-
-            if path.name == "session_index.jsonl":
-                indexed = record_from_index_line(
-                    obj, path, line_number, warnings, fallback_timezone
-                )
-                if indexed is not None and (include_archived or not indexed.archived):
-                    records.append(indexed)
-                continue
-
-            payload = payload_for(obj)
-            event_time = parse_timestamp(obj.get("timestamp") or payload.get("timestamp"))
-            event_time = normalize_event_timestamp(
-                current, warnings, path, line_number, event_time, fallback_timezone
-            )
-
-            if (
-                obj.get("type") == "session_meta"
-                or "cwd" in payload
-                or any(key in payload for key in ("id", "thread_id", "session_id"))
-            ):
-                identities = identity_values(payload)
-                thread_id = filename_id or (identities[0] if identities else None)
-                if thread_id is None:
-                    warnings.append(
-                        f"{path}:{line_number}: missing thread id; skipped record"
-                    )
+        with path.open("r", encoding="utf-8") as handle:
+            for line_number, line in enumerate(handle, start=1):
+                if not line.strip():
                     continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    warnings.append(f"{path}:{line_number}: malformed JSON")
+                    continue
+                if not isinstance(obj, dict):
+                    continue
+
+                if path.name == "session_index.jsonl":
+                    indexed = record_from_index_line(
+                        obj, path, line_number, warnings, fallback_timezone
+                    )
+                    if indexed is not None and (include_archived or not indexed.archived):
+                        records.append(indexed)
+                    continue
+
+                payload = payload_for(obj)
+                event_time = parse_timestamp(
+                    obj.get("timestamp") or payload.get("timestamp")
+                )
+                event_time = normalize_event_timestamp(
+                    current, warnings, path, line_number, event_time, fallback_timezone
+                )
+
+                if (
+                    obj.get("type") == "session_meta"
+                    or "cwd" in payload
+                    or any(key in payload for key in ("id", "thread_id", "session_id"))
+                ):
+                    identities = identity_values(payload)
+                    thread_id = filename_id or (identities[0] if identities else None)
+                    if thread_id is None:
+                        warnings.append(
+                            f"{path}:{line_number}: missing thread id; skipped record"
+                        )
+                        continue
+                    if current is None:
+                        current = MutableRecord(thread_id=thread_id)
+                        current.merge_source(path, archived, "transcript")
+                        if event_time is None:
+                            apply_filename_timestamp(current, path, fallback_timezone)
+                    if not identities:
+                        current.evidence_types.add("filename_identity")
+                    add_aliases(current, identities)
+                    cwd = payload.get("cwd")
+                    if isinstance(cwd, str):
+                        current.cwd = cwd
+                    apply_thread_metadata(current, payload)
+                    current.started_at = earlier(current.started_at, event_time)
+                    current.updated_at = later(current.updated_at, event_time)
+                    continue
+
                 if current is None:
-                    current = MutableRecord(thread_id=thread_id)
+                    if filename_id is None:
+                        warnings.append(
+                            f"{path}:{line_number}: missing thread id; skipped record"
+                        )
+                        continue
+                    current = MutableRecord(thread_id=filename_id)
                     current.merge_source(path, archived, "transcript")
+                    current.evidence_types.add("filename_identity")
                     if event_time is None:
                         apply_filename_timestamp(current, path, fallback_timezone)
-                if not identities:
-                    current.evidence_types.add("filename_identity")
-                add_aliases(current, identities)
-                cwd = payload.get("cwd")
-                if isinstance(cwd, str):
-                    current.cwd = cwd
-                apply_thread_metadata(current, payload)
                 current.started_at = earlier(current.started_at, event_time)
                 current.updated_at = later(current.updated_at, event_time)
-                continue
 
-            if current is None:
-                if filename_id is None:
-                    warnings.append(f"{path}:{line_number}: missing thread id; skipped record")
-                    continue
-                current = MutableRecord(thread_id=filename_id)
-                current.merge_source(path, archived, "transcript")
-                current.evidence_types.add("filename_identity")
-                if event_time is None:
-                    apply_filename_timestamp(current, path, fallback_timezone)
-            current.started_at = earlier(current.started_at, event_time)
-            current.updated_at = later(current.updated_at, event_time)
+                role = payload.get("role")
+                if role == "user":
+                    text = extract_content_text(payload.get("content"))
+                    if text:
+                        current.user_prompts.append(text)
 
-            role = payload.get("role")
-            if role == "user":
-                text = extract_content_text(payload.get("content"))
-                if text:
-                    current.user_prompts.append(text)
-
-            summary = payload.get("summary") or payload.get("title")
-            if isinstance(summary, str):
-                current.summaries.append(summary)
+                summary = payload.get("summary") or payload.get("title")
+                if isinstance(summary, str):
+                    current.summaries.append(summary)
+    except (OSError, UnicodeError) as exc:
+        return [], [f"{path}: unreadable: {exc}"]
 
     if current is not None:
         current.warnings.extend(warnings)
@@ -624,7 +625,9 @@ def serialize_record(
     data: dict[str, Any] = {
         "thread_id": record.thread_id,
         "thread_name": record.thread_name,
-        "aliases": sorted(record.aliases),
+        "aliases": sorted(
+            alias for alias in record.aliases if alias != record.thread_id
+        ),
         "cwd": record.cwd,
         "started_at": record.started_at.isoformat() if record.started_at else None,
         "updated_at": record.updated_at.isoformat() if record.updated_at else None,

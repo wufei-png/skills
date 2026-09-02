@@ -160,6 +160,56 @@ class ScanCodexSessionsTest(unittest.TestCase):
 
         self.assertEqual(1, len(matching))
         self.assertIn("transcript-alias", matching[0]["aliases"])
+        self.assertNotIn("canonical-main", matching[0]["aliases"])
+
+    def test_parent_thread_id_alone_does_not_mark_subagent(self):
+        session_index = self.codex_home / "session_index.jsonl"
+        with session_index.open("a", encoding="utf-8") as handle:
+            handle.write(
+                '\n{"id":"forked-main","thread_name":"Forked user thread",'
+                '"updated_at":"2026-06-12T13:00:00+08:00",'
+                '"path":"sessions/2026/06/12/rollout-2026-06-12T13-00-00-forked-main.jsonl"}\n'
+            )
+        path = (
+            self.codex_home
+            / "sessions"
+            / "2026"
+            / "06"
+            / "12"
+            / "rollout-2026-06-12T13-00-00-forked-main.jsonl"
+        )
+        path.write_text(
+            '{"timestamp":"2026-06-12T13:00:00+08:00","type":"session_meta",'
+            '"payload":{"id":"forked-main","cwd":"/Users/example/project",'
+            '"parent_thread_id":"active-main","source":"cli"}}\n',
+            encoding="utf-8",
+        )
+
+        result = self.scan(cwd=None)
+        record = next(item for item in result["records"] if item["thread_id"] == "forked-main")
+
+        self.assertIn("forked-main", self.ids(result))
+        self.assertFalse(record["subagent"])
+        self.assertEqual("active-main", record["parent_thread_id"])
+
+    def test_invalid_utf8_transcript_is_reported_without_failing_scan(self):
+        path = (
+            self.codex_home
+            / "sessions"
+            / "2026"
+            / "06"
+            / "12"
+            / "rollout-2026-06-12T14-00-00-bad-utf8.jsonl"
+        )
+        path.write_bytes(b"\xff\xfe not utf-8\n")
+
+        result = self.scan(cwd=None)
+
+        self.assertIn("active-main", self.ids(result))
+        self.assertTrue(
+            any("unreadable" in warning for warning in result["warnings"]),
+            result["warnings"],
+        )
 
     def test_unknown_time_requires_explicit_opt_in_when_date_filtered(self):
         session_index = self.codex_home / "session_index.jsonl"
