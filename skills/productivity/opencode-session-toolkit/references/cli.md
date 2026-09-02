@@ -2,7 +2,7 @@
 
 Run commands from the skill directory. Put `--db-path` after the subcommand when overriding `opencode db path`. Treat `<command> --help` as the option authority.
 
-`doctor` reads schema metadata only, not transcript content.
+`doctor` reads schema metadata only, not transcript content. Add `--integrity` when an explicit SQLite `PRAGMA integrity_check` is needed; it is not part of the default probe.
 
 ## Filters and output
 
@@ -29,3 +29,7 @@ Markdown creates one file per session using a sanitized title, UTC creation time
 - `--overwrite` replaces changed files through same-directory atomic renames.
 
 `--include-sensitive` keeps the same explicit opt-in as `show` and emits a warning on stderr.
+
+`export --sanitize` calls the installed OpenCode CLI once per selected session as `opencode export SESSION_ID --sanitize` and stores the native JSON output without rewriting or locally sanitizing it. It uses the database resolved by `opencode db path`; `--db-path`, `--format jsonl`, and `--include-sensitive` are rejected. Native stdout is captured directly to a temporary file and must be one valid JSON object; a nonzero exit, status prefix, truncation, or invalid JSON aborts the whole batch and leaves no new output.
+
+All export files are staged and published as one batch. A normal publish failure rolls already-published files back; existing files are still preflighted, and `--overwrite` remains required for changed output.

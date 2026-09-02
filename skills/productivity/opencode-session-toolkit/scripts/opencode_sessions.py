@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -41,6 +42,7 @@ WINDOWS_RESERVED_NAMES = {
     *(f"COM{i}" for i in range(1, 10)),
     *(f"LPT{i}" for i in range(1, 10)),
 }
+Content = str | bytes
 
 
 def tool_version() -> str:
@@ -187,6 +189,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     add_db_argument(doctor)
     add_output_format(doctor)
+    doctor.add_argument(
+        "--integrity",
+        action="store_true",
+        help="Run SQLite integrity_check in addition to schema checks.",
+    )
 
     list_parser = commands.add_parser("list", help="List sessions and metadata.")
     add_db_argument(list_parser)
@@ -243,6 +250,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Include reasoning and complete message/part payloads.",
     )
+    export.add_argument(
+        "--sanitize",
+        action="store_true",
+        help="Use native `opencode export SESSION_ID --sanitize` output.",
+    )
 
     schema = commands.add_parser(
         "schema", help="Show the live core-table schema and indexes."
@@ -297,6 +309,10 @@ def connect_read_only(db_path: Path) -> sqlite3.Connection:
     except sqlite3.DatabaseError:
         pass
     return connection
+
+
+def begin_read_snapshot(connection: sqlite3.Connection) -> None:
+    connection.execute("BEGIN")
 
 
 def quote_identifier(identifier: str) -> str:
@@ -844,15 +860,28 @@ def has_explicit_filter(args: argparse.Namespace) -> bool:
     )
 
 
+def validate_sanitize_args(args: argparse.Namespace) -> None:
+    if not args.sanitize:
+        return
+    if args.db_path:
+        raise UserError("--sanitize cannot be combined with --db-path.")
+    if args.format == "jsonl":
+        raise UserError("--sanitize cannot be combined with --format jsonl.")
+    if args.include_sensitive:
+        raise UserError("--sanitize cannot be combined with --include-sensitive.")
+
+
 def write_files_atomically(
-    files: Sequence[tuple[Path, str]],
+    files: Sequence[tuple[Path, Content]],
     *,
     overwrite: bool,
+    batch_root: Path | None = None,
 ) -> tuple[list[Path], list[Path]]:
     conflicts: list[Path] = []
     unchanged: list[Path] = []
-    pending: list[tuple[Path, str]] = []
-    for path, content in files:
+    pending: list[tuple[Path, Content]] = []
+    for raw_path, content in files:
+        path = Path(os.path.abspath(raw_path))
         status = output_status(path, content, overwrite=overwrite)
         if status == "unchanged":
             unchanged.append(path)
@@ -866,32 +895,89 @@ def write_files_atomically(
             f"Refusing to overwrite changed output; pass --overwrite:\n{preview}"
         )
 
-    written: list[Path] = []
+    if not pending:
+        return [], unchanged
+
+    if batch_root is None:
+        batch_root = pending[0][0].parent
+    batch_root = Path(os.path.abspath(batch_root))
+    created_directories: list[Path] = []
+
+    def ensure_directory(path: Path) -> None:
+        missing: list[Path] = []
+        current = path
+        while not current.exists():
+            missing.append(current)
+            if current == current.parent:
+                break
+            current = current.parent
+        if current.exists() and not current.is_dir():
+            raise OSError(f"output parent is not a directory: {current}")
+        for directory in reversed(missing):
+            directory.mkdir()
+            created_directories.append(directory)
+
+    ensure_directory(batch_root.parent)
+    stage_dir = Path(
+        tempfile.mkdtemp(prefix=f".{batch_root.name}.staging-", dir=batch_root.parent)
+    )
+    staged: list[tuple[Path, Path, Content]] = []
+    published: list[tuple[Path, Path | None]] = []
     try:
+        payload_root = stage_dir / "payload"
         for path, content in pending:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with tempfile.NamedTemporaryFile(
-                mode="w",
-                encoding="utf-8",
-                dir=path.parent,
-                prefix=f".{path.name}.",
-                suffix=".tmp",
-                delete=False,
-            ) as handle:
-                handle.write(content)
-                temp_path = Path(handle.name)
-            try:
-                os.replace(temp_path, path)
-            finally:
-                if temp_path.exists():
-                    temp_path.unlink()
-            written.append(path)
+            relative = path.relative_to(batch_root)
+            staged_path = payload_root / relative
+            staged_path.parent.mkdir(parents=True, exist_ok=True)
+            if isinstance(content, bytes):
+                staged_path.write_bytes(content)
+            else:
+                staged_path.write_text(content, encoding="utf-8")
+            staged.append((path, staged_path, content))
+
+        backup_root = stage_dir / "backup"
+        for path, staged_path, _content in staged:
+            ensure_directory(path.parent)
+            backup_path: Path | None = None
+            if path.exists() or path.is_symlink():
+                relative = path.relative_to(batch_root)
+                backup_path = backup_root / relative
+                backup_path.parent.mkdir(parents=True, exist_ok=True)
+                if path.is_symlink():
+                    backup_path.symlink_to(os.readlink(path))
+                elif path.is_file():
+                    shutil.copy2(path, backup_path)
+                else:
+                    raise OSError(f"output target is not a file: {path}")
+            os.replace(staged_path, path)
+            published.append((path, backup_path))
+        return [path for path, _ in published], unchanged
     except OSError as exc:
-        raise UserError(f"Failed to write export output: {exc}") from exc
-    return written, unchanged
+        rollback_errors: list[str] = []
+        for path, backup_path in reversed(published):
+            try:
+                if path.exists() or path.is_symlink():
+                    path.unlink()
+                if backup_path is not None:
+                    os.replace(backup_path, path)
+            except OSError as rollback_exc:
+                rollback_errors.append(f"{path}: {rollback_exc}")
+        for directory in sorted(
+            created_directories, key=lambda item: len(item.parts), reverse=True
+        ):
+            try:
+                directory.rmdir()
+            except OSError:
+                pass
+        detail = str(exc)
+        if rollback_errors:
+            detail += "; rollback incomplete: " + "; ".join(rollback_errors)
+        raise UserError(f"Failed to write export output: {detail}") from exc
+    finally:
+        shutil.rmtree(stage_dir, ignore_errors=True)
 
 
-def output_status(path: Path, content: str, *, overwrite: bool) -> str:
+def output_status(path: Path, content: Content, *, overwrite: bool) -> str:
     if not path.exists() and not path.is_symlink():
         ancestor = path.parent
         while not ancestor.exists() and not ancestor.is_symlink():
@@ -905,7 +991,11 @@ def output_status(path: Path, content: str, *, overwrite: bool) -> str:
         return "overwrite" if overwrite else "conflict"
     if path.is_file():
         try:
-            if path.read_text(encoding="utf-8") == content:
+            if isinstance(content, bytes):
+                unchanged = path.read_bytes() == content
+            else:
+                unchanged = path.read_text(encoding="utf-8") == content
+            if unchanged:
                 return "unchanged"
         except (OSError, UnicodeError) as exc:
             raise UserError(f"Failed to inspect existing output {path}: {exc}") from exc
@@ -937,7 +1027,7 @@ def handle_doctor(
             for name in ("session", "message", "part")
         ),
     }
-    data = {
+    data: dict[str, Any] = {
         "database": str(db_path),
         "sqlite_version": sqlite3.sqlite_version,
         "tables": {
@@ -946,22 +1036,33 @@ def handle_doctor(
         "commands": commands,
         "read_only": True,
     }
+    integrity_failure: str | None = None
+    if args.integrity:
+        results = [str(row[0]) for row in connection.execute("PRAGMA integrity_check")]
+        integrity_ok = results == ["ok"]
+        data["integrity_check"] = {"ok": integrity_ok, "results": results}
+        if not integrity_ok:
+            integrity_failure = ", ".join(results) or "no result"
     if args.format == "json":
         print(json.dumps(data, ensure_ascii=False, indent=2))
-        return
-    print(f"Database: {db_path}")
-    print(f"SQLite: {sqlite3.sqlite_version}")
-    print("Read-only: yes")
-    print("\nCommand capabilities:")
-    print(
-        format_table(
-            [
-                {"command": key, "available": "yes" if value else "no"}
-                for key, value in commands.items()
-            ],
-            ("command", "available"),
+    else:
+        print(f"Database: {db_path}")
+        print(f"SQLite: {sqlite3.sqlite_version}")
+        print("Read-only: yes")
+        if args.integrity:
+            print(f"Integrity: {'ok' if integrity_failure is None else 'failed'}")
+        print("\nCommand capabilities:")
+        print(
+            format_table(
+                [
+                    {"command": key, "available": "yes" if value else "no"}
+                    for key, value in commands.items()
+                ],
+                ("command", "available"),
+            )
         )
-    )
+    if integrity_failure is not None:
+        raise UserError(f"SQLite integrity check failed: {integrity_failure}")
 
 
 def handle_list(
@@ -1064,6 +1165,7 @@ def handle_export(
     capabilities: Capabilities,
     args: argparse.Namespace,
 ) -> None:
+    validate_sanitize_args(args)
     if not args.all and not has_explicit_filter(args):
         raise UserError("Refusing an implicit full export; add a filter or pass --all.")
     sessions = load_sessions(connection, capabilities, args)
@@ -1074,8 +1176,21 @@ def handle_export(
     if args.include_sensitive:
         print("Warning: sensitive payload export enabled.", file=sys.stderr)
     output_root = Path(args.output_dir).expanduser().resolve()
-    files: list[tuple[Path, str]] = []
-    if args.format == "jsonl":
+    files: list[tuple[Path, Content]] = []
+    if args.sanitize:
+        for session in sessions:
+            directory = output_root
+            if args.group_by_project:
+                directory /= sanitize_component(
+                    project_label(session), "unknown-project"
+                )
+            files.append(
+                (
+                    directory / output_filename(session, "json"),
+                    run_native_sanitized_export(session.id),
+                )
+            )
+    elif args.format == "jsonl":
         lines: list[str] = []
         for session in sessions:
             messages = load_transcript(connection, capabilities, session.id)
@@ -1125,7 +1240,9 @@ def handle_export(
                 "Dry run found output conflicts; pass --overwrite to replace them."
             )
         return
-    written, unchanged = write_files_atomically(files, overwrite=args.overwrite)
+    written, unchanged = write_files_atomically(
+        files, overwrite=args.overwrite, batch_root=output_root
+    )
     print(f"Matched sessions: {len(sessions)}")
     print(f"Written files: {len(written)}")
     print(f"Unchanged files: {len(unchanged)}")
@@ -1169,24 +1286,67 @@ def handle_schema(
     print(format_table(rows, ("table", "available", "columns", "indexes")))
 
 
+def run_native_sanitized_export(session_id: str) -> bytes:
+    with tempfile.TemporaryDirectory(prefix="opencode-native-export-") as directory:
+        stdout_path = Path(directory) / "session.json"
+        try:
+            with stdout_path.open("wb") as stdout:
+                completed = subprocess.run(
+                    ["opencode", "export", session_id, "--sanitize"],
+                    stdout=stdout,
+                    stderr=subprocess.PIPE,
+                    check=False,
+                )
+        except FileNotFoundError as exc:
+            raise UserError(
+                "`opencode` was not found; native sanitized export is unavailable."
+            ) from exc
+        stderr = completed.stderr.decode("utf-8", errors="replace").strip()
+        if completed.returncode != 0:
+            detail = stderr or f"exit status {completed.returncode}"
+            raise UserError(
+                f"`opencode export {session_id} --sanitize` failed: {detail}"
+            )
+        native_output = stdout_path.read_bytes()
+        try:
+            decoded = native_output.decode("utf-8")
+            value = json.loads(decoded)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise UserError(
+                f"`opencode export {session_id} --sanitize` did not produce a single valid JSON document."
+            ) from exc
+        if not isinstance(value, dict):
+            raise UserError(
+                f"`opencode export {session_id} --sanitize` did not produce a JSON object."
+            )
+        return native_output
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "export" and args.sanitize:
+        validate_sanitize_args(args)
     db_path = resolve_db_path(args.db_path)
     with connect_read_only(db_path) as connection:
-        capabilities = inspect_capabilities(connection)
-        handlers = {
-            "doctor": handle_doctor,
-            "list": handle_list,
-            "show": handle_show,
-            "search": handle_search,
-            "export": handle_export,
-            "schema": handle_schema,
-        }
-        handler = handlers[args.command]
-        if args.command == "doctor":
-            handler(connection, db_path, capabilities, args)
-        else:
-            handler(connection, capabilities, args)
+        begin_read_snapshot(connection)
+        try:
+            capabilities = inspect_capabilities(connection)
+            handlers = {
+                "doctor": handle_doctor,
+                "list": handle_list,
+                "show": handle_show,
+                "search": handle_search,
+                "export": handle_export,
+                "schema": handle_schema,
+            }
+            handler = handlers[args.command]
+            if args.command == "doctor":
+                handler(connection, db_path, capabilities, args)
+            else:
+                handler(connection, capabilities, args)
+        finally:
+            if connection.in_transaction:
+                connection.rollback()
     return 0
 
 

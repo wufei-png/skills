@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -9,6 +11,7 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 CLI = (
@@ -174,6 +177,59 @@ class CliTest(unittest.TestCase):
             capture_output=True,
             text=True,
             check=False,
+        )
+        if check and result.returncode != 0:
+            self.fail(
+                f"CLI failed ({result.returncode}): {result.stderr}\n{result.stdout}"
+            )
+        return result
+
+    def native_environment(self, *, fail_id: str | None = None, invalid_id: str | None = None) -> dict[str, str]:
+        bin_dir = self.root / "fake-bin"
+        bin_dir.mkdir(exist_ok=True)
+        executable = bin_dir / "opencode"
+        executable.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json\n"
+            "import os\n"
+            "import sys\n"
+            "\n"
+            "if sys.argv[1:] == ['db', 'path']:\n"
+            "    print(os.environ['TEST_OPENCODE_DB'])\n"
+            "    raise SystemExit(0)\n"
+            "if len(sys.argv) == 4 and sys.argv[1] == 'export' and sys.argv[3] == '--sanitize':\n"
+            "    session_id = sys.argv[2]\n"
+            "    if session_id == os.environ.get('TEST_OPENCODE_FAIL_ID'):\n"
+            "        print('native export failed', file=sys.stderr)\n"
+            "        raise SystemExit(7)\n"
+            "    if session_id == os.environ.get('TEST_OPENCODE_INVALID_ID'):\n"
+            "        print('Exporting session: ' + session_id)\n"
+            "        raise SystemExit(0)\n"
+            "    print(json.dumps({'native': True, 'session': session_id}, separators=(',', ':')))\n"
+            "    raise SystemExit(0)\n"
+            "print('unexpected fake opencode invocation', file=sys.stderr)\n"
+            "raise SystemExit(9)\n",
+            encoding="utf-8",
+        )
+        executable.chmod(0o755)
+        environment = os.environ.copy()
+        environment["PATH"] = f"{bin_dir}{os.pathsep}{environment.get('PATH', '')}"
+        environment["TEST_OPENCODE_DB"] = str(self.db_path)
+        if fail_id is not None:
+            environment["TEST_OPENCODE_FAIL_ID"] = fail_id
+        if invalid_id is not None:
+            environment["TEST_OPENCODE_INVALID_ID"] = invalid_id
+        return environment
+
+    def run_cli_with_env(
+        self, environment: dict[str, str], *arguments: str, check: bool = True
+    ) -> subprocess.CompletedProcess[str]:
+        result = subprocess.run(
+            [sys.executable, str(CLI), *arguments],
+            capture_output=True,
+            text=True,
+            check=False,
+            env=environment,
         )
         if check and result.returncode != 0:
             self.fail(
@@ -365,6 +421,131 @@ class CliTest(unittest.TestCase):
         self.assertTrue(payload["commands"]["export"])
         self.assertNotIn("100% literal", result.stdout)
         self.assertEqual(hashlib.sha256(self.db_path.read_bytes()).hexdigest(), before)
+
+    def test_doctor_integrity_is_opt_in(self) -> None:
+        default = self.run_cli(
+            "doctor", "--db-path", str(self.db_path), "--format", "json"
+        )
+        checked = self.run_cli(
+            "doctor",
+            "--db-path",
+            str(self.db_path),
+            "--format",
+            "json",
+            "--integrity",
+        )
+
+        self.assertNotIn("integrity_check", json.loads(default.stdout))
+        self.assertEqual(
+            {"ok": True, "results": ["ok"]},
+            json.loads(checked.stdout)["integrity_check"],
+        )
+
+    def test_sanitized_export_uses_native_json_for_each_selected_session(self) -> None:
+        output_dir = self.root / "sanitized"
+        environment = self.native_environment()
+
+        result = self.run_cli_with_env(
+            environment,
+            "export",
+            "--all",
+            "--output-dir",
+            str(output_dir),
+            "--sanitize",
+        )
+
+        exported = sorted(output_dir.glob("*.json"))
+        self.assertEqual(2, len(exported))
+        self.assertEqual(
+            {"ses_percent", "ses_other"},
+            {json.loads(path.read_text(encoding="utf-8"))["session"] for path in exported},
+        )
+        self.assertIn("Written files: 2", result.stdout)
+
+    def test_sanitized_export_rejects_custom_db_and_local_projection(self) -> None:
+        for extra_args, expected in (
+            (("--db-path", str(self.db_path)), "--db-path"),
+            (("--format", "jsonl"), "--format"),
+            (("--include-sensitive",), "--include-sensitive"),
+        ):
+            with self.subTest(arguments=extra_args):
+                result = self.run_cli(
+                    "export",
+                    "--session-id",
+                    "ses_percent",
+                    "--output-dir",
+                    str(self.root / "invalid-sanitize"),
+                    "--sanitize",
+                    *extra_args,
+                    check=False,
+                )
+                self.assertEqual(2, result.returncode)
+                self.assertIn(expected, result.stderr)
+
+    def test_sanitized_export_failure_leaves_no_batch_output(self) -> None:
+        output_dir = self.root / "failed-sanitized"
+        result = self.run_cli_with_env(
+            self.native_environment(fail_id="ses_percent"),
+            "export",
+            "--all",
+            "--output-dir",
+            str(output_dir),
+            "--sanitize",
+            check=False,
+        )
+
+        self.assertEqual(2, result.returncode)
+        self.assertIn("native export failed", result.stderr)
+        self.assertFalse(output_dir.exists())
+
+    def test_sanitized_export_rejects_non_json_native_output(self) -> None:
+        output_dir = self.root / "invalid-native"
+        result = self.run_cli_with_env(
+            self.native_environment(invalid_id="ses_percent"),
+            "export",
+            "--session-id",
+            "ses_percent",
+            "--output-dir",
+            str(output_dir),
+            "--sanitize",
+            check=False,
+        )
+
+        self.assertEqual(2, result.returncode)
+        self.assertIn("valid JSON", result.stderr)
+        self.assertFalse(output_dir.exists())
+
+    def test_batch_write_rolls_back_when_publish_fails(self) -> None:
+        spec = importlib.util.spec_from_file_location("opencode_sessions", CLI)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        self.assertIsNotNone(spec.loader)
+        sys.modules[spec.name] = module
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            sys.modules.pop(spec.name, None)
+        output_dir = self.root / "rollback"
+        files = [
+            (output_dir / "one.txt", "one"),
+            (output_dir / "two.txt", "two"),
+        ]
+        original_replace = module.os.replace
+        calls = 0
+
+        def fail_second_replace(source, target):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise OSError("injected publish failure")
+            return original_replace(source, target)
+
+        with mock.patch.object(module.os, "replace", side_effect=fail_second_replace):
+            with self.assertRaisesRegex(module.UserError, "Failed to write export output"):
+                module.write_files_atomically(files, overwrite=False, batch_root=output_dir)
+
+        self.assertFalse((output_dir / "one.txt").exists())
+        self.assertFalse((output_dir / "two.txt").exists())
 
     def test_list_works_without_optional_project_table(self) -> None:
         connection = sqlite3.connect(self.db_path)
