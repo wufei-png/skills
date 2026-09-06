@@ -1,0 +1,7 @@
+interface:
+  display_name: "Consensus Change Review"
+  short_description: "Resolve disputed review findings before fixes"
+  default_prompt: "Use $consensus-change-review to review this change and resolve disputed findings before fixing them."
+
+policy:
+  allow_implicit_invocation: false

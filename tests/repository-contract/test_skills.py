@@ -10,6 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS_ROOT = ROOT / "skills"
 EXPECTED_SKILLS = {
+    "consensus-change-review",
+    "consensus-gated-grilling",
+    "consensus-review-loop",
     "codex-session-recovery",
     "delegated-change-review",
     "grilling",
@@ -146,6 +149,56 @@ class SkillRepositoryContractTest(unittest.TestCase):
                 with self.subTest(pair=relative_pair, phrase=phrase):
                     for text in texts:
                         self.assertIn(phrase, text)
+
+    def test_consensus_variants_keep_their_bounded_protocol(self) -> None:
+        paths = (
+            SKILLS_ROOT / "productivity/consensus-gated-grilling/SKILL.md",
+            SKILLS_ROOT / "engineering/consensus-change-review/SKILL.md",
+            SKILLS_ROOT / "engineering/consensus-review-loop/SKILL.md",
+        )
+        required_phrases = (
+            "at most two exchange rounds",
+            "fresh, read-only tie-breaker",
+            "ask the user to adjudicate",
+        )
+        for path in paths:
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(skill=path.parent.name):
+                for phrase in required_phrases:
+                    self.assertIn(phrase, text)
+
+    def test_consensus_variants_preserve_base_contracts(self) -> None:
+        required_by_skill = {
+            "productivity/consensus-gated-grilling": (
+                "decision tree in dependency order",
+                "available context or tools",
+                "per-turn maximum as a ceiling",
+                "with the conversation context",
+                "or the positive number the user requested",
+                "distinct, non-leading perspectives",
+                "Never silently self-review or reduce their number.",
+                "when relevant, implementation authorization",
+                "Do not modify code before approval.",
+            ),
+            "engineering/consensus-change-review": (
+                "without rushing a healthy reviewer",
+                "Record rejected findings with the reason.",
+                "through the implementation owner when one exists, or fix them yourself",
+                "If none are accepted and none are disputed, skip to the summary.",
+            ),
+            "engineering/consensus-review-loop": (
+                "relevant code, tests, and call sites",
+                "without rushing a healthy reviewer",
+                "Record rejected findings with the reason.",
+                "through the implementation owner when one exists, or fix them yourself",
+                "After the last allowed round, report that boundary as a residual risk.",
+            ),
+        }
+        for relative, required_phrases in required_by_skill.items():
+            text = (SKILLS_ROOT / relative / "SKILL.md").read_text(encoding="utf-8")
+            with self.subTest(skill=relative):
+                for phrase in required_phrases:
+                    self.assertIn(phrase, text)
 
     def test_manual_evaluation_cases_reference_real_fixtures(self) -> None:
         manifests = sorted(ROOT.glob("tests/**/cases.json"))

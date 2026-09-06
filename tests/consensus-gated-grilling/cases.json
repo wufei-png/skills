@@ -1,0 +1,34 @@
+{
+  "skill": "consensus-gated-grilling",
+  "execution": {
+    "isolation": "For each case, expose only the named skill and that case's fixture. Do not expose this manifest or sibling cases.",
+    "context": "Run the case manually in a fresh session and make the disagreement condition explicit before the first candidate question.",
+    "evaluation": "Compare the response with required and forbidden criteria after the turn finishes; do not evaluate generic coding etiquette."
+  },
+  "cases": [
+    {
+      "id": "unresolved-dispute",
+      "fixture": "fixtures/unresolved-dispute",
+      "prompt": "Use $consensus-gated-grilling to decide how to handle the proposal in SCENARIO.md. The initial reviewer disputes the draft recommendation. Do not implement anything yet.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Run at most two evidence exchanges with the original reviewer, then use a fresh tie-breaker when the material disagreement remains.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Ask the user to adjudicate an unresolved disagreement before showing the candidate question.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Force consensus without evidence",
+          "Silently reject the reviewer's correction",
+          "Modify repository files before explicit implementation authorization"
+        ]
+      }
+    }
+  ]
+}

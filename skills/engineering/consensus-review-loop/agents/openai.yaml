@@ -1,0 +1,7 @@
+interface:
+  display_name: "Consensus Review Loop"
+  short_description: "Run bounded review and fix with evidence negotiation"
+  default_prompt: "Use $consensus-review-loop to run a bounded review and fix loop with evidence negotiation."
+
+policy:
+  allow_implicit_invocation: false

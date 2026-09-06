@@ -23,6 +23,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 ## Choose a workflow
 
 - Need to resolve a consequential tradeoff before acting? Use `grilling`; use `review-gated-grilling` when each question needs a fresh read-only second opinion.
+- Need bounded subagent consensus without changing the base workflow? Use the matching `consensus-*` variant.
 - Need an authorized code change in verified stages? Use `implement-in-stages`; use `review-gated-implementation` when each stage also needs the delegated review gate.
 - Need a read-only audit? Use `review-tests` for tests or `improve-code-comments` for comments and docstrings; use `review-loop` for a bounded review-and-fix loop.
 - Need to locate prior local history? Use `codex-session-recovery` for Codex JSONL or `opencode-session-toolkit` for OpenCode SQLite sessions.
@@ -68,6 +69,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 
 - [`grilling`](./skills/productivity/grilling/SKILL.md) — Resolve a decision through dependency-ordered questions about genuine tradeoffs.
 - [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — Review each candidate question with fresh, read-only subagents before asking it.
+- [`consensus-gated-grilling`](./skills/productivity/consensus-gated-grilling/SKILL.md) — Resolve decisions with bounded subagent consensus before asking each question.
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — Find local Codex sessions read-only and produce CLI-first recovery steps.
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — Inspect, search, diagnose, and export local OpenCode SQLite sessions safely.
 
@@ -76,7 +78,9 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — Audit and improve comments and docstrings without changing executable code.
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — Audit a project test suite for prioritized, evidence-backed defects without modifying it.
 - [`review-loop`](./skills/engineering/review-loop/SKILL.md) — Run a bounded review-and-fix loop with fresh, read-only reviewer subagents.
+- [`consensus-review-loop`](./skills/engineering/consensus-review-loop/SKILL.md) — Run the review loop with bounded subagent consensus for disputed findings.
 - [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — Run the single delegated review gate used by `review-gated-implementation`.
+- [`consensus-change-review`](./skills/engineering/consensus-change-review/SKILL.md) — Resolve disputed findings with bounded subagent consensus before fixes.
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — Execute an authorized change as dependency-ordered stages, reviewing and committing each after its checks pass.
 - [`implement-in-stages`](./skills/engineering/implement-in-stages/SKILL.md) — Execute an authorized change as dependency-ordered stages, committing each after its checks pass.
 
@@ -86,6 +90,16 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 | ----------------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `grilling`                    | `review-gated-grilling` | Adds fresh, read-only subagent review before each candidate question or permitted batch is shown to the user. | Keep the interview and authorization contract parallel; put reviewer behavior only in the gated variant.                    |
 | `review-gated-implementation` | `implement-in-stages`   | Removes the per-stage and final delegated reviews, including review findings and outcome reporting.           | Keep planning, stage boundaries, checks, commits, and risk reporting parallel; put review behavior only in the gated skill. |
+
+## Consensus variants
+
+These opt-in variants keep their base skills unchanged and add bounded, evidence-led exchange with the original reviewer, a fresh tie-breaker when needed, and user escalation when disagreement remains.
+
+| Base skill | Variant | Scope |
+| --- | --- | --- |
+| `review-gated-grilling` | `consensus-gated-grilling` | Decision questions |
+| `delegated-change-review` | `consensus-change-review` | One code-review gate |
+| `review-loop` | `consensus-review-loop` | Review-and-fix rounds |
 
 All skills in the current catalog are manual-only. Each `SKILL.md` sets `disable-model-invocation: true` for Claude Code and Pi, while the paired `agents/openai.yaml` sets `policy.allow_implicit_invocation: false` for ChatGPT and Codex. Keep both fields in sync. `review-gated-grilling` and the review skills are Codex-first because they expect a fresh subagent mechanism; the code review skills additionally use the built-in `$review-agent` skill where referenced. Reviewers do not edit implementation files or ask the user questions directly. Whether code reviewers run tests or checks is a review-strategy decision based on the concrete problem. The primary agent still adjudicates findings and owns the user-facing result.
 

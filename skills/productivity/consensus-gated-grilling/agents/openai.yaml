@@ -1,0 +1,7 @@
+interface:
+  display_name: "Consensus-Gated Grilling"
+  short_description: "Bounded subagent consensus for consequential decisions"
+  default_prompt: "Use $consensus-gated-grilling to resolve this decision with bounded subagent consensus."
+
+policy:
+  allow_implicit_invocation: false

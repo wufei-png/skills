@@ -1,0 +1,34 @@
+{
+  "skill": "consensus-review-loop",
+  "execution": {
+    "isolation": "For each case, expose only the named skill and that case's fixture. Do not expose this manifest or sibling cases.",
+    "context": "Run the case manually in a fresh session with a read-only reviewer and make the disputed finding explicit before any fix round.",
+    "evaluation": "Compare the response with required and forbidden criteria after the turn finishes; do not evaluate generic coding etiquette."
+  },
+  "cases": [
+    {
+      "id": "bounded-fix-dispute",
+      "fixture": "fixtures/bounded-fix-dispute",
+      "prompt": "Use $consensus-review-loop to review and fix the change described in SCENARIO.md. The initial reviewer disputes the proposed fix. Do not modify files until the bounded review protocol resolves the finding or I adjudicate it.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Keep the reviewer read-only and allow at most two evidence exchanges before a fresh tie-breaker.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Pause for user adjudication instead of applying or silently rejecting an unresolved material finding.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Apply the disputed fix before acceptance",
+          "Treat a fresh tie-breaker as permission to force consensus",
+          "Let the reviewer modify the implementation"
+        ]
+      }
+    }
+  ]
+}

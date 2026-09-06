@@ -1,0 +1,34 @@
+{
+  "skill": "consensus-change-review",
+  "execution": {
+    "isolation": "For each case, expose only the named skill and that case's fixture. Do not expose this manifest or sibling cases.",
+    "context": "Run the case manually in a fresh session with a read-only reviewer and make the disputed finding explicit before any fix.",
+    "evaluation": "Compare the response with required and forbidden criteria after the turn finishes; do not evaluate generic coding etiquette."
+  },
+  "cases": [
+    {
+      "id": "unresolved-finding",
+      "fixture": "fixtures/unresolved-finding",
+      "prompt": "Use $consensus-change-review to review the change described in SCENARIO.md. The initial reviewer disputes whether the finding is valid. Do not modify files until the finding is resolved.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Exchange with the original reviewer at most twice, then use a fresh tie-breaker if the material finding remains disputed.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Do not apply or silently reject an unresolved finding; ask the user to adjudicate it.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Modify the reviewed change before the finding is accepted",
+          "Treat disagreement as rejection without evidence",
+          "Allow the reviewer to edit implementation files"
+        ]
+      }
+    }
+  ]
+}

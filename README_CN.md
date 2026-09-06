@@ -23,6 +23,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 ## 选择工作流
 
 - 需要在行动前收敛一个有实质影响的取舍？使用 `grilling`；如果每个问题都需要全新的只读第二意见，使用 `review-gated-grilling`。
+- 需要不改变基础流程、增加有上限的 subagent 共识协商？使用对应的 `consensus-*` 变体。
 - 需要将已授权的代码变更分阶段并验证交付？使用 `implement-in-stages`；如果每个阶段还需要委托审查门，使用 `review-gated-implementation`。
 - 需要只读审查？测试用 `review-tests`，注释和 docstring 用 `improve-code-comments`；需要有轮次上限的审查修复循环时用 `review-loop`。
 - 需要定位本地历史？Codex JSONL 用 `codex-session-recovery`，OpenCode SQLite 会话用 `opencode-session-toolkit`。
@@ -68,6 +69,7 @@ git diff --check
 
 - [`grilling`](./skills/productivity/grilling/SKILL.md) — 通过依赖有序的问题收敛决策中的真实取舍。
 - [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — 每次提问前由全新、只读的 subagent 审核候选问题。
+- [`consensus-gated-grilling`](./skills/productivity/consensus-gated-grilling/SKILL.md) — 每次提问前通过有上限的 subagent 共识协商收敛决策。
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — 只读查找本地 Codex 会话，并生成 CLI 优先的恢复步骤。
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — 安全检查、搜索、诊断及导出本地 OpenCode SQLite 会话。
 
@@ -76,7 +78,9 @@ git diff --check
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — 在不修改可执行代码的前提下审查和改进注释与 docstring。
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — 以只读方式审查项目测试套件，返回按优先级排序、有证据支持的缺陷。
 - [`review-loop`](./skills/engineering/review-loop/SKILL.md) — 使用全新、只读审查子 Agent 运行有轮次上限的审查与修复循环。
+- [`consensus-review-loop`](./skills/engineering/consensus-review-loop/SKILL.md) — 为有争议的 finding 增加有上限的 subagent 共识协商。
 - [`delegated-change-review`](./skills/engineering/delegated-change-review/SKILL.md) — 为 `review-gated-implementation` 提供单轮委托审查门。
+- [`consensus-change-review`](./skills/engineering/consensus-change-review/SKILL.md) — 在修正前通过有上限的 subagent 共识协商解决争议 finding。
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — 将已授权变更拆成依赖有序的阶段，每阶段检查通过后审查并提交。
 - [`implement-in-stages`](./skills/engineering/implement-in-stages/SKILL.md) — 将已授权变更拆成依赖有序的阶段，每阶段检查通过后提交。
 
@@ -86,6 +90,16 @@ git diff --check
 | ----------------------------- | ----------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `grilling`                    | `review-gated-grilling` | 每个候选问题或允许的问题批次展示给用户前，增加全新、只读的 subagent 审查。 | 访谈和授权契约保持平行；reviewer 行为只放在 gated 变体中。                       |
 | `review-gated-implementation` | `implement-in-stages`   | 删除逐阶段和最终 delegated review，包括 review finding 与 outcome 报告。   | 阶段规划、边界、检查、提交及风险报告保持平行；review 行为只放在 gated skill 中。 |
+
+## 共识变体
+
+以下可选变体保持基础 skill 不变，只增加有上限的证据协商、必要时的新 reviewer 仲裁，以及无法解决时交给用户裁决。
+
+| 基础 skill | 变体 | 范围 |
+| --- | --- | --- |
+| `review-gated-grilling` | `consensus-gated-grilling` | 决策提问 |
+| `delegated-change-review` | `consensus-change-review` | 单次代码审查门 |
+| `review-loop` | `consensus-review-loop` | 审查与修复轮次 |
 
 当前目录中的所有 skill 都只能手动调用。每个 `SKILL.md` 都通过 `disable-model-invocation: true` 管理 Claude Code 与 Pi；配套的 `agents/openai.yaml` 则通过 `policy.allow_implicit_invocation: false` 管理 ChatGPT 与 Codex，两处字段必须保持同步。`review-gated-grilling` 与审查 skill 以 Codex 为主要运行环境，因为它们需要全新 subagent 机制；代码审查 skill 还会在标明的位置依赖内置 `$review-agent`。Reviewer 不编辑实现文件，也不直接向用户提问；代码 reviewer 是否运行测试或检查，由具体问题的审查策略决定。主 Agent 仍负责裁决发现并对面向用户的最终结果负责。
 
