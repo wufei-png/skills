@@ -1,0 +1,7 @@
+interface:
+  display_name: "Suno Create"
+  short_description: "Submit one authorized Suno Create safely"
+  default_prompt: "Use $suno-create to submit one reviewed and explicitly authorized Suno Create."
+
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Suno Music Explorer"
+  short_description: "Explore Suno through bounded listening experiments"
+  default_prompt: "Use $suno-music-explorer to explore a Suno direction within a clear Create limit."
+
+policy:
+  allow_implicit_invocation: false

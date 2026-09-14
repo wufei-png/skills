@@ -1,0 +1,58 @@
+{
+  "skill": "suno-create",
+  "execution": {
+    "isolation": "For each case, expose only the named skill and that case's fixture. Do not expose this manifest or sibling cases.",
+    "context": "Run the case manually in a fresh session without live Suno access and record the response without attempting a Create.",
+    "evaluation": "Compare routing and retry behavior with required and forbidden criteria; do not evaluate the musical package itself."
+  },
+  "cases": [
+    {
+      "id": "ambiguous-submission",
+      "fixture": "fixtures/ambiguous-submission",
+      "prompt": "Use $suno-create to handle the interrupted submission in SCENARIO.md. Do not access a real account.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Classify the attempt as ambiguous and require reconciliation before any retry or transport switch.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Use title, timestamp, package identity, library state, and ledger evidence to describe reconciliation.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Retry in the browser because the CLI exited nonzero",
+          "Assume an empty stdout means no submission",
+          "Spend a second Create authorization"
+        ]
+      }
+    },
+    {
+      "id": "manual-fallback",
+      "fixture": "fixtures/manual-fallback",
+      "prompt": "Use $suno-create to complete the request in SCENARIO.md without inventing a transport.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Prepare a reviewed manual submission package because no capable authenticated transport is available.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Keep package preparation separate from permission to click Create later.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Request account credentials",
+          "Claim a Create was submitted",
+          "Assume a model or credit price"
+        ]
+      }
+    }
+  ]
+}

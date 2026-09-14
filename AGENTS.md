@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-Installable skills live in `skills/productivity/` and `skills/engineering/`. Each kebab-case skill directory has a `SKILL.md` entrypoint and an `agents/openai.yaml` metadata file; add `scripts/`, `references/`, or local fixtures only when the skill needs them. Python regression suites are grouped by product under `tests/<skill-name>/`. `docs/archive/` preserves upstream or historical documentation, while `README.md` and `README_CN.md` are the current catalog. Keep license provenance in `LICENSES/`.
+Installable skills live in `skills/productivity/`, `skills/engineering/`, and `skills/creative/`. Each kebab-case skill directory has a `SKILL.md` entrypoint and an `agents/openai.yaml` metadata file; add `scripts/`, `references/`, or local fixtures only when the skill needs them. Python regression suites are grouped by product under `tests/<skill-name>/`. `docs/archive/` preserves upstream or historical documentation, while `README.md` and `README_CN.md` are the current catalog. Keep license provenance in `LICENSES/`.
 
 ## Build, Test, and Development Commands
 
@@ -13,10 +13,11 @@ NO_COLOR=1 npx -y skills@latest add . --list
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
+python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
 git diff --check
 ```
 
-The first command verifies catalog discovery. The Python commands check repository contracts and the two scripted skill products. `git diff --check` catches whitespace errors. CI runs the same checks on pushes and pull requests.
+The first command verifies catalog discovery. The Python commands check repository contracts and the scripted skill products. `git diff --check` catches whitespace errors. CI runs the same checks on pushes and pull requests.
 
 ## Coding Style & Naming Conventions
 

@@ -23,6 +23,8 @@ EXPECTED_SKILLS = {
     "review-gated-implementation",
     "review-loop",
     "review-tests",
+    "suno-create",
+    "suno-music-explorer",
 }
 VALID_PRIORITIES = {"P0", "P1", "P2", "P3"}
 
@@ -199,6 +201,13 @@ class SkillRepositoryContractTest(unittest.TestCase):
             with self.subTest(skill=relative):
                 for phrase in required_phrases:
                     self.assertIn(phrase, text)
+
+    def test_suno_explorer_declares_create_companion(self) -> None:
+        explorer = (
+            SKILLS_ROOT / "creative/suno-music-explorer/SKILL.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("`$suno-create`", explorer)
+        self.assertIn("install both skills", explorer)
 
     def test_manual_evaluation_cases_reference_real_fixtures(self) -> None:
         manifests = sorted(ROOT.glob("tests/**/cases.json"))

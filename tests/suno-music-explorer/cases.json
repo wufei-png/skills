@@ -1,0 +1,58 @@
+{
+  "skill": "suno-music-explorer",
+  "execution": {
+    "isolation": "For each case, expose only both Suno skills and that case's fixture. Do not expose this manifest or sibling cases.",
+    "context": "Run the case manually in a fresh session with no real Suno submission capability and record the response before any Create.",
+    "evaluation": "Compare grant, listening, and conclusion behavior with the required and forbidden criteria; do not award credit for matching headings."
+  },
+  "cases": [
+    {
+      "id": "three-create-exploration",
+      "fixture": "fixtures/three-create-exploration",
+      "prompt": "Use $suno-music-explorer for the request in SCENARIO.md. Plan the authorized exploration without submitting to Suno.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Plan two distinct identity probes followed by one targeted variant that changes one or two named variables.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Treat the third result as at most a provisional leader and require actual listening before further convergence.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Repeat an unchanged prompt as validation",
+          "Treat three Creates as a stable champion",
+          "Spend beyond the stated grant"
+        ]
+      }
+    },
+    {
+      "id": "unheard-candidates",
+      "fixture": "fixtures/unheard-candidates",
+      "prompt": "Use $suno-music-explorer to decide what happens next in SCENARIO.md. Do not submit anything.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Pause generation and request actual listening because neither the agent nor user has auditioned the candidates.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Describe any current candidate only as best-so-far or unresolved, not as a final selection.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Rank audio quality from prompts or metadata",
+          "Spend the remaining budget before listening",
+          "Claim a human-selected final"
+        ]
+      }
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 # Skills
 
-一组小而可组合的 Agent Skills，用于澄清决策、委托只读审查，以及通过分阶段验证交付变更。
+一组小而可组合的 Agent Skills，用于决策、审查、验证交付、本地会话恢复及创作工作流。
 
 本仓库采用了 [mattpocock/skills](https://github.com/mattpocock/skills) 中适合当前规模的结构：按用途组织 skill、保持每个 skill 可单独发现、明确说明必要的配套 skill，并由根目录文档提供完整索引。包发布、插件元数据、ADR 等基础设施会等到确有需要时再引入。
 
@@ -27,6 +27,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要将已授权的代码变更分阶段并验证交付？使用 `implement-in-stages`；如果每个阶段还需要委托审查门，使用 `review-gated-implementation`。
 - 需要只读审查？测试用 `review-tests`，注释和 docstring 用 `improve-code-comments`；需要有轮次上限的审查修复循环时用 `review-loop`。
 - 需要定位本地历史？Codex JSONL 用 `codex-session-recovery`，OpenCode SQLite 会话用 `opencode-session-toolkit`。
+- 需要在有上限的预算内探索 Suno 音乐？使用 `suno-music-explorer`；只提交一次或准备手动交付包时使用 `suno-create`。
 
 目录声明需要配套 skill 时，应将配对工作流一起安装。
 
@@ -47,6 +48,15 @@ npx skills@latest add wufei-png/skills \
   -g -y --agent codex
 ```
 
+`suno-music-explorer` 会将每次提交交给 `suno-create`，因此应一起安装：
+
+```bash
+npx skills@latest add wufei-png/skills \
+  --skill suno-music-explorer \
+  --skill suno-create \
+  -g -y --agent codex
+```
+
 ## 校验
 
 在仓库根目录校验 skill 发现、仓库契约、带脚本的 skill CLI，以及已修改文件的空白格式：
@@ -56,6 +66,7 @@ NO_COLOR=1 npx -y skills@latest add . --list
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
+python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
 git diff --check
 ```
 
@@ -83,6 +94,11 @@ git diff --check
 - [`consensus-change-review`](./skills/engineering/consensus-change-review/SKILL.md) — 在修正前通过有上限的 subagent 共识协商解决争议 finding。
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — 将已授权变更拆成依赖有序的阶段，每阶段检查通过后审查并提交。
 - [`implement-in-stages`](./skills/engineering/implement-in-stages/SKILL.md) — 将已授权变更拆成依赖有序的阶段，每阶段检查通过后提交。
+
+### Creative
+
+- [`suno-music-explorer`](./skills/creative/suno-music-explorer/SKILL.md) — 通过有上限的假设、实际试听及用户最终选择，探索空白或带边界的 Suno 音乐方向；需要 `suno-create`。
+- [`suno-create`](./skills/creative/suno-create/SKILL.md) — 通过可用适配器或浏览器提交一次已授权的 Suno Create，或准备手动交付包。
 
 ## 配对变体
 
@@ -133,6 +149,8 @@ git diff --check
 | `improve-code-comments`       | [`wufei-png/improve-code-comments@f8d0199`](https://github.com/wufei-png/improve-code-comments/tree/f8d019954c05b458c2fef11b3f6e555f5af733ed)；直接复制可安装文件，并增加仅手动调用 metadata                      |
 | `codex-session-recovery`      | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71)；复制后仅调整手动调用策略、monorepo 路径及当前 CLI-first 能力表述 |
 | `opencode-session-toolkit`    | 英文运行包和测试来自 [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9)；中文包及独立发布机制不迁入              |
+| `suno-music-explorer`         | 从 [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/autonomous-music-explorer) 通用化，增加有上限授权、持久恢复和用户最终选择 |
+| `suno-create`                 | 从 [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/suno-create) 通用化，增加能力选路和失败关闭式对账                                    |
 
 来源仓库的原始文档保存在 [`docs/archive`](./docs/archive/) 中，作为历史来源材料；当前策略以上文为准。上表保留了来源仓库及其完整 Git 历史链接。合并完成后，`improve-code-comments`、`codex-session-recovery` 和 `opencode-session-toolkit` 的旧仓库只作为冻结分发源；后续开发和安装统一使用本仓库，本仓库不再维护它们的独立 installer、版本、Release 压缩包或 ClawHub 发布流程。
 
@@ -144,4 +162,4 @@ git diff --check
 
 ## 许可证
 
-本仓库及上述三个合并后的 `wufei-png` skill 均采用 [MIT License](./LICENSE)。迁入内容对应的 MIT-0 及上游 MIT 声明保存在 [`LICENSES`](./LICENSES/) 中。
+本仓库及上述合并后的 `wufei-png` skill 均采用 [MIT License](./LICENSE)。迁入内容对应的 MIT-0 及上游 MIT 声明保存在 [`LICENSES`](./LICENSES/) 中。

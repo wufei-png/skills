@@ -2,7 +2,7 @@
 
 # Skills
 
-Small, composable agent skills for clarifying decisions, delegating read-only reviews, and shipping changes through verified stages.
+Small, composable agent skills for decisions, reviews, verified delivery, local-session recovery, and creative workflows.
 
 This repository borrows the useful shape of [mattpocock/skills](https://github.com/mattpocock/skills): skills are grouped by purpose, each skill is individually discoverable, required companions are stated explicitly, and the root documentation acts as the catalog. Package release machinery, plugin metadata, ADRs, and other infrastructure are intentionally omitted until this collection needs them.
 
@@ -27,6 +27,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - Need an authorized code change in verified stages? Use `implement-in-stages`; use `review-gated-implementation` when each stage also needs the delegated review gate.
 - Need a read-only audit? Use `review-tests` for tests or `improve-code-comments` for comments and docstrings; use `review-loop` for a bounded review-and-fix loop.
 - Need to locate prior local history? Use `codex-session-recovery` for Codex JSONL or `opencode-session-toolkit` for OpenCode SQLite sessions.
+- Need bounded Suno exploration? Use `suno-music-explorer`; use `suno-create` for one reviewed submission or a manual handoff.
 
 Install paired workflows together when the catalog says a companion is required.
 
@@ -47,6 +48,15 @@ npx skills@latest add wufei-png/skills \
   -g -y --agent codex
 ```
 
+`suno-music-explorer` delegates each submission to `suno-create`, so install them together:
+
+```bash
+npx skills@latest add wufei-png/skills \
+  --skill suno-music-explorer \
+  --skill suno-create \
+  -g -y --agent codex
+```
+
 ## Validate
 
 Validate catalog discovery, repository contracts, scripted skill CLIs, and changed-file whitespace from the repository root:
@@ -56,6 +66,7 @@ NO_COLOR=1 npx -y skills@latest add . --list
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
+python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
 git diff --check
 ```
 
@@ -83,6 +94,11 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 - [`consensus-change-review`](./skills/engineering/consensus-change-review/SKILL.md) — Resolve disputed findings with bounded subagent consensus before fixes.
 - [`review-gated-implementation`](./skills/engineering/review-gated-implementation/SKILL.md) — Execute an authorized change as dependency-ordered stages, reviewing and committing each after its checks pass.
 - [`implement-in-stages`](./skills/engineering/implement-in-stages/SKILL.md) — Execute an authorized change as dependency-ordered stages, committing each after its checks pass.
+
+### Creative
+
+- [`suno-music-explorer`](./skills/creative/suno-music-explorer/SKILL.md) — Explore blank or bounded Suno directions through capped hypotheses, real listening, and human final selection. Requires `suno-create`.
+- [`suno-create`](./skills/creative/suno-create/SKILL.md) — Submit one authorized Suno Create through an available adapter or browser, or prepare a manual handoff.
 
 ## Paired variants
 
@@ -133,6 +149,8 @@ These skill-backed projects remain in their own repositories because their skill
 | `improve-code-comments`       | [`wufei-png/improve-code-comments@f8d0199`](https://github.com/wufei-png/improve-code-comments/tree/f8d019954c05b458c2fef11b3f6e555f5af733ed); installable files copied directly, with manual-only metadata added                                                         |
 | `codex-session-recovery`      | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71); copied with manual-only metadata, monorepo paths, and current CLI-first capability wording                               |
 | `opencode-session-toolkit`    | English runtime and tests from [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9); the Chinese package and independent release machinery were intentionally not migrated |
+| `suno-music-explorer`         | Generalized from [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/autonomous-music-explorer) with bounded grants, durable recovery, and human final selection                       |
+| `suno-create`                 | Generalized from [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/suno-create) with capability-based routing and fail-closed reconciliation                                  |
 
 The original repository documentation is retained under [`docs/archive`](./docs/archive/) as historical source material; the current policy is documented above. The source repositories and their complete histories are linked above. `improve-code-comments`, `codex-session-recovery`, and `opencode-session-toolkit` are frozen distribution sources after this consolidation: future development and installation use this repository, with no independent installer, version, release archive, or ClawHub publishing flow maintained here.
 
@@ -144,4 +162,4 @@ The original repository documentation is retained under [`docs/archive`](./docs/
 
 ## License
 
-This repository, including the three consolidated `wufei-png` skills above, is released under the [MIT License](./LICENSE). Imported MIT-0 and upstream MIT notices are retained under [`LICENSES`](./LICENSES/).
+This repository, including the consolidated `wufei-png` skills above, is released under the [MIT License](./LICENSE). Imported MIT-0 and upstream MIT notices are retained under [`LICENSES`](./LICENSES/).
