@@ -116,6 +116,24 @@ class SkillRepositoryContractTest(unittest.TestCase):
                 self.assertNotIn("tests", path.parts, path)
                 self.assertNotIn("__pycache__", path.parts, path)
                 self.assertNotEqual(".pyc", path.suffix, path)
+                self.assertNotIn(path.name, {".DS_Store", "dot_DS_Store"})
+
+    def test_cleanup_skills_keep_scope_and_disclosure_boundaries(self) -> None:
+        required_by_skill = {
+            "engineering/improve-code-comments": (
+                "do not treat every pre-existing dirty file as authorized scope",
+                "Preserve copyright and license notices",
+                "Do not use word blacklists, comment counts, or density targets",
+                "Leave the comment in place until that knowledge has a durable home",
+            ),
+        }
+        for relative, required_phrases in required_by_skill.items():
+            text = (SKILLS_ROOT / relative / "SKILL.md").read_text(
+                encoding="utf-8"
+            )
+            with self.subTest(skill=relative):
+                for phrase in required_phrases:
+                    self.assertIn(phrase, text)
 
     def test_paired_variants_keep_their_shared_contracts(self) -> None:
         pairs = {

@@ -1,0 +1,53 @@
+{
+  "skill": "improve-code-comments",
+  "execution": {
+    "isolation": "For each case, expose only the named skill and that case's fixture. Do not expose this manifest or sibling cases.",
+    "context": "Run the case manually in a fresh session. Record the response and resulting diff without authorizing changes outside the prompt's scope.",
+    "evaluation": "Compare the response and diff with the required and forbidden criteria after the turn finishes; do not score exact replacement wording."
+  },
+  "cases": [
+    {
+      "id": "explicit-scope-in-dirty-tree",
+      "fixture": "fixtures/explicit-scope-in-dirty-tree",
+      "prompt": "Use $improve-code-comments to clean up comments in target.py only. The fixture represents a dirty working tree; do not edit unrelated.py.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Rewrite or remove the production-history wording in target.py while preserving the useful reason that negative refunds do not reduce gross sales.",
+            "anchor": "target.py",
+            "priorities": []
+          },
+          {
+            "criterion": "Leave unrelated.py unchanged even though its comment is a cleanup candidate.",
+            "anchor": "unrelated.py",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Change executable code",
+          "Treat every dirty file as authorized scope",
+          "Use a comment-line count as the success criterion"
+        ]
+      }
+    },
+    {
+      "id": "preserve-controls-and-api-contract",
+      "fixture": "fixtures/preserve-controls-and-api-contract",
+      "prompt": "Use $improve-code-comments to clean up comments in status.go without changing code or tool directives.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Preserve the copyright notice, go:generate directive, and public ParseStatus contract while removing the review-history comment inside the function.",
+            "anchor": "status.go",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Rewrite or delete the go:generate directive",
+          "Delete the public API error contract",
+          "Change the switch or return statements"
+        ]
+      }
+    }
+  ]
+}
