@@ -27,6 +27,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要将已授权的代码变更分阶段并验证交付？使用 `implement-in-stages`；如果每个阶段还需要委托审查门，使用 `review-gated-implementation`。
 - 需要只读审查？测试用 `review-tests`，注释和 docstring 用 `improve-code-comments`；需要有轮次上限的审查修复循环时用 `review-loop`。
 - 需要定位本地历史？Codex JSONL 用 `codex-session-recovery`，OpenCode SQLite 会话用 `opencode-session-toolkit`。
+- 需要准备面向用户交付的成品？使用 `sanitize-artifacts` 清除提示词及生产过程残留，同时保留受众需要的信息。
 - 需要在有上限的预算内探索 Suno 音乐？使用 `suno-music-explorer`；只提交一次或准备手动交付包时使用 `suno-create`。
 
 目录声明需要配套 skill 时，应将配对工作流一起安装。
@@ -83,6 +84,7 @@ git diff --check
 - [`consensus-gated-grilling`](./skills/productivity/consensus-gated-grilling/SKILL.md) — 每次提问前通过有上限的 subagent 共识协商收敛决策。
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — 只读查找本地 Codex 会话，并生成 CLI 优先的恢复步骤。
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — 安全检查、搜索、诊断及导出本地 OpenCode SQLite 会话。
+- [`sanitize-artifacts`](./skills/productivity/sanitize-artifacts/SKILL.md) — 清除已选交付物中的提示词、对话和生产过程残留，同时保留受众需要的实质信息。
 
 ### Engineering
 
@@ -147,6 +149,7 @@ git diff --check
 | `delegated-change-review`     | `SKILL.md` 来自本地用户 skill 快照，SHA-256 `e6266516eacc80eb6fdd1859a0d52e457edb2fa3f2c499655a713fd2e92fea44`；UI 元数据已移除独立提交请求                                                                       |
 | `review-gated-implementation` | 本地用户 skill 快照，SHA-256 `3e9f33b12e135d8491a0d31b70413c576f4ba0582c90713894e646c89d31608a`                                                                                                                   |
 | `improve-code-comments`       | [`wufei-png/improve-code-comments@f8d0199`](https://github.com/wufei-png/improve-code-comments/tree/f8d019954c05b458c2fef11b3f6e555f5af733ed)；直接复制可安装文件，并增加仅手动调用 metadata。其纯文本清理规则改编自 [`vintasoftware/vinta-ai-workflows@f80a8e0`：`skills/vinta-derive-skills/resources/foundation-skills/deslop-comments/SKILL.md`](https://github.com/vintasoftware/vinta-ai-workflows/blob/f80a8e08f3df73ac6ecbae747733b95f440d94a5/skills/vinta-derive-skills/resources/foundation-skills/deslop-comments/SKILL.md)，上游 MIT 声明保存在 `LICENSES/`。 |
+| `sanitize-artifacts`          | 基于 [`kotek-7/dotfiles@bdad3ce`：`dot_agents/skills/sanitize-artifacts/SKILL.md`](https://github.com/kotek-7/dotfiles/blob/bdad3cefc3fb96842ecb4c6b4ae77d2f40ae1c0b/dot_agents/skills/sanitize-artifacts/SKILL.md) 大幅修订；补充了成品范围、隐藏内容检查、保留规则和当前仅手动调用 metadata。该版本的来源仓库中未发现许可证文件。 |
 | `codex-session-recovery`      | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71)；复制后仅调整手动调用策略、monorepo 路径及当前 CLI-first 能力表述 |
 | `opencode-session-toolkit`    | 英文运行包和测试来自 [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9)；中文包及独立发布机制不迁入              |
 | `suno-music-explorer`         | 从 [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/autonomous-music-explorer) 通用化，增加有上限授权、持久恢复和用户最终选择 |

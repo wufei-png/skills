@@ -1,0 +1,7 @@
+interface:
+  display_name: "Sanitize Artifacts"
+  short_description: "Remove production residue from deliverable artifacts"
+  default_prompt: "Use $sanitize-artifacts to prepare this artifact for delivery without exposing production residue."
+
+policy:
+  allow_implicit_invocation: false

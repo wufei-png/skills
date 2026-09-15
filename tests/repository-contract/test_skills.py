@@ -23,6 +23,7 @@ EXPECTED_SKILLS = {
     "review-gated-implementation",
     "review-loop",
     "review-tests",
+    "sanitize-artifacts",
     "suno-create",
     "suno-music-explorer",
 }
@@ -125,6 +126,12 @@ class SkillRepositoryContractTest(unittest.TestCase):
                 "Preserve copyright and license notices",
                 "Do not use word blacklists, comment counts, or density targets",
                 "Leave the comment in place until that knowledge has a durable home",
+            ),
+            "productivity/sanitize-artifacts": (
+                "Do not treat every dirty or recently viewed file as authorized scope",
+                "This is not a general security, malware, or data-loss-prevention audit",
+                "required disclosures",
+                "available tools could not inspect",
             ),
         }
         for relative, required_phrases in required_by_skill.items():

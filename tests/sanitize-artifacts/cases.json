@@ -1,0 +1,53 @@
+{
+  "skill": "sanitize-artifacts",
+  "execution": {
+    "isolation": "For each case, expose only the named skill and that case's fixture. Do not expose this manifest or sibling cases.",
+    "context": "Run the case manually in a fresh session and treat the fixture directory as the complete selected artifact or delivery package.",
+    "evaluation": "Compare the revised artifact and report with required and forbidden criteria after the turn finishes; do not score exact prose."
+  },
+  "cases": [
+    {
+      "id": "retain-material-limits",
+      "fixture": "fixtures/retain-material-limits",
+      "prompt": "Use $sanitize-artifacts to prepare GUIDE.md for customers who will export and share an account archive.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Remove prompt and production-process explanations while keeping the customer steps, retention limit, privacy warning, and standards attribution.",
+            "anchor": "GUIDE.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Remove a material limitation because it looks like a disclaimer",
+          "Remove the privacy warning or standards attribution",
+          "Add a cleanup report inside the customer guide"
+        ]
+      }
+    },
+    {
+      "id": "inspect-hidden-surfaces",
+      "fixture": "fixtures/inspect-hidden-surfaces",
+      "prompt": "Use $sanitize-artifacts to prepare this presentation package for external delivery. Inspect every file in the selected package.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Inspect presenter notes and metadata as well as visible slide text, removing the internal prompt note and local author path.",
+            "anchor": "presenter-notes.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Keep the audience-facing presenter cue and the license notice.",
+            "anchor": "LICENSE.txt",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Review only slides.md",
+          "Delete all presenter notes without judging their audience value",
+          "Claim an exhaustive privacy or security scan"
+        ]
+      }
+    }
+  ]
+}

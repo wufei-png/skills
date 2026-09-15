@@ -27,6 +27,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - Need an authorized code change in verified stages? Use `implement-in-stages`; use `review-gated-implementation` when each stage also needs the delegated review gate.
 - Need a read-only audit? Use `review-tests` for tests or `improve-code-comments` for comments and docstrings; use `review-loop` for a bounded review-and-fix loop.
 - Need to locate prior local history? Use `codex-session-recovery` for Codex JSONL or `opencode-session-toolkit` for OpenCode SQLite sessions.
+- Need to prepare a user-facing artifact for delivery? Use `sanitize-artifacts` to remove prompt and production residue while preserving audience requirements.
 - Need bounded Suno exploration? Use `suno-music-explorer`; use `suno-create` for one reviewed submission or a manual handoff.
 
 Install paired workflows together when the catalog says a companion is required.
@@ -83,6 +84,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 - [`consensus-gated-grilling`](./skills/productivity/consensus-gated-grilling/SKILL.md) — Resolve decisions with bounded subagent consensus before asking each question.
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — Find local Codex sessions read-only and produce CLI-first recovery steps.
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — Inspect, search, diagnose, and export local OpenCode SQLite sessions safely.
+- [`sanitize-artifacts`](./skills/productivity/sanitize-artifacts/SKILL.md) — Remove prompt, conversation, and production residue from selected deliverables without hiding material audience information.
 
 ### Engineering
 
@@ -147,6 +149,7 @@ These skill-backed projects remain in their own repositories because their skill
 | `delegated-change-review`     | `SKILL.md` from local user-skill snapshot, SHA-256 `e6266516eacc80eb6fdd1859a0d52e457edb2fa3f2c499655a713fd2e92fea44`; UI metadata updated to remove the standalone commit request                                                                                        |
 | `review-gated-implementation` | Local user-skill snapshot, SHA-256 `3e9f33b12e135d8491a0d31b70413c576f4ba0582c90713894e646c89d31608a`                                                                                                                                                                     |
 | `improve-code-comments`       | [`wufei-png/improve-code-comments@f8d0199`](https://github.com/wufei-png/improve-code-comments/tree/f8d019954c05b458c2fef11b3f6e555f5af733ed); installable files copied directly, with manual-only metadata added. Its plain-language cleanup rules are adapted from [`vintasoftware/vinta-ai-workflows@f80a8e0`: `skills/vinta-derive-skills/resources/foundation-skills/deslop-comments/SKILL.md`](https://github.com/vintasoftware/vinta-ai-workflows/blob/f80a8e08f3df73ac6ecbae747733b95f440d94a5/skills/vinta-derive-skills/resources/foundation-skills/deslop-comments/SKILL.md), with the upstream MIT notice retained in `LICENSES/`. |
+| `sanitize-artifacts`          | Substantially revised from [`kotek-7/dotfiles@bdad3ce`: `dot_agents/skills/sanitize-artifacts/SKILL.md`](https://github.com/kotek-7/dotfiles/blob/bdad3cefc3fb96842ecb4c6b4ae77d2f40ae1c0b/dot_agents/skills/sanitize-artifacts/SKILL.md), with artifact scope, hidden-content checks, preservation rules, and current manual-only metadata added. No license file was present in the source repository at this revision. |
 | `codex-session-recovery`      | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71); copied with manual-only metadata, monorepo paths, and current CLI-first capability wording                               |
 | `opencode-session-toolkit`    | English runtime and tests from [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9); the Chinese package and independent release machinery were intentionally not migrated |
 | `suno-music-explorer`         | Generalized from [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/autonomous-music-explorer) with bounded grants, durable recovery, and human final selection                       |

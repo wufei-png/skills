@@ -1,0 +1,3 @@
+author=Internal Drafting Team
+source_path=/Users/example/secret-client/reliability-review.pptx
+title=Quarterly reliability review
