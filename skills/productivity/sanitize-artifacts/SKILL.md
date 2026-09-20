@@ -25,7 +25,7 @@ Classify each candidate item by its value to the audience:
 
 Remove phrases such as "as requested", "the prompt says", or "unlike the previous version" when they only explain the production process. Do not copy a prompt example into the artifact unless the audience needs that example.
 
-Constraints are not automatically residue. Preserve material assumptions, compatibility limits, safety or legal warnings, citations, copyright and license notices, attribution, provenance, required disclosures, accessibility content, and anything else the audience needs for correct or safe use. Remove unintended credentials or personal or confidential data that is clearly within the selected artifact, but do not claim an exhaustive security or privacy scan.
+Constraints are not automatically residue. Preserve assumptions, compatibility limits, safety or legal warnings, citations, copyright and license notices, attribution, provenance, required disclosures, accessibility content, and anything else the audience needs for correct or safe use. Keep purely internal implementation or production constraints out of the deliverable. Remove only clearly accidental credentials or personal or confidential data that the audience does not need; when intent is uncertain, preserve it and report the uncertainty or ask for confirmation. Do not claim an exhaustive security or privacy scan.
 
 ## Inspect the Whole Artifact
 
@@ -37,6 +37,6 @@ Constraints are not automatically residue. Preserve material assumptions, compat
 
 ## Output
 
-For text returned in chat, put the revised artifact first. Add a change summary only when the user asks for one.
+For text returned in chat, put the revised artifact first; do not preface it with cleanup or process commentary. Add a change summary only when the user asks for one.
 
 For files, save the deliverable in the requested location. Otherwise, update the selected text source or create the delivery copy required for safe format-specific cleanup. Report changed paths, checks performed, and inspection limits outside the artifact. Do not modify unrelated files.
