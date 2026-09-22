@@ -584,6 +584,7 @@ def matches_dates(
 
 
 def score_record(record: MutableRecord, cwd: str | None, query: str | None) -> None:
+    """Rank candidates within one search; weighted scores can exceed 100."""
     score = 0
     reasons: list[str] = list(record.matching_reasons)
     has_primary_evidence = "transcript" in record.evidence_types
@@ -639,7 +640,7 @@ def serialize_record(
         "first_user_prompt": first_prompt,
         "last_user_prompt": last_prompt,
         "matching_reasons": record.matching_reasons,
-        "confidence": record.score,
+        "match_score": record.score,
         "resume_command": f"codex resume {record.thread_id}",
         "fork_command": f"codex fork {record.thread_id}",
         "warnings": record.warnings,
@@ -774,7 +775,7 @@ def format_table(result: dict[str, Any]) -> str:
                 f"thread_id: {record['thread_id']}",
                 f"thread_name: {record['thread_name'] or ''}",
                 f"aliases: {', '.join(record['aliases']) or 'none'}",
-                f"confidence: {record['confidence']}",
+                f"match_score: {record['match_score']}",
                 f"flags: {', '.join(flags)}",
                 f"cwd: {record['cwd'] or ''}",
                 f"started_at: {record['started_at'] or ''}",

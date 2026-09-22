@@ -377,16 +377,19 @@ class ScanCodexSessionsTest(unittest.TestCase):
         session_index = self.codex_home / "session_index.jsonl"
         with session_index.open("a", encoding="utf-8") as handle:
             handle.write(
-                '\n{"id":"stale-index-only","cwd":"/Users/example/project",'
+                '\n{"id":"stale-index-only","thread_name":"keepsake index",'
+                '"cwd":"/Users/example/project",'
                 '"updated_at":"2026-06-12T14:00:00+08:00",'
                 '"path":"sessions/missing/rollout-2026-06-12T14-00-00-stale-index-only.jsonl"}\n'
             )
 
-        result = self.scan()
+        result = self.scan(query="keepsake")
         stale = next(record for record in result["records"] if record["thread_id"] == "stale-index-only")
         active = next(record for record in result["records"] if record["thread_id"] == "active-main")
 
-        self.assertLess(stale["confidence"], active["confidence"])
+        self.assertLess(stale["match_score"], active["match_score"])
+        self.assertIn("query match", stale["matching_reasons"])
+        self.assertIn("query match", active["matching_reasons"])
         self.assertIn("index-only evidence", "\n".join(stale["matching_reasons"] + stale["warnings"]))
 
     def test_index_only_naive_timestamp_does_not_crash_sorting(self):
@@ -462,11 +465,42 @@ class ScanCodexSessionsTest(unittest.TestCase):
         self.assertEqual("codex fork active-main", active["fork_command"])
         self.assertNotIn("deep_link", active)
 
-    def test_table_output_mentions_confidence_and_commands(self):
-        result = self.scan()
+    def test_cli_json_exposes_uncapped_integer_match_score_without_old_field(self):
+        completed = self.run_cli(
+            "--codex-home", str(self.codex_home),
+            "--cwd", PROJECT_CWD,
+            "--query", "keepsake",
+            "--timezone", "Asia/Shanghai",
+            "--format", "json",
+        )
+
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        records = json.loads(completed.stdout)["records"]
+        self.assertEqual(["active-main"], [record["thread_id"] for record in records])
+        record = records[0]
+        self.assertEqual(105, record["match_score"])
+        self.assertIs(type(record["match_score"]), int)
+        self.assertNotIn("confidence", record)
+        self.assertEqual(
+            [
+                "cwd exact match",
+                "active source",
+                "main session",
+                "query match",
+                "has user prompts",
+            ],
+            record["matching_reasons"],
+        )
+        self.assertTrue(record["source_paths"])
+        self.assertEqual("codex resume active-main", record["resume_command"])
+        self.assertEqual("codex fork active-main", record["fork_command"])
+
+    def test_table_output_mentions_match_score_and_commands(self):
+        result = self.scan(query="keepsake")
         table = self.scanner.format_table(result)
         self.assertIn("active-main", table)
-        self.assertIn("confidence", table.lower())
+        self.assertIn("match_score: 105", table)
+        self.assertNotIn("confidence", table.lower())
         self.assertIn("codex resume active-main", table)
 
     def test_table_output_includes_recovery_details_and_prompt_snippets(self):
