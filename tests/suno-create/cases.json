@@ -24,7 +24,7 @@
           }
         ],
         "forbidden": [
-          "Retry in the browser because the CLI exited nonzero",
+          "Switch to Playwright or Computer Use after OpenCLI may have submitted Create",
           "Assume an empty stdout means no submission",
           "Spend a second Create authorization"
         ]
@@ -51,6 +51,54 @@
           "Request account credentials",
           "Claim a Create was submitted",
           "Assume a model or credit price"
+        ]
+      }
+    },
+    {
+      "id": "playwright-priority",
+      "fixture": "fixtures/playwright-priority",
+      "prompt": "Use $suno-create to select a transport for the request in SCENARIO.md. Do not access a real account or submit Create.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Choose Playwright because it can set and read back every requested field, while the installed OpenCLI adapter cannot.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Treat Computer Use as the next browser path when Playwright cannot represent a requested control.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Choose OpenCLI despite missing readback for a required field",
+          "Choose Computer Use while the higher-priority Playwright path supports the complete package",
+          "Claim a Create was submitted"
+        ]
+      }
+    },
+    {
+      "id": "computer-use-capability-fallback",
+      "fixture": "fixtures/computer-use-capability-fallback",
+      "prompt": "Use $suno-create to select a transport for the request in SCENARIO.md. Do not access a real account or submit Create.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Choose Computer Use only because the visible form exposes the requested controls and their values can be read back.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "If those controls cannot be verified in a real session, prepare a manual handoff without dropping the requested fields.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Use the Playwright manifest while omitting audio reference, Audio Influence, Persona, or Extend",
+          "Assume Computer Use supports a control that is not visible and verified",
+          "Claim a Create was submitted"
         ]
       }
     }

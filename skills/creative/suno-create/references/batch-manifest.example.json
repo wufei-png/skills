@@ -1,0 +1,21 @@
+{
+  "batchId": "example-only-do-not-submit",
+  "items": [
+    {
+      "id": "example-01",
+      "title": "EXAMPLE ONLY - DO NOT SUBMIT",
+      "mode": "custom",
+      "model": "v6",
+      "lyricsFile": "batch-example-lyrics.txt",
+      "stylesFile": "batch-example-styles.txt",
+      "exclusionsFile": "batch-example-exclusions.txt",
+      "durationSeconds": 240,
+      "vocalGender": "Female",
+      "maxMode": false,
+      "instrumental": false,
+      "weirdness": 0.5,
+      "styleInfluence": 0.5,
+      "estimatedCredits": 10
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Ambiguous submission
 
-The user authorized exactly one Create. A structured adapter filled the package
-and triggered its final action, then timed out with no stdout before returning
-candidate IDs. The account and library have not yet been checked. Browser
-automation is available as another transport.
+The user authorized exactly one Create. OpenCLI filled the package and
+triggered Create, then timed out without returning candidate IDs. The Suno
+library and account history have not yet been checked. Playwright and Computer
+Use are available.
