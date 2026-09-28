@@ -401,7 +401,22 @@ async function setModel(page, model) {
   if (await readModel(page) !== model) throw new Error('Model did not read back as ' + model + '.');
 }
 
+// The Duration row offers Custom and Auto. Only Custom exposes the seconds
+// input and slider, so select it before reading or writing the duration.
+async function selectCustomDuration(page) {
+  const row = await choiceGroup(page, 'Duration', ['Custom', 'Auto']);
+  const mode = await readChoice(row, 'Duration', ['Custom', 'Auto']);
+  if (mode !== 'Custom') {
+    await row.getByRole('button', { name: 'Custom', exact: true }).click();
+    await page.waitForTimeout(250);
+  }
+  if (await readChoice(row, 'Duration', ['Custom', 'Auto']) !== 'Custom') {
+    throw new Error('Duration did not read back as Custom; refusing to submit.');
+  }
+}
+
 async function durationControls(page) {
+  await selectCustomDuration(page);
   const input = await oneVisible(page.locator('input[aria-label="Duration"]'), 'Duration input');
   const slider = await oneVisible(page.locator('[role="slider"][aria-label="Duration"]'), 'Duration slider');
   return { input, slider };
