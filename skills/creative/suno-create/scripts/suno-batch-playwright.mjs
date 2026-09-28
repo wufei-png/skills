@@ -23,6 +23,7 @@ const GENERATE_PATH = '/api/generate/v2-web/';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SELECTED_CLASS = 'hxc-btn-variant-standard-legacy';
 const UNSELECTED_CLASS = 'hxc-btn-variant-tertiary-legacy';
+const FORM_READY_TIMEOUT_MS = Number(process.env.SUNO_FORM_READY_TIMEOUT_MS || 30_000);
 
 export function parseDuration(value) {
   const match = /^(\d+):([0-5]\d)$/.exec(String(value).trim());
@@ -301,6 +302,20 @@ async function setInstrumental(page, target) {
   }
   if (await readInstrumental(page) !== target) {
     throw new Error('Instrumental did not read back as ' + (target ? 'On' : 'Off') + '.');
+  }
+}
+
+export async function waitForCreateForm(page, mode, timeoutMs = FORM_READY_TIMEOUT_MS) {
+  const name = mode === 'custom' ? 'Advanced' : 'Simple';
+  const tab = page.getByRole('tab', { name, exact: true });
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (await visible(tab).count() === 1) return;
+    if (Date.now() >= deadline) {
+      throw new Error('Suno Create form did not render the ' + name + ' mode tab within ' +
+        timeoutMs + ' ms after navigation; the page layout may have changed.');
+    }
+    await page.waitForTimeout(250);
   }
 }
 
@@ -885,7 +900,7 @@ async function main() {
     const context = await findAuthenticatedContext(browser);
     page = await context.newPage();
     await page.goto(SUNO_CREATE, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(500);
+    await waitForCreateForm(page, manifest.items[0].mode);
 
     if (options['prepare-only']) {
       const results = [];
