@@ -334,15 +334,21 @@ export async function setInstrumental(page, target, mode) {
 
 export async function waitForCreateForm(page, mode, timeoutMs = FORM_READY_TIMEOUT_MS) {
   const name = mode === 'custom' ? 'Advanced' : 'Simple';
-  const tab = page.getByRole('tab', { name, exact: true });
   const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    if (await visible(tab).count() === 1) return;
-    if (Date.now() >= deadline) {
-      throw new Error('Suno Create form did not render the ' + name + ' mode tab within ' +
-        timeoutMs + ' ms after navigation; the page layout may have changed.');
+  const notReady = (what) => new Error('Suno Create form did not render ' + what + ' within ' +
+    timeoutMs + ' ms after navigation; the page layout may have changed.');
+  // The mode tab paints well before the rest of the form, so treat the model
+  // picker, which every package needs, as the signal that the form is usable.
+  const stages = [
+    ['the ' + name + ' mode tab', page.getByRole('tab', { name, exact: true })],
+    ['the model picker', page.locator('button[aria-haspopup="menu"]').filter({ hasText: /^v[0-9]/ })],
+  ];
+  for (const [what, locator] of stages) {
+    for (;;) {
+      if (await visible(locator).count() === 1) break;
+      if (Date.now() >= deadline) throw notReady(what);
+      await page.waitForTimeout(250);
     }
-    await page.waitForTimeout(250);
   }
 }
 
