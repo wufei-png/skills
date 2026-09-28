@@ -262,6 +262,12 @@ async function setChoice(page, label, options, target) {
   return after;
 }
 
+export async function readLyricsText(page) {
+  const editor = page.locator('[aria-label="Lyrics editor"][contenteditable="true"]');
+  if (await visible(editor).count() !== 1) return '';
+  return String(await editor.innerText());
+}
+
 async function instrumentalControl(page) {
   const candidates = [
     ['checkbox', page.getByRole('checkbox', { name: 'Instrumental', exact: true })],
@@ -272,15 +278,23 @@ async function instrumentalControl(page) {
   for (const [role, locator] of candidates) {
     if (await visible(locator).count()) matches.push({ role, locator });
   }
-  if (matches.length !== 1) {
-    throw new Error('Official Instrumental control is missing or ambiguous; refusing to submit.');
+  if (matches.length > 1) {
+    throw new Error('Official Instrumental control is ambiguous; refusing to submit.');
   }
+  if (matches.length === 0) return null;
   const { role, locator } = matches[0];
   return { role, locator: await oneVisible(locator, 'Instrumental control') };
 }
 
+// The current Create page exposes no Instrumental toggle in Advanced mode. The
+// lyrics field carries that meaning instead: existing lyrics make the track
+// vocal, and an empty field makes it instrumental. readLyricsText returns ''
+// when the editor has not been filled yet, so this reads the live control when
+// one exists and otherwise reports whether the package is unambiguously vocal.
 async function readInstrumental(page) {
-  const { role, locator } = await instrumentalControl(page);
+  const control = await instrumentalControl(page);
+  if (!control) return (await readLyricsText(page)).trim().length > 0 ? false : null;
+  const { role, locator } = control;
   if (role === 'checkbox') return locator.isChecked();
   const attributes = await locator.evaluate(element => ({
     ariaPressed: element.getAttribute('aria-pressed'),
@@ -293,8 +307,18 @@ async function readInstrumental(page) {
   return selected;
 }
 
-async function setInstrumental(page, target) {
-  const { role, locator } = await instrumentalControl(page);
+export async function setInstrumental(page, target) {
+  const control = await instrumentalControl(page);
+  if (!control) {
+    const current = await readInstrumental(page);
+    if (current === target) return;
+    if (current == null) {
+      throw new Error('The Create page has no Instrumental control and the lyrics field is empty; ' +
+        'the resulting track would be instrumental. Refusing to submit.');
+    }
+    throw new Error('This Create page has no Instrumental control, so the requested state cannot be set.');
+  }
+  const { role, locator } = control;
   const before = await readInstrumental(page);
   if (before !== target) {
     if (role === 'checkbox') await locator.setChecked(target);
