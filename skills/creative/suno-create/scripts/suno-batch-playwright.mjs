@@ -291,9 +291,12 @@ async function instrumentalControl(page) {
 // vocal, and an empty field makes it instrumental. readLyricsText returns ''
 // when the editor has not been filled yet, so this reads the live control when
 // one exists and otherwise reports whether the package is unambiguously vocal.
-async function readInstrumental(page) {
+async function readInstrumental(page, mode) {
   const control = await instrumentalControl(page);
-  if (!control) return (await readLyricsText(page)).trim().length > 0 ? false : null;
+  if (!control) {
+    if (mode === 'simple') return false;
+    return (await readLyricsText(page)).trim().length > 0 ? false : null;
+  }
   const { role, locator } = control;
   if (role === 'checkbox') return locator.isChecked();
   const attributes = await locator.evaluate(element => ({
@@ -307,10 +310,10 @@ async function readInstrumental(page) {
   return selected;
 }
 
-export async function setInstrumental(page, target) {
+export async function setInstrumental(page, target, mode) {
   const control = await instrumentalControl(page);
   if (!control) {
-    const current = await readInstrumental(page);
+    const current = await readInstrumental(page, mode);
     if (current === target) return;
     if (current == null) {
       throw new Error('The Create page has no Instrumental control and the lyrics field is empty; ' +
@@ -319,12 +322,12 @@ export async function setInstrumental(page, target) {
     throw new Error('This Create page has no Instrumental control, so the requested state cannot be set.');
   }
   const { role, locator } = control;
-  const before = await readInstrumental(page);
+  const before = await readInstrumental(page, mode);
   if (before !== target) {
     if (role === 'checkbox') await locator.setChecked(target);
     else await locator.click();
   }
-  if (await readInstrumental(page) !== target) {
+  if (await readInstrumental(page, mode) !== target) {
     throw new Error('Instrumental did not read back as ' + (target ? 'On' : 'Off') + '.');
   }
 }
@@ -560,7 +563,6 @@ async function readPreSubmitState(page, item) {
 export async function prepareSunoCreateForm(page, item) {
   await setMode(page, item.mode);
   await openMoreOptions(page);
-  await setInstrumental(page, false);
   await setModel(page, item.model);
   if (item.mode === 'custom') {
     await fillField(page, '[aria-label="Lyrics editor"][contenteditable="true"]', item.lyrics, 'lyrics', true);
@@ -569,6 +571,9 @@ export async function prepareSunoCreateForm(page, item) {
   } else {
     await fillField(page, 'textarea[rows="1"]:not([data-cowrite-input])', item.prompt, 'simple prompt');
   }
+  // Read after the content is set: without an Instrumental control, filled
+  // lyrics are what makes this package vocal instead of instrumental.
+  await setInstrumental(page, false, item.mode);
   const title = await oneVisible(page.locator('input[placeholder="Song Title (Optional)"]'), 'song title input');
   await title.fill(item.title);
   if (String(await title.evaluate(element => element.value)) !== item.title) {
