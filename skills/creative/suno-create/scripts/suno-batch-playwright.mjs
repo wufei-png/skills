@@ -364,15 +364,25 @@ async function setMode(page, mode) {
   }
 }
 
-async function openMoreOptions(page) {
-  let maxLabel = visible(page.getByText('Max Mode', { exact: true }));
-  if (await maxLabel.count() === 0) {
-    const more = await oneVisible(page.getByRole('button', { name: /More Options/ }), 'More Options');
-    await more.click();
-    await page.waitForTimeout(200);
-    maxLabel = visible(page.getByText('Max Mode', { exact: true }));
+async function openMoreOptions(page, timeoutMs = FORM_READY_TIMEOUT_MS) {
+  const toggle = page.locator('div[role="button"][aria-expanded]')
+    .filter({ hasText: /^\s*More Options\s*$/ })
+    .first();
+  const custom = page.getByRole('button', { name: 'Custom', exact: true });
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (await visible(toggle).count() === 1 && await visible(custom).count() === 1) return;
+    if (Date.now() >= deadline) {
+      throw new Error('The Create options section did not expose the Duration row within ' +
+        timeoutMs + ' ms; the page layout may have changed.');
+    }
+    if (await visible(toggle).count() === 1 &&
+        await toggle.getAttribute('aria-expanded') === 'false') {
+      await toggle.scrollIntoViewIfNeeded().catch(() => {});
+      await toggle.click({ force: true });
+    }
+    await page.waitForTimeout(400);
   }
-  if (await maxLabel.count() !== 1) throw new Error('Official Max Mode control is not uniquely visible.');
 }
 
 async function modelPicker(page) {
