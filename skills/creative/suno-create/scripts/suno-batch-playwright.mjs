@@ -253,7 +253,7 @@ async function readChoice(row, label, options) {
 
 async function setChoice(page, label, options, target) {
   const row = await choiceGroup(page, label, options);
-  const before = await readChoice(row, label, options);
+  const before = await readSelectedOption(row, label, options);
   if (before !== target) {
     await row.getByRole('button', { name: target, exact: true }).click();
   }
@@ -365,21 +365,20 @@ async function setMode(page, mode) {
 }
 
 async function openMoreOptions(page, timeoutMs = FORM_READY_TIMEOUT_MS) {
+  const ready = page.getByRole('button', { name: 'Auto', exact: true });
   const toggle = page.locator('div[role="button"][aria-expanded]')
-    .filter({ hasText: /^\s*More Options\s*$/ })
+    .filter({ hasText: /More Options/ })
     .first();
-  const custom = page.getByRole('button', { name: 'Custom', exact: true });
-  const deadline = Date.now() + timeoutMs;
+  const deadline = Date.now() + Math.max(timeoutMs, 60_000);
   for (;;) {
-    if (await visible(toggle).count() === 1 && await visible(custom).count() === 1) return;
+    if (await visible(ready).count() === 1) return;
+    if (await visible(toggle).count() === 1) {
+      await toggle.scrollIntoViewIfNeeded().catch(() => {});
+      await toggle.click({ force: true }).catch(() => {});
+    }
     if (Date.now() >= deadline) {
       throw new Error('The Create options section did not expose the Duration row within ' +
-        timeoutMs + ' ms; the page layout may have changed.');
-    }
-    if (await visible(toggle).count() === 1 &&
-        await toggle.getAttribute('aria-expanded') === 'false') {
-      await toggle.scrollIntoViewIfNeeded().catch(() => {});
-      await toggle.click({ force: true });
+        Math.max(timeoutMs, 60_000) + ' ms; the page layout may have changed.');
     }
     await page.waitForTimeout(400);
   }
@@ -413,27 +412,50 @@ async function setModel(page, model) {
 
 // The Duration row offers Custom and Auto. Only Custom exposes the seconds
 // input and slider, so select it before reading or writing the duration.
-async function selectCustomDuration(page) {
-  const row = await choiceGroup(page, 'Duration', ['Custom', 'Auto']);
-  const mode = await readChoice(row, 'Duration', ['Custom', 'Auto']);
-  if (mode !== 'Custom') {
-    await row.getByRole('button', { name: 'Custom', exact: true }).click();
+async function selectCustomDuration(page, timeoutMs = FORM_READY_TIMEOUT_MS) {
+  const input = page.locator('input[aria-label="Duration"]');
+  const custom = page.getByRole('button', { name: 'Custom', exact: true });
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (await visible(input).count() === 1) return;
+    if (await visible(custom).count() === 1) {
+      // The pair can unmount while the form settles, so retry the read instead
+      // of failing on a control that was only transiently present.
+      try {
+        const row = await choiceGroup(page, 'Duration', ['Custom', 'Auto']);
+        if (await readChoice(row, 'Duration', ['Custom', 'Auto']) !== 'Custom') {
+          await custom.click();
+          await page.waitForTimeout(250);
+          if (await readChoice(row, 'Duration', ['Custom', 'Auto']) !== 'Custom') {
+            throw new Error('Duration did not read back as Custom; refusing to submit.');
+          }
+        }
+      } catch (error) {
+        if (/refusing to submit/.test(error.message)) throw error;
+      }
+      continue;
+    }
+    if (Date.now() >= deadline) {
+      throw new Error('The Duration controls did not become available within ' + timeoutMs +
+        ' ms; the Create page layout may have changed.');
+    }
     await page.waitForTimeout(250);
-  }
-  if (await readChoice(row, 'Duration', ['Custom', 'Auto']) !== 'Custom') {
-    throw new Error('Duration did not read back as Custom; refusing to submit.');
   }
 }
 
-async function durationControls(page) {
+async function durationControls(page, mode = 'Custom') {
+  if (mode === 'Auto') return { input: null, slider: null };
   await selectCustomDuration(page);
   const input = await oneVisible(page.locator('input[aria-label="Duration"]'), 'Duration input');
   const slider = await oneVisible(page.locator('[role="slider"][aria-label="Duration"]'), 'Duration slider');
   return { input, slider };
 }
 
-async function readDuration(page) {
-  const { input, slider } = await durationControls(page);
+async function readDuration(page, mode = 'Custom') {
+  if (mode === 'Auto') return { mode: 'Auto', display: 'Auto', seconds: null, min: null, max: null };
+  const sliderCount = await visible(page.locator('[role="slider"][aria-label="Duration"]')).count();
+  if (sliderCount === 0) return { mode: 'Auto', display: 'Auto', seconds: null, min: null, max: null };
+  const { input, slider } = await durationControls(page, mode);
   const display = String(await input.evaluate(element => element.value));
   const seconds = await readNumericAttribute(slider, 'aria-valuenow', 'Duration');
   const min = await readNumericAttribute(slider, 'aria-valuemin', 'Duration');
@@ -442,10 +464,24 @@ async function readDuration(page) {
     throw new Error('Duration slider state is incomplete; refusing to submit.');
   }
   if (parseDuration(display) !== seconds) throw new Error('Duration input and slider disagree.');
-  return { display, seconds, min, max };
+  return { mode: 'Custom', display, seconds, min, max };
 }
 
-async function setDuration(page, seconds) {
+async function setDuration(page, seconds, mode = 'Custom') {
+  if (mode === 'Auto') {
+    // Auto is the default, so this usually only verifies. The row renders Auto
+    // alone when it is active and the Custom/Auto pair once Custom is chosen,
+    // so resolve the row by its label and require only the option in use.
+    const row = await choiceGroup(page, 'Duration', ['Auto']);
+    if (await readSelectedOption(row, 'Duration', ['Auto']) !== 'Auto') {
+      await row.getByRole('button', { name: 'Auto', exact: true }).click();
+      await page.waitForTimeout(250);
+      if (await readSelectedOption(row, 'Duration', ['Auto']) !== 'Auto') {
+        throw new Error('Duration did not read back as Auto; refusing to submit.');
+      }
+    }
+    return { mode: 'Auto', display: 'Auto', seconds: null, min: null, max: null };
+  }
   const { input } = await durationControls(page);
   const before = await readDuration(page);
   if (seconds < before.min || seconds > before.max) {
@@ -490,9 +526,23 @@ async function setSlider(page, label, value) {
   let current = await readNumericAttribute(slider, 'aria-valuenow', label);
   if (!Number.isInteger(current)) throw new Error(label + ' value is not readable.');
   if (current !== target) {
-    await slider.click();
-    await slider.press('Home');
-    for (let step = min; step < target; step++) await slider.press('ArrowRight');
+    // Move by the observed delta. The control does not reset to its minimum on
+    // Home, and it loses focus between key presses, so refocus before each one.
+    const key = target > current ? 'ArrowRight' : 'ArrowLeft';
+    const steps = Math.abs(target - current);
+    for (let step = 0; step < steps; step++) {
+      const before = await readNumericAttribute(slider, 'aria-valuenow', label);
+      await slider.focus().catch(() => {});
+      await slider.press(key);
+      const after = await readNumericAttribute(slider, 'aria-valuenow', label);
+      if (after === before) {
+        await slider.click();
+        await slider.press(key);
+        if (await readNumericAttribute(slider, 'aria-valuenow', label) === before) {
+          throw new Error(label + ' did not respond to ' + key + '; refusing to submit.');
+        }
+      }
+    }
   }
   current = await readNumericAttribute(slider, 'aria-valuenow', label);
   if (current !== target) throw new Error(label + ' did not read back the requested value.');
