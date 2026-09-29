@@ -14,6 +14,7 @@ EXPECTED_SKILLS = {
     "consensus-gated-grilling",
     "consensus-review-loop",
     "codex-session-recovery",
+    "codex-thread-report",
     "delegated-change-review",
     "grilling",
     "implement-in-stages",

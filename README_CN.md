@@ -27,6 +27,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要将已授权的代码变更分阶段并验证交付？使用 `implement-in-stages`；如果每个阶段还需要委托审查门，使用 `review-gated-implementation`。
 - 需要只读审查？测试用 `review-tests`，注释和 docstring 用 `improve-code-comments`；需要有轮次上限的审查修复循环时用 `review-loop`。
 - 需要定位本地历史？Codex JSONL 用 `codex-session-recovery`，OpenCode SQLite 会话用 `opencode-session-toolkit`。
+- 需要将本会话的调查结论回报给现有 Codex 会话？使用 `codex-thread-report`。
 - 需要准备面向用户交付的成品？使用 `sanitize-artifacts` 清除提示词及生产过程残留，同时保留受众需要的信息。
 - 需要在有上限的预算内探索 Suno 音乐？使用 `suno-music-explorer`；提交已授权的 Create 或有上限的串行批次时使用 `suno-create`。
 
@@ -84,6 +85,7 @@ git diff --check
 - [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — 每次提问前由全新、只读的 subagent 审核候选问题。
 - [`consensus-gated-grilling`](./skills/productivity/consensus-gated-grilling/SKILL.md) — 每次提问前通过有上限的 subagent 共识协商收敛决策。
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — 只读查找本地 Codex 会话，并生成 CLI 优先的恢复步骤。
+- [`codex-thread-report`](./skills/productivity/codex-thread-report/SKILL.md) — 为现有 Codex 会话整理相关结论，并在明确要求时发送。
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — 安全检查、搜索、诊断及导出本地 OpenCode SQLite 会话。
 - [`sanitize-artifacts`](./skills/productivity/sanitize-artifacts/SKILL.md) — 清除已选交付物中的提示词、对话和生产过程残留，同时保留受众需要的实质信息。
 

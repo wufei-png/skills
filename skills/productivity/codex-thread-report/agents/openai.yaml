@@ -1,0 +1,7 @@
+interface:
+  display_name: "Codex Thread Report"
+  short_description: "Report findings from this chat to an existing Codex thread."
+  default_prompt: "Use $codex-thread-report to prepare a concise report for an existing Codex thread. Send it only if I explicitly ask."
+
+policy:
+  allow_implicit_invocation: false
