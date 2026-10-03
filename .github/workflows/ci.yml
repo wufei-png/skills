@@ -22,7 +22,7 @@ jobs:
       - name: Discover installable skills
         run: |
           NO_COLOR=1 npx -y skills@latest add . --list | tee /tmp/skills-list.txt
-          grep -F "Found 16 skills" /tmp/skills-list.txt
+          grep -F "Found 17 skills" /tmp/skills-list.txt
           for skill in \
             consensus-change-review \
             consensus-gated-grilling \
@@ -36,6 +36,7 @@ jobs:
             review-gated-grilling \
             improve-code-comments \
             codex-session-recovery \
+            codex-thread-report \
             opencode-session-toolkit \
             sanitize-artifacts \
             suno-create \
@@ -45,7 +46,7 @@ jobs:
           done
       - name: Validate manual-only metadata
         run: |
-          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 16
+          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 17
           for metadata in $(find skills -path '*/agents/openai.yaml')
           do
             grep -F "allow_implicit_invocation: false" "$metadata"
@@ -54,8 +55,8 @@ jobs:
           done
       - name: Test repository contracts
         run: python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
-      - name: Test Suno Create Playwright runner
-        run: node --test tests/suno-create/suno-batch-playwright.test.mjs
+      - name: Test Suno Create browser adapters
+        run: node --test tests/suno-create/*.test.mjs
       - name: Test Codex session recovery
         run: python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
       - name: Test OpenCode session toolkit
