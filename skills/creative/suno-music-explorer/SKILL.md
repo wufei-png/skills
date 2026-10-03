@@ -19,7 +19,7 @@ Do not use this skill for a one-off Create, form filling, or exploration that be
 Before any Create:
 
 1. Separate non-negotiable constraints from soft preferences.
-2. Obtain a maximum Create count and, if the user provides one, a credit cap. A vague request such as “go explore” is not an unlimited spending grant.
+2. Obtain a maximum Create count or an explicit unlimited-Create grant and, if the user provides one, a credit cap. A vague request such as “go explore” is not an unlimited spending grant. An unlimited Create count does not remove an existing credit cap or the listening and stopping rules.
 3. Treat each cap as a ceiling, never a quota. Stop early when the evidence or a safety condition calls for it.
 4. If the limit is one Create, route to `$suno-create`. Two Creates permit only simplified exploration. Three is the minimum for a targeted variant.
 5. Resolve the persistent ledger as described in [references/ledger.md](references/ledger.md). Confirm before creating a new `.suno-explorer/` directory.

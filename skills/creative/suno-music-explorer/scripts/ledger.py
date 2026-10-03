@@ -41,6 +41,17 @@ class LedgerError(ValueError):
     pass
 
 
+def parse_create_limit(value: str) -> int | None:
+    if value.casefold() == "unlimited":
+        return None
+    try:
+        return int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "Create limit must be an integer or 'unlimited'"
+        ) from error
+
+
 def resolved(path: str | Path) -> Path:
     return Path(path).expanduser().resolve()
 
@@ -134,11 +145,19 @@ def validate_ledger(data: Any) -> dict[str, Any]:
     spent = data.get("spent")
     if not isinstance(grant, dict) or not isinstance(spent, dict):
         raise LedgerError("grant and spent must be objects")
-    create_limit = grant.get("create_limit")
+    if "create_limit" not in grant:
+        raise LedgerError("grant.create_limit must be explicit; use null only for an unlimited grant")
+    create_limit = grant["create_limit"]
     creates_spent = spent.get("creates")
-    if not isinstance(create_limit, int) or create_limit < 2:
-        raise LedgerError("grant.create_limit must be an integer of at least 2")
-    if not isinstance(creates_spent, int) or not 0 <= creates_spent <= create_limit:
+    if create_limit is not None and (
+        not isinstance(create_limit, int) or create_limit < 2
+    ):
+        raise LedgerError(
+            "grant.create_limit must be an integer of at least 2 or null (unlimited)"
+        )
+    if not isinstance(creates_spent, int) or creates_spent < 0:
+        raise LedgerError("spent.creates must be a non-negative integer")
+    if create_limit is not None and creates_spent > create_limit:
         raise LedgerError("spent.creates must be within the Create grant")
 
     credit_limit = grant.get("credit_limit")
@@ -275,7 +294,13 @@ def parser() -> argparse.ArgumentParser:
     init_parser = commands.add_parser("init")
     init_parser.add_argument("--ledger-dir", required=True)
     init_parser.add_argument("--session-id", required=True)
-    init_parser.add_argument("--create-limit", type=int, required=True)
+    init_parser.add_argument(
+        "--create-limit",
+        type=parse_create_limit,
+        required=True,
+        metavar="N|unlimited",
+        help="maximum Create count, or 'unlimited' with explicit user authorization",
+    )
     init_parser.add_argument("--credit-limit", type=int)
     init_parser.add_argument("--confirm-create", action="store_true")
     init_parser.set_defaults(handler=command_init)

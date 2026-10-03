@@ -33,6 +33,7 @@ python3 <skill-directory>/scripts/ledger.py init \
 ```
 
 Omit `--confirm-create` when the directory already exists. Use `--credit-limit` only when the user supplied one.
+When the user explicitly grants unlimited Creates, pass `--create-limit unlimited`; the ledger stores `grant.create_limit` as `null` and applies no Create ceiling.
 
 ## Record minimum recovery state
 
