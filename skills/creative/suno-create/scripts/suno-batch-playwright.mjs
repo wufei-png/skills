@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import {
   existsSync,
   closeSync,
+  chmodSync,
   fsyncSync,
   openSync,
   mkdirSync,
@@ -14,11 +15,14 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { homedir } from 'node:os';
+import { createInterface } from 'node:readline/promises';
 import { parseArgs } from 'node:util';
 import { pathToFileURL } from 'node:url';
 
 const SUNO_CREATE = 'https://suno.com/create?wid=default';
+const DEFAULT_PROFILE_DIRECTORY = join(homedir(), '.suno-batch-playwright', 'chrome-profile');
 const GENERATE_PATH = '/api/generate/v2-web/';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SELECTED_CLASS = 'hxc-btn-variant-standard-legacy';
@@ -118,8 +122,8 @@ export function validateManifest(manifest, {
     }
     rejectUnknownKeys(item, new Set([
       'id', 'title', 'mode', 'model', 'promptFile', 'lyricsFile', 'stylesFile',
-      'exclusionsFile', 'durationSeconds', 'maxMode', 'instrumental', 'vocalGender',
-      'estimatedCredits', 'weirdness', 'styleInfluence',
+      'exclusionsFile', 'durationSeconds', 'durationMode', 'maxMode', 'instrumental',
+      'vocalGender', 'estimatedCredits', 'weirdness', 'styleInfluence',
     ]), label);
     const id = requiredString(item.id, label + '.id');
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(id)) {
@@ -134,20 +138,30 @@ export function validateManifest(manifest, {
       throw new Error(label + '.mode must be simple or custom.');
     }
     const model = requiredString(item.model, label + '.model');
+    const durationMode = item.durationMode || (item.durationSeconds > 0 ? 'Custom' : 'Auto');
+    if (!['Auto', 'Custom'].includes(durationMode)) {
+      throw new Error(label + '.durationMode must be Auto or Custom.');
+    }
     if (!Number.isInteger(item.durationSeconds) || item.durationSeconds < 0) {
       throw new Error(label + '.durationSeconds must be an explicit nonnegative whole number.');
+    }
+    if (durationMode === 'Custom' && item.durationSeconds < 1) {
+      throw new Error(label + '.durationSeconds must be a positive whole number in Custom mode.');
+    }
+    if (durationMode === 'Auto' && item.durationSeconds !== 0) {
+      throw new Error(label + '.durationSeconds must be 0 in Auto mode.');
     }
     if (typeof item.maxMode !== 'boolean') {
       throw new Error(label + '.maxMode must be an explicit true/false UI setting.');
     }
     if (item.instrumental !== false) {
       if (item.instrumental === true) {
-        throw new Error('This batch runner is for vocal packages; instrumental requests are not supported.');
+        throw new Error('This batch runner is for vocal packages; use the CUA adapter for instrumental requests.');
       }
       throw new Error(label + '.instrumental must be explicitly false for a vocal package.');
     }
     if (!['Male', 'Female'].includes(item.vocalGender)) {
-      throw new Error(label + '.vocalGender must be Male or Female.');
+      throw new Error(label + '.vocalGender must be Male or Female for a vocal package.');
     }
     if (!Number.isInteger(item.estimatedCredits) || item.estimatedCredits < 1) {
       throw new Error(label + '.estimatedCredits must be an explicit positive integer.');
@@ -187,7 +201,7 @@ export function validateManifest(manifest, {
     estimatedCredits += item.estimatedCredits;
     const fingerprint = createHash('sha256')
       .update(JSON.stringify({ id, title, mode, model, ...content, durationSeconds: item.durationSeconds,
-        vocalGender: item.vocalGender, maxMode: item.maxMode, instrumental: item.instrumental,
+        durationMode, vocalGender: item.vocalGender, maxMode: item.maxMode, instrumental: item.instrumental,
         weirdness, styleInfluence,
         estimatedCredits: item.estimatedCredits }))
       .digest('hex');
@@ -198,6 +212,7 @@ export function validateManifest(manifest, {
       model,
       ...content,
       durationSeconds: item.durationSeconds,
+      durationMode,
       vocalGender: item.vocalGender,
       maxMode: item.maxMode,
       instrumental: item.instrumental,
@@ -233,7 +248,7 @@ async function choiceGroup(page, label, options) {
   return row;
 }
 
-async function readChoice(row, label, options) {
+async function readChoice(row, label, options, { allowNone = false } = {}) {
   const selected = [];
   for (const option of options) {
     const button = await oneVisible(row.getByRole('button', { name: option, exact: true }), label + ' ' + option);
@@ -247,8 +262,15 @@ async function readChoice(row, label, options) {
     if (isSelected == null) throw new Error(label + ' selected state is not readable; refusing to submit.');
     if (isSelected) selected.push(option);
   }
+  if (allowNone && selected.length === 0) return null;
   if (selected.length !== 1) throw new Error(label + ' must have exactly one selected option.');
   return selected[0];
+}
+
+// Read the selected option without demanding one. Vocal Gender ships with
+// nothing selected, so the exactly-one rule belongs after setting, not before.
+async function readSelectedOption(row, label, options) {
+  return readChoice(row, label, options, { allowNone: true });
 }
 
 async function setChoice(page, label, options, target) {
@@ -364,6 +386,7 @@ async function setMode(page, mode) {
   }
 }
 
+// More Options starts collapsed; wait for the Auto button before using its controls.
 async function openMoreOptions(page, timeoutMs = FORM_READY_TIMEOUT_MS) {
   const ready = page.getByRole('button', { name: 'Auto', exact: true });
   const toggle = page.locator('div[role="button"][aria-expanded]')
@@ -410,8 +433,10 @@ async function setModel(page, model) {
   if (await readModel(page) !== model) throw new Error('Model did not read back as ' + model + '.');
 }
 
-// The Duration row offers Custom and Auto. Only Custom exposes the seconds
-// input and slider, so select it before reading or writing the duration.
+// Duration can be Auto or Custom. Some page revisions expose a Custom/Auto pair
+// and only render the seconds input in Custom mode; others render the input and
+// slider directly. Use the input when it is already available, and only drive
+// the Custom/Auto pair when that control is present and stable.
 async function selectCustomDuration(page, timeoutMs = FORM_READY_TIMEOUT_MS) {
   const input = page.locator('input[aria-label="Duration"]');
   const custom = page.getByRole('button', { name: 'Custom', exact: true });
@@ -452,9 +477,12 @@ async function durationControls(page, mode = 'Custom') {
 }
 
 async function readDuration(page, mode = 'Custom') {
-  if (mode === 'Auto') return { mode: 'Auto', display: 'Auto', seconds: null, min: null, max: null };
   const sliderCount = await visible(page.locator('[role="slider"][aria-label="Duration"]')).count();
-  if (sliderCount === 0) return { mode: 'Auto', display: 'Auto', seconds: null, min: null, max: null };
+  if (mode === 'Auto' || sliderCount === 0) {
+    const row = await choiceGroup(page, 'Duration', ['Auto']);
+    await readChoice(row, 'Duration', ['Auto']);
+    return { mode: 'Auto', display: 'Auto', seconds: null, min: null, max: null };
+  }
   const { input, slider } = await durationControls(page, mode);
   const display = String(await input.evaluate(element => element.value));
   const seconds = await readNumericAttribute(slider, 'aria-valuenow', 'Duration');
@@ -577,12 +605,62 @@ async function fillField(page, selector, value, label, contentEditable = false) 
   return readback;
 }
 
+async function waitForCredits(page, timeoutMs = FORM_READY_TIMEOUT_MS) {
+  const credits = page.locator('button[aria-label^="Credits remaining"]');
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (await visible(credits).count() === 1) return;
+    if (Date.now() >= deadline) {
+      throw new Error('The signed-in credits control did not appear within ' + timeoutMs +
+        ' ms after navigation; refusing to submit.');
+    }
+    await page.waitForTimeout(250);
+  }
+}
+
 async function readCreditsRemaining(page) {
   const credits = await oneVisible(page.locator('button[aria-label^="Credits remaining"]'), 'credits remaining');
   const label = await credits.getAttribute('aria-label');
   const match = /^Credits remaining:\s*([\d,]+)$/.exec(label || '');
   if (!match) throw new Error('Exact remaining credit count is unavailable.');
   return Number(match[1].replace(/,/g, ''));
+}
+
+function ensurePrivateProfileDirectory(directory) {
+  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  if (process.platform !== 'win32') chmodSync(directory, 0o700);
+}
+
+export async function setupPersistentProfile(chromium, profileDirectory, {
+  input = process.stdin,
+  output = process.stdout,
+} = {}) {
+  if (!input.isTTY) throw new Error('--setup-profile requires an interactive terminal.');
+  ensurePrivateProfileDirectory(profileDirectory);
+  const prompt = createInterface({ input, output });
+  let context;
+  try {
+    context = await chromium.launchPersistentContext(profileDirectory, {
+      headless: false,
+    });
+    const page = await context.newPage();
+    await page.goto(SUNO_CREATE, { waitUntil: 'domcontentloaded' });
+    output.write('Sign in to Suno in the opened Chrome window. Do not enter credentials in this terminal.\n');
+    while (true) {
+      await prompt.question('After Suno shows your signed-in Create page, press Enter here: ');
+      try {
+        await page.locator('button[aria-label^="Credits remaining"]').waitFor({ state: 'visible', timeout: 5_000 });
+        await readCreditsRemaining(page);
+        output.write('Suno login verified; the isolated browser profile is ready.\n');
+        break;
+      } catch {
+        output.write('Suno login is not verified yet. Finish sign-in in Chrome, then press Enter again.\n');
+      }
+    }
+  } finally {
+    prompt.close();
+    if (context) await context.close().catch(() => {});
+  }
 }
 
 async function readPreSubmitState(page, item) {
@@ -616,7 +694,7 @@ async function readPreSubmitState(page, item) {
     'Max Mode',
     ['Off', 'On'],
   );
-  const instrumental = await readInstrumental(page);
+  const instrumental = await readInstrumental(page, item.mode);
   const model = await readModel(page);
   const weirdness = await readSlider(page, 'Weirdness', item.weirdness);
   const styleInfluence = await readSlider(page, 'Style Influence', item.styleInfluence);
@@ -634,8 +712,20 @@ async function readPreSubmitState(page, item) {
     contentVerified: Object.keys(contentSelectors),
     createEnabled: enabled,
   };
-  for (const key of ['title', 'durationSeconds', 'vocalGender', 'maxMode', 'instrumental', 'model']) {
+  for (const key of ['title', 'vocalGender', 'maxMode', 'instrumental', 'model']) {
     if (state[key] !== item[key]) throw new Error('Pre-submit readback mismatch for ' + key + '.');
+  }
+  if (item.durationMode === 'Auto') {
+    if (duration.mode !== 'Auto') throw new Error('Pre-submit readback mismatch for durationMode.');
+  } else if (state.durationSeconds !== item.durationSeconds) {
+    throw new Error('Pre-submit readback mismatch for durationSeconds.');
+  }
+  state.durationMode = duration.mode;
+  if (item.weirdness != null && state.weirdness !== Math.round(item.weirdness * 100)) {
+    throw new Error('Pre-submit readback mismatch for weirdness.');
+  }
+  if (item.styleInfluence != null && state.styleInfluence !== Math.round(item.styleInfluence * 100)) {
+    throw new Error('Pre-submit readback mismatch for styleInfluence.');
   }
   if (!state.createEnabled) throw new Error('Create is disabled; no submission was made.');
   return state;
@@ -643,6 +733,15 @@ async function readPreSubmitState(page, item) {
 
 export async function prepareSunoCreateForm(page, item) {
   await setMode(page, item.mode);
+  // Mode-specific fields can render only after switching away from the default tab.
+  const selectors = item.mode === 'custom' ? [
+    '[aria-label="Lyrics editor"][contenteditable="true"]',
+    '[data-testid="create-form-styles-wrapper"] textarea',
+    'input[placeholder="Exclude styles"]',
+  ] : ['textarea[rows="1"]:not([data-cowrite-input])'];
+  for (const selector of selectors) {
+    await visible(page.locator(selector)).first().waitFor({ state: 'visible', timeout: FORM_READY_TIMEOUT_MS });
+  }
   await openMoreOptions(page);
   await setModel(page, item.model);
   if (item.mode === 'custom') {
@@ -660,7 +759,7 @@ export async function prepareSunoCreateForm(page, item) {
   if (String(await title.evaluate(element => element.value)) !== item.title) {
     throw new Error('Song title did not read back correctly.');
   }
-  await setDuration(page, item.durationSeconds);
+  await setDuration(page, item.durationSeconds, item.durationMode);
   await setChoice(page, 'Vocal Gender', ['Male', 'Female'], item.vocalGender);
   await setChoice(page, 'Max Mode', ['Off', 'On'], item.maxMode ? 'On' : 'Off');
   await setSlider(page, 'Weirdness', item.weirdness);
@@ -891,9 +990,11 @@ function cliOptions() {
       manifest: { type: 'string' },
       submit: { type: 'boolean', default: false },
       'prepare-only': { type: 'boolean', default: false },
+      'setup-profile': { type: 'boolean', default: false },
       resume: { type: 'boolean', default: false },
       ledger: { type: 'string' },
-      'cdp-url': { type: 'string', default: 'http://127.0.0.1:9222' },
+      'cdp-url': { type: 'string' },
+      'profile-dir': { type: 'string' },
       'max-items': { type: 'string' },
       'max-credits': { type: 'string' },
       'confirm-batch': { type: 'string' },
@@ -908,6 +1009,12 @@ function usage() {
   return [
     'Suno batch Playwright runner',
     '',
+    'Install the Playwright-managed Chrome for Testing browser once:',
+    '  playwright-cli install-browser chromium',
+    '',
+    'One-time isolated browser login (opens a dedicated Chrome profile):',
+    '  node suno-batch-playwright.mjs --setup-profile',
+    '',
     'Validate without browser actions:',
     '  node suno-batch-playwright.mjs --manifest batch.json',
     'Fill each package and read fields back, without Create:',
@@ -919,7 +1026,10 @@ function usage() {
     'After checking Suno Library/history, mark an uncertain package not submitted so it can resume:',
     '  node suno-batch-playwright.mjs --manifest batch.json --reconcile-not-submitted package-id --confirm-batch batch-id --max-items 8 --max-credits 80 --ledger .suno-create/batches/run.json',
     '',
-    'The runner never downloads clips. It requires a logged-in Chrome session exposed through CDP.',
+    'Browser runs use an isolated persistent Chrome profile at ~/.suno-batch-playwright/chrome-profile by default.',
+    'Sign in once with --setup-profile. The default profile is separate from your regular Chrome profile; no login data is copied.',
+    'Use --profile-dir for another dedicated directory, or --cdp-url to attach to an existing CDP endpoint.',
+    'The runner never downloads clips and does not open an HTTP debugging port.',
   ].join('\n');
 }
 
@@ -929,7 +1039,19 @@ async function main() {
     process.stdout.write(usage() + '\n');
     return;
   }
+  if (options['setup-profile']) {
+    if (options.manifest || options.submit || options['prepare-only'] || options.resume || options.ledger ||
+        options['confirm-batch'] || options['max-items'] || options['max-credits'] || options['reconcile-not-submitted'] || options['cdp-url']) {
+      throw new Error('--setup-profile runs alone; do not combine it with manifest, submission, reconciliation, or CDP options.');
+    }
+    const { chromium } = playwrightRequire();
+    await setupPersistentProfile(chromium, resolve(options['profile-dir'] || DEFAULT_PROFILE_DIRECTORY));
+    return;
+  }
   if (!options.manifest) throw new Error('--manifest is required.');
+  if (options['cdp-url'] && options['profile-dir']) {
+    throw new Error('Choose either --cdp-url or --profile-dir; they select different browser sessions.');
+  }
   if (options.submit && options['prepare-only']) throw new Error('Choose either --submit or --prepare-only.');
   const reconcileId = options['reconcile-not-submitted'];
   const reconciling = reconcileId != null;
@@ -990,6 +1112,8 @@ async function main() {
 
   let chromium;
   let browser;
+  let persistentContext;
+  let context;
   let page;
   let ambiguous = false;
   try {
@@ -1006,15 +1130,39 @@ async function main() {
       return;
     }
     ({ chromium } = playwrightRequire());
-    browser = await chromium.connectOverCDP(options['cdp-url'], { timeout: 5_000 });
-    const context = await findAuthenticatedContext(browser);
+    if (options['cdp-url']) {
+      browser = await chromium.connectOverCDP(options['cdp-url'], { timeout: 5_000 });
+      context = await findAuthenticatedContext(browser);
+    } else {
+      const profileDirectory = resolve(options['profile-dir'] || DEFAULT_PROFILE_DIRECTORY);
+      ensurePrivateProfileDirectory(profileDirectory);
+      try {
+        persistentContext = await chromium.launchPersistentContext(profileDirectory, {
+          headless: false,
+        });
+      } catch (error) {
+        throw new Error('Could not launch Playwright-managed Chrome for Testing. Run `playwright-cli install-browser chromium` once. ' + String(error?.message || error));
+      }
+      context = persistentContext;
+    }
     page = await context.newPage();
     await page.goto(SUNO_CREATE, { waitUntil: 'domcontentloaded' });
+    if (!options['cdp-url']) {
+      try {
+        await page.locator('button[aria-label^="Credits remaining"]').waitFor({ state: 'visible', timeout: 15_000 });
+        await readCreditsRemaining(page);
+      } catch {
+        throw new Error('Could not verify a signed-in Suno session in this isolated profile. Run --setup-profile with the same profile directory, then retry.');
+      }
+    }
     await waitForCreateForm(page, manifest.items[0].mode);
 
     if (options['prepare-only']) {
       const results = [];
       for (const item of manifest.items) {
+        // Start each package from a clean form so previous content cannot carry over.
+        await page.goto(SUNO_CREATE, { waitUntil: 'domcontentloaded' });
+        await waitForCreateForm(page, item.mode);
         results.push({ id: item.id, status: 'prepared', verified: await prepareSunoCreateForm(page, item) });
       }
       process.stdout.write(JSON.stringify({ batchId: manifest.batchId, creates: 0, results }) + '\n');
@@ -1036,6 +1184,10 @@ async function main() {
         .filter(candidate => !['confirmed'].includes(ledger.items[candidate.id].status))
         .reduce((sum, candidate) => sum + candidate.estimatedCredits, 0);
       try {
+        // Reload so each package cannot inherit the previous package's content.
+        await page.goto(SUNO_CREATE, { waitUntil: 'domcontentloaded' });
+        await waitForCreateForm(page, item.mode);
+        await waitForCredits(page);
         results.push(await submitOne(page, item, ledger, ledgerPath, outstanding));
         creates++;
       } catch (error) {
@@ -1054,6 +1206,7 @@ async function main() {
     process.stdout.write(JSON.stringify({ batchId: manifest.batchId, creates, results }) + '\n');
   } finally {
     if (page && !ambiguous) await page.close().catch(() => {});
+    if (persistentContext) await persistentContext.close().catch(() => {});
     if (browser) await browser.close().catch(() => {});
     releaseLedgerLock();
   }

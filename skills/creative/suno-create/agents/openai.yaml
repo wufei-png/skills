@@ -1,7 +1,7 @@
 interface:
   display_name: "Suno Create"
-  short_description: "Submit authorized Suno Creates with verified settings"
-  default_prompt: "Use $suno-create to prepare or submit only the explicitly authorized package set and spend bound through a capable, verified path."
+  short_description: "Submit authorized Creates with browser verification"
+  default_prompt: "Use $suno-create to prepare or submit only the explicitly authorized package set and spend bound through a browser path that can verify every requested setting."
 
 policy:
   allow_implicit_invocation: false

@@ -66,7 +66,7 @@ Validate catalog discovery, repository contracts, scripted skill CLIs, and chang
 ```bash
 NO_COLOR=1 npx -y skills@latest add . --list
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
-node --test tests/suno-create/suno-batch-playwright.test.mjs
+node --test tests/suno-create/*.test.mjs
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
 python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
@@ -103,7 +103,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 ### Creative
 
 - [`suno-music-explorer`](./skills/creative/suno-music-explorer/SKILL.md) — Explore blank or bounded Suno directions through capped hypotheses, real listening, and human final selection. Requires `suno-create`.
-- [`suno-create`](./skills/creative/suno-create/SKILL.md) — Try OpenCLI, then Playwright, then Computer Use, using only a path that can verify the complete package; otherwise prepare a manual handoff.
+- [`suno-create`](./skills/creative/suno-create/SKILL.md) — Use an authenticated CUA tab, an isolated Playwright profile, or Computer Use to verify the complete package before an authorized Create; otherwise prepare a manual handoff.
 
 ## Paired variants
 
@@ -156,7 +156,7 @@ These skill-backed projects remain in their own repositories because their skill
 | `codex-session-recovery`      | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71); copied with manual-only metadata, monorepo paths, and current CLI-first capability wording                               |
 | `opencode-session-toolkit`    | English runtime and tests from [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9); the Chinese package and independent release machinery were intentionally not migrated |
 | `suno-music-explorer`         | Generalized from [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/autonomous-music-explorer) with bounded grants, durable recovery, and human final selection                       |
-| `suno-create`                 | Generalized from [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/suno-create) with capability-based OpenCLI, Playwright, and Computer Use routing, bounded batches, and fail-closed reconciliation |
+| `suno-create`                 | Generalized from [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/suno-create) with browser capability routing through CUA, Playwright, and Computer Use, bounded batches, and fail-closed reconciliation |
 
 The original repository documentation is retained under [`docs/archive`](./docs/archive/) as historical source material; the current policy is documented above. The source repositories and their complete histories are linked above. `improve-code-comments`, `codex-session-recovery`, and `opencode-session-toolkit` are frozen distribution sources after this consolidation: future development and installation use this repository, with no independent installer, version, release archive, or ClawHub publishing flow maintained here.
 

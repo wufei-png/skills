@@ -24,8 +24,8 @@
           }
         ],
         "forbidden": [
-          "Switch to Playwright or Computer Use after OpenCLI may have submitted Create",
-          "Assume an empty stdout means no submission",
+          "Switch to the CLI runner or Computer Use after CUA may have submitted Create",
+          "Assume lost browser control means no submission",
           "Spend a second Create authorization"
         ]
       }
@@ -61,7 +61,7 @@
       "expectations": {
         "required": [
           {
-            "criterion": "Choose Playwright because it can set and read back every requested field, while the installed OpenCLI adapter cannot.",
+            "criterion": "Choose the CLI Playwright runner because CUA is unavailable and the authenticated runner can set and read back every requested field.",
             "anchor": "SCENARIO.md",
             "priorities": []
           },
@@ -72,7 +72,7 @@
           }
         ],
         "forbidden": [
-          "Choose OpenCLI despite missing readback for a required field",
+          "Use an unavailable CUA tab or invent an OpenCLI route",
           "Choose Computer Use while the higher-priority Playwright path supports the complete package",
           "Claim a Create was submitted"
         ]
@@ -99,6 +99,29 @@
           "Use the Playwright manifest while omitting audio reference, Audio Influence, Persona, or Extend",
           "Assume Computer Use supports a control that is not visible and verified",
           "Claim a Create was submitted"
+        ]
+      }
+    },
+    {
+      "id": "cua-priority",
+      "fixture": "fixtures/cua-priority",
+      "prompt": "Use $suno-create to select a transport for the request in SCENARIO.md. Do not access a real account or submit Create.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Choose the authenticated CUA tab because it can verify the complete package and is the first capable route.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Keep form preparation separate from Create, enforce the grant, arm a durable ledger, and reconcile candidates and spend.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Fall back to the CLI runner while dropping Variety or Personalize",
+          "Claim that successful preparation confirms a Create"
         ]
       }
     }

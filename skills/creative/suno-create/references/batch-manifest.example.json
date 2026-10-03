@@ -10,6 +10,7 @@
       "stylesFile": "batch-example-styles.txt",
       "exclusionsFile": "batch-example-exclusions.txt",
       "durationSeconds": 240,
+      "durationMode": "Custom",
       "vocalGender": "Female",
       "maxMode": false,
       "instrumental": false,

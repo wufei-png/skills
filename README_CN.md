@@ -66,7 +66,7 @@ npx skills@latest add wufei-png/skills \
 ```bash
 NO_COLOR=1 npx -y skills@latest add . --list
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
-node --test tests/suno-create/suno-batch-playwright.test.mjs
+node --test tests/suno-create/*.test.mjs
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
 python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
@@ -103,7 +103,7 @@ git diff --check
 ### Creative
 
 - [`suno-music-explorer`](./skills/creative/suno-music-explorer/SKILL.md) — 通过有上限的假设、实际试听及用户最终选择，探索空白或带边界的 Suno 音乐方向；需要 `suno-create`。
-- [`suno-create`](./skills/creative/suno-create/SKILL.md) — 依次尝试 OpenCLI、Playwright、Computer Use；仅使用能设置并核验完整创建参数的路径，否则准备手动交接包。
+- [`suno-create`](./skills/creative/suno-create/SKILL.md) — 使用已登录的 CUA 标签页、独立 Playwright profile 或 Computer Use，完整核验参数后提交已授权的 Create；否则准备手动交接包。
 
 ## 配对变体
 
@@ -156,7 +156,7 @@ git diff --check
 | `codex-session-recovery`      | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71)；复制后仅调整手动调用策略、monorepo 路径及当前 CLI-first 能力表述 |
 | `opencode-session-toolkit`    | 英文运行包和测试来自 [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9)；中文包及独立发布机制不迁入              |
 | `suno-music-explorer`         | 从 [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/autonomous-music-explorer) 通用化，增加有上限授权、持久恢复和用户最终选择 |
-| `suno-create`                 | 从 [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/suno-create) 通用化，支持 OpenCLI、Playwright、Computer Use 能力选路、有上限批次和失败关闭式对账 |
+| `suno-create`                 | 从 [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/suno-create) 通用化，支持 CUA、Playwright、Computer Use 浏览器能力选路、有上限批次和失败关闭式对账 |
 
 来源仓库的原始文档保存在 [`docs/archive`](./docs/archive/) 中，作为历史来源材料；当前策略以上文为准。上表保留了来源仓库及其完整 Git 历史链接。合并完成后，`improve-code-comments`、`codex-session-recovery` 和 `opencode-session-toolkit` 的旧仓库只作为冻结分发源；后续开发和安装统一使用本仓库，本仓库不再维护它们的独立 installer、版本、Release 压缩包或 ClawHub 发布流程。
 

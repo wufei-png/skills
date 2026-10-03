@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { PassThrough } from 'node:stream';
 import { fakePage } from './fake-page.mjs';
 import {
   formatDuration,
@@ -16,7 +17,114 @@ import {
   validateManifest,
   prepareSunoCreateForm,
   submitOne,
+  setInstrumental,
+  waitForCreateForm,
+  setupPersistentProfile,
 } from '../../skills/creative/suno-create/scripts/suno-batch-playwright.mjs';
+
+test('sets a previously unselected vocal gender and rejects unreadable or multiple selections', async t => {
+  const { directory, manifest } = packageFixture(t);
+  const item = validateManifest(manifest, { baseDirectory: directory }).items[0];
+  const page = fakePage({ initialVocalGender: null });
+  const result = await prepareSunoCreateForm(page, item);
+  assert.equal(result.vocalGender, 'Female');
+  assert.equal(page.state.clicks, 0);
+  for (const initialVocalGender of ['unreadable', 'both']) {
+    const invalidPage = fakePage({ initialVocalGender });
+    await assert.rejects(prepareSunoCreateForm(invalidPage, item), /not readable|exactly one/);
+    assert.equal(invalidPage.state.clicks, 0);
+  }
+});
+
+test('selects and verifies Auto duration from a form previously set to Custom', async t => {
+  const { directory, manifest } = packageFixture(t, { durationMode: 'Auto', durationSeconds: 0 });
+  const item = validateManifest(manifest, { baseDirectory: directory }).items[0];
+  const page = fakePage();
+  const result = await prepareSunoCreateForm(page, item);
+  assert.equal(result.durationMode, 'Auto');
+  assert.equal(result.durationSeconds, null);
+  assert.equal(page.state.clicks, 0);
+  for (const setting of [{ durationMode: 'Auto', durationSeconds: 250 }, { durationMode: 'Custom', durationSeconds: 0 }]) {
+    manifest.items[0] = { ...manifest.items[0], ...setting };
+    assert.throws(() => validateManifest(manifest, { baseDirectory: directory }), /durationSeconds/);
+  }
+});
+
+test('profile setup waits for terminal confirmation and verifies login before closing', { timeout: 3000 }, async t => {
+  const { directory } = packageFixture(t);
+  const input = new PassThrough();
+  const output = new PassThrough();
+  input.isTTY = true;
+  t.after(() => { input.destroy(); output.destroy(); });
+  const page = fakePage();
+  let transcript = '', closed = false, verified = false;
+  page.locator('button[aria-label^="Credits remaining"]').waitFor = async () => { verified = true; };
+  output.on('data', chunk => {
+    transcript += chunk;
+    if (String(chunk).includes('press Enter here:')) setImmediate(() => input.write('\n'));
+  });
+  const profile = join(directory, 'isolated-profile');
+  await setupPersistentProfile({ async launchPersistentContext(path, options) {
+    assert.equal(path, profile);
+    assert.equal(options.headless, false);
+    return { newPage: async () => page, close: async () => { closed = true; } };
+  } }, profile, { input, output });
+  assert.equal(verified, true);
+  assert.equal(closed, true);
+  assert.equal(page.state.clicks, 0);
+  assert.match(transcript, /Suno login verified/);
+  if (process.platform !== 'win32') assert.equal(statSync(profile).mode & 0o777, 0o700);
+});
+
+test('does not infer Auto from a missing slider if its selected state is lost', async t => {
+  const { directory, manifest } = packageFixture(t, { durationMode: 'Auto', durationSeconds: 0 });
+  const item = validateManifest(manifest, { baseDirectory: directory }).items[0];
+  const page = fakePage({ initialDurationMode: 'Auto' });
+  const auto = page.getByRole('button', { name: 'Auto', exact: true });
+  let reads = 0;
+  auto.evaluate = async () => ({ ariaPressed: String(++reads === 1), ariaChecked: null, dataState: null, className: '' });
+  await assert.rejects(prepareSunoCreateForm(page, item), /Duration must have exactly one selected option/);
+  assert.equal(page.state.clicks, 0);
+});
+
+test('waits for the Create form to render before touching controls', async () => {
+  const page = fakePage();
+  await waitForCreateForm(page, 'custom');
+  await waitForCreateForm(page, 'simple');
+  assert.equal(page.state.mode, 'Advanced');
+});
+
+test('reports a Create form that never renders instead of an ambiguous control', async () => {
+  const page = fakePage();
+  // The Advanced tab is never present: the page renders, the form does not.
+  const original = page.getByRole('tab', { name: 'Advanced' });
+  original.count = async () => 0;
+  await assert.rejects(() => waitForCreateForm(page, 'custom', 300),
+    /did not render the Advanced mode tab within 300 ms/);
+});
+
+test('proves a vocal package without an Instrumental control when lyrics are present', async t => {
+  const { directory, manifest } = packageFixture(t);
+  const item = validateManifest(manifest, { baseDirectory: directory }).items[0];
+  const page = fakePage();          // exposes no Instrumental control at all
+  const result = await prepareSunoCreateForm(page, item);
+  assert.equal(result.instrumental, false);
+  assert.equal(page.state.clicks, 0);
+});
+
+test('refuses a package that would silently be instrumental', async () => {
+  // A page that offers no Instrumental control and whose lyrics field is empty.
+  // Fake locators report 'v6' from innerText for the model picker, so this case
+  // uses a minimal stub that reports a genuinely empty editor.
+  const empty = { filter() { return this; }, async count() { return 0; } };
+  const editor = { filter() { return this; }, async count() { return 1; }, async innerText() { return ''; } };
+  const page = {
+    getByRole: (_role, { name }) => (name === 'Instrumental' ? empty : editor),
+    locator: () => editor,
+  };
+  await assert.rejects(() => setInstrumental(page, false, 'custom'),
+    /no Instrumental control and the lyrics field is empty/);
+});
 
 test('prepares custom and simple fields across the browser execution boundary', async t => {
   for (const mode of ['custom', 'simple']) {
@@ -28,6 +136,7 @@ test('prepares custom and simple fields across the browser execution boundary', 
     assert.equal(result.title, item.title);
     assert.equal(result.createEnabled, true);
     assert.equal(page.state.clicks, 0);
+    assert.equal(page.state.mode, mode === 'custom' ? 'Advanced' : 'Simple');
   }
 });
 
@@ -73,7 +182,7 @@ test('preserves ambiguous outcomes and handles both click and response failures'
   }
 });
 
-test('CLI resume reports zero new Creates for an already confirmed batch', t => {
+test('CLI resume reports zero new Creates for an already confirmed batch over CDP', t => {
   const { directory, manifest } = packageFixture(t);
   const runnerPath = join(directory, 'runner.mjs');
   copyFileSync(new URL('../../skills/creative/suno-create/scripts/suno-batch-playwright.mjs', import.meta.url), runnerPath);
@@ -92,7 +201,8 @@ test('CLI resume reports zero new Creates for an already confirmed batch', t => 
   `);
   const manifestPath = join(directory, 'batch.json');
   writeFileSync(manifestPath, JSON.stringify(manifest));
-  const args = [runnerPath, '--manifest', manifestPath, '--submit', '--confirm-batch', manifest.batchId,
+  const args = [runnerPath, '--manifest', manifestPath, '--cdp-url', 'http://127.0.0.1:9222',
+    '--submit', '--confirm-batch', manifest.batchId,
     '--max-items', '1', '--max-credits', '10', '--ledger', join(directory, 'ledger.json')];
   const first = spawnSync(process.execPath, args, { encoding: 'utf8' });
   assert.equal(first.status, 0, first.stderr);
@@ -101,6 +211,33 @@ test('CLI resume reports zero new Creates for an already confirmed batch', t => 
   assert.equal(resumed.status, 0, resumed.stderr);
   assert.equal(JSON.parse(resumed.stdout).creates, 0);
   assert.deepEqual(JSON.parse(resumed.stdout).results, JSON.parse(first.stdout).results);
+});
+
+test('CLI prepares through its persistent profile without clicking Create', t => {
+  const { directory, manifest } = packageFixture(t);
+  const runnerPath = join(directory, 'runner.mjs');
+  copyFileSync(new URL('../../skills/creative/suno-create/scripts/suno-batch-playwright.mjs', import.meta.url), runnerPath);
+  const modulePath = join(directory, 'node_modules', 'playwright');
+  mkdirSync(modulePath, { recursive: true });
+  const fixtureUrl = new URL('./fake-page.mjs', import.meta.url).href;
+  writeFileSync(join(modulePath, 'index.js'), `
+    exports.chromium = { async launchPersistentContext(profileDirectory, options) {
+      if (!profileDirectory.endsWith('isolated-profile') || options.headless !== false) {
+        throw new Error('unexpected persistent profile launch options');
+      }
+      const { fakePage } = await import(${JSON.stringify(fixtureUrl)});
+      return { newPage: async () => fakePage(), close: async () => {} };
+    } };
+  `);
+  const manifestPath = join(directory, 'batch.json');
+  writeFileSync(manifestPath, JSON.stringify(manifest));
+  const result = spawnSync(process.execPath, [runnerPath, '--manifest', manifestPath,
+    '--prepare-only', '--profile-dir', join(directory, 'isolated-profile')], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.creates, 0);
+  assert.equal(output.results[0].status, 'prepared');
+  assert.equal(output.results[0].verified.createEnabled, true);
 });
 
 test('CLI runs when the installed script is reached through a symlink', t => {
