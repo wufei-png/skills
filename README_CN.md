@@ -22,6 +22,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 
 ## 选择工作流
 
+- 某个解释没看懂，需要重新讲清楚？使用 `wait-what` 补上背景，并使用清楚、一致的术语。
 - 需要在行动前收敛一个有实质影响的取舍？使用 `grilling`；如果每个问题都需要全新的只读第二意见，使用 `review-gated-grilling`。
 - 需要不改变基础流程、增加有上限的 subagent 共识协商？使用对应的 `consensus-*` 变体。
 - 需要将已授权的代码变更分阶段并验证交付？使用 `implement-in-stages`；如果每个阶段还需要委托审查门，使用 `review-gated-implementation`。
@@ -81,6 +82,7 @@ git diff --check
 
 ### Productivity
 
+- [`wait-what`](./skills/productivity/wait-what/SKILL.md) — 沿用当前对话的主要语言，补上背景，重新解释没看懂的内容。
 - [`grilling`](./skills/productivity/grilling/SKILL.md) — 通过依赖有序的问题收敛决策中的真实取舍。
 - [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — 每次提问前由全新、只读的 subagent 审核候选问题。
 - [`consensus-gated-grilling`](./skills/productivity/consensus-gated-grilling/SKILL.md) — 每次提问前通过有上限的 subagent 共识协商收敛决策。
@@ -147,6 +149,7 @@ git diff --check
 
 | 迁移内容                      | 来源快照                                                                                                                                                                                                          |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `wait-what`                   | 改编自 [`mattpocock/skills@6fd9479`：`skills/productivity/wait-what/SKILL.md`](https://github.com/mattpocock/skills/blob/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/productivity/wait-what/SKILL.md)。将使用 Simplified Technical English 的要求改为沿用当前对话的主要语言，并直接写入从 [ASD-STE100](https://www.asd-ste100.org/STE_faq.html) 提炼的表达原则；此适配不宣称完全符合 STE 标准。上游 MIT 声明保存在 `LICENSES/mattpocock-skills-MIT.txt`。 |
 | `grilling`                    | [`wufei-png/grilling@64853fe`](https://github.com/wufei-png/grilling/tree/64853fedfc2d02f53013bb8c1666c6316760d289)                                                                                               |
 | `review-loop`                 | 基于 [`wufei-png/agent-review-skills@df3a8e6`](https://github.com/wufei-png/agent-review-skills/tree/df3a8e6c76cab0433d10529b50cc6dae573eb9c0)，并恢复了仅手动调用字段                                            |
 | `delegated-change-review`     | `SKILL.md` 来自本地用户 skill 快照，SHA-256 `e6266516eacc80eb6fdd1859a0d52e457edb2fa3f2c499655a713fd2e92fea44`；UI 元数据已移除独立提交请求                                                                       |

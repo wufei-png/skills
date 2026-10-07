@@ -1,0 +1,7 @@
+interface:
+  display_name: "Wait, What?"
+  short_description: "Re-explain unclear points with the missing context"
+  default_prompt: "Use $wait-what to re-explain the point I did not understand with the missing context and clear terms."
+
+policy:
+  allow_implicit_invocation: false

@@ -22,6 +22,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 
 ## Choose a workflow
 
+- Need a point re-explained because it did not make sense? Use `wait-what` for missing context and clear, consistent terms.
 - Need to resolve a consequential tradeoff before acting? Use `grilling`; use `review-gated-grilling` when each question needs a fresh read-only second opinion.
 - Need bounded subagent consensus without changing the base workflow? Use the matching `consensus-*` variant.
 - Need an authorized code change in verified stages? Use `implement-in-stages`; use `review-gated-implementation` when each stage also needs the delegated review gate.
@@ -81,6 +82,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 
 ### Productivity
 
+- [`wait-what`](./skills/productivity/wait-what/SKILL.md) — Re-explain an unclear point with the missing context, following the conversation's main language.
 - [`grilling`](./skills/productivity/grilling/SKILL.md) — Resolve a decision through dependency-ordered questions about genuine tradeoffs.
 - [`review-gated-grilling`](./skills/productivity/review-gated-grilling/SKILL.md) — Review each candidate question with fresh, read-only subagents before asking it.
 - [`consensus-gated-grilling`](./skills/productivity/consensus-gated-grilling/SKILL.md) — Resolve decisions with bounded subagent consensus before asking each question.
@@ -147,6 +149,7 @@ These skill-backed projects remain in their own repositories because their skill
 
 | Imported content              | Source snapshot                                                                                                                                                                                                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `wait-what`                   | Adapted from [`mattpocock/skills@6fd9479`: `skills/productivity/wait-what/SKILL.md`](https://github.com/mattpocock/skills/blob/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/productivity/wait-what/SKILL.md). Replaces the instruction to use Simplified Technical English with the conversation's main language and writing principles distilled from [ASD-STE100](https://www.asd-ste100.org/STE_faq.html); this adaptation does not claim full STE compliance. The upstream MIT notice is retained in `LICENSES/mattpocock-skills-MIT.txt`. |
 | `grilling`                    | [`wufei-png/grilling@64853fe`](https://github.com/wufei-png/grilling/tree/64853fedfc2d02f53013bb8c1666c6316760d289)                                                                                                                                                       |
 | `review-loop`                 | Based on [`wufei-png/agent-review-skills@df3a8e6`](https://github.com/wufei-png/agent-review-skills/tree/df3a8e6c76cab0433d10529b50cc6dae573eb9c0), with the manual-only invocation field restored                                                                        |
 | `delegated-change-review`     | `SKILL.md` from local user-skill snapshot, SHA-256 `e6266516eacc80eb6fdd1859a0d52e457edb2fa3f2c499655a713fd2e92fea44`; UI metadata updated to remove the standalone commit request                                                                                        |
