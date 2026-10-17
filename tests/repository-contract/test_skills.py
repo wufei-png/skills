@@ -16,6 +16,7 @@ EXPECTED_SKILLS = {
     "codex-session-recovery",
     "codex-thread-report",
     "delegated-change-review",
+    "docs-context-curator",
     "grilling",
     "implement-in-stages",
     "improve-code-comments",

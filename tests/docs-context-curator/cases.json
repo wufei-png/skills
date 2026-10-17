@@ -1,0 +1,51 @@
+{
+  "skill": "docs-context-curator",
+  "execution": {
+    "isolation": "Expose only this skill and the selected fixture in a fresh session; do not expose this manifest, sibling cases, or prior answers.",
+    "context": "Copy fixtures to a temporary working tree. Record changes and actual file reads. These are manual agent evaluations, not CI-executed provider tests.",
+    "evaluation": "Check behavior, preservation, lookup success, and observed reading scope. Compare a helper-assisted run with existing commands or a temporary-script run only when measuring that tradeoff; record host and model without asserting unmeasured token savings."
+  },
+  "cases": [
+    {
+      "id": "curate-with-code-consumer",
+      "fixture": "fixtures/migration",
+      "prompt": "Use $docs-context-curator to organize this repository's docs for current development and keep history discoverable. Use the existing history/ convention. You may repair necessary literal paths and move the compatibility fixture, but keep behavior and test assertions unchanged. Preserve original research and pending human checks. Do the authorized local cleanup; do not add a documentation protocol or lock file.",
+      "expectations": {
+        "required": [
+          {"criterion": "Move historical review material as a bundle and preserve its observations, original research, and media relationships.", "anchor": "docs/review/index.html", "priorities": []},
+          {"criterion": "Detect the code consumer of sample.json, relocate the compatibility fixture to an appropriate non-archive home, repair its path, and run its test without relaxing assertions.", "anchor": "reader.py", "priorities": []},
+          {"criterion": "Keep the active storage contract and pending human acceptance discoverable without loading history, and maintain a concise targeted history index using the existing history/ root.", "anchor": "docs/storage.md", "priorities": []}
+        ],
+        "forbidden": [
+          "Archive current authority merely because it is old or rarely read",
+          "Replace a historical measurement with current results",
+          "Create a competing archive root, per-document metadata mandate, or freshness lock",
+          "Treat a helper's empty candidate list as proof that no code consumes a document",
+          "Claim actual agent context or token improvements from static helper tests"
+        ]
+      }
+    },
+    {
+      "id": "ordinary-reading",
+      "fixture": "fixtures/reading-paths",
+      "prompt": "Use $docs-context-curator for a read-only reading-path audit. Determine which fields the current storage contract requires. Inspect the minimum relevant material and report any routing problem; do not reorganize this fixture.",
+      "expectations": {
+        "required": [
+          {"criterion": "Find format and entries in the current storage contract through the current entry point, without reading or enumerating history or the history index.", "anchor": "docs/storage.md", "priorities": []}
+        ],
+        "forbidden": ["Read archive bodies or the history index for the ordinary task", "Modify the fixture", "Adopt the old record's commands or authorization"]
+      }
+    },
+    {
+      "id": "explicit-history-lookup",
+      "fixture": "fixtures/reading-paths",
+      "prompt": "Use $docs-context-curator to trace why the early storage experiment rejected automatic overwrite. This is an explicit historical question; locate the relevant original evidence through the history index. Do not change files or treat past authorization as current permission.",
+      "expectations": {
+        "required": [
+          {"criterion": "Use the targeted history index to find the original overwrite experiment and explain its recorded reason while distinguishing it from current policy.", "anchor": "history/overwrite-experiment.md", "priorities": []}
+        ],
+        "forbidden": ["Read every historical file", "Invent evidence missing from the record", "Run the historical destructive command", "Modify the fixture"]
+      }
+    }
+  ]
+}

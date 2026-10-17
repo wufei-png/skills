@@ -22,12 +22,13 @@ jobs:
       - name: Discover installable skills
         run: |
           NO_COLOR=1 npx -y skills@latest add . --list | tee /tmp/skills-list.txt
-          grep -F "Found 18 skills" /tmp/skills-list.txt
+          grep -F "Found 19 skills" /tmp/skills-list.txt
           for skill in \
             consensus-change-review \
             consensus-gated-grilling \
             consensus-review-loop \
             delegated-change-review \
+            docs-context-curator \
             review-gated-implementation \
             implement-in-stages \
             review-loop \
@@ -47,7 +48,7 @@ jobs:
           done
       - name: Validate manual-only metadata
         run: |
-          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 18
+          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 19
           for metadata in $(find skills -path '*/agents/openai.yaml')
           do
             grep -F "allow_implicit_invocation: false" "$metadata"
@@ -56,6 +57,8 @@ jobs:
           done
       - name: Test repository contracts
         run: python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
+      - name: Test documentation context checks
+        run: python3 -m unittest discover -s tests/docs-context-curator -p 'test_*.py' -v
       - name: Test Suno Create browser adapters
         run: node --test tests/suno-create/*.test.mjs
       - name: Test Codex session recovery

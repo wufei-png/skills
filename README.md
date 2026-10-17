@@ -27,6 +27,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - Need bounded subagent consensus without changing the base workflow? Use the matching `consensus-*` variant.
 - Need an authorized code change in verified stages? Use `implement-in-stages`; use `review-gated-implementation` when each stage also needs the delegated review gate.
 - Need a read-only audit? Use `review-tests` for tests or `improve-code-comments` for comments and docstrings; use `review-loop` for a bounded review-and-fix loop.
+- Need focused current docs and discoverable history? Use `docs-context-curator` to organize reading paths, archive historical material, and check migration references without adopting a documentation framework.
 - Need to locate prior local history? Use `codex-session-recovery` for Codex JSONL or `opencode-session-toolkit` for OpenCode SQLite sessions.
 - Need to report findings from this chat to an existing Codex task? Use `codex-thread-report`.
 - Need to prepare a user-facing artifact for delivery? Use `sanitize-artifacts` to remove prompt and production residue while preserving audience requirements.
@@ -67,6 +68,7 @@ Validate catalog discovery, repository contracts, scripted skill CLIs, and chang
 ```bash
 NO_COLOR=1 npx -y skills@latest add . --list
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
+python3 -m unittest discover -s tests/docs-context-curator -p 'test_*.py' -v
 node --test tests/suno-create/*.test.mjs
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
@@ -93,6 +95,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 
 ### Engineering
 
+- [`docs-context-curator`](./skills/engineering/docs-context-curator/SKILL.md) — Organize current documentation and searchable history with optional read-only checks; preserve current rules and repair necessary migration references.
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — Audit and improve comments and docstrings without changing executable code.
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — Audit a project test suite for prioritized, evidence-backed defects without modifying it.
 - [`review-loop`](./skills/engineering/review-loop/SKILL.md) — Run a bounded review-and-fix loop with fresh, read-only reviewer subagents.
@@ -168,6 +171,8 @@ The original repository documentation is retained under [`docs/archive`](./docs/
 `review-gated-grilling` is a self-contained variant derived from the current `grilling` contract. Its independent-first, evidence-led, adaptively stopped discussion gate is informed by [Liang et al.'s multi-agent debate](https://aclanthology.org/2024.emnlp-main.992/), [Zhu et al.'s analysis of confidence and diversity](https://aclanthology.org/2026.findings-acl.1694/), [Baltaji et al.'s conformity findings](https://aclanthology.org/2024.c3nlp-1.2/), and [gstack's fresh-context second-opinion workflow](https://github.com/garrytan/gstack/blob/main/office-hours/SKILL.md). No upstream files were imported.
 
 `implement-in-stages` is a self-contained variant derived from `review-gated-implementation`. Their shared planning, execution, checks, commit, and reporting wording intentionally stays parallel so common updates can be synchronized directly.
+
+`docs-context-curator` is an original synthesis informed by [daymade's documentation governance](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-docs/docs-cleaner/SKILL.md), [progressive disclosure](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-claude-code/claude-md-progressive-disclosurer/SKILL.md), and [Driftlock's archive boundaries](https://github.com/KairosSignal/driftlock-agent-docs/tree/c51bca5c0904e0b0f8bd38e86430f4c9214e3678). It uses optional scoped checks instead of a persistent documentation graph or lock. No upstream files were imported. Its manual reading-path cases do not establish token savings until actually run and measured.
 
 ## License
 

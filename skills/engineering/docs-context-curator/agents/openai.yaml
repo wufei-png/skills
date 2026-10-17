@@ -1,0 +1,7 @@
+interface:
+  display_name: "Docs Context Curator"
+  short_description: "Curate current docs and searchable project history"
+  default_prompt: "Use $docs-context-curator to organize this project's documentation for focused reading while preserving discoverable history."
+
+policy:
+  allow_implicit_invocation: false
