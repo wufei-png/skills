@@ -1,0 +1,7 @@
+interface:
+  display_name: "Godot Silent Review"
+  short_description: "Review Godot frames without desktop windows"
+  default_prompt: "Use $godot-silent-review to inspect this Godot project's screenshots and motion keyframes silently through its existing Web capture runner."
+
+policy:
+  allow_implicit_invocation: false

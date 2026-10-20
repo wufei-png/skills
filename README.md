@@ -28,6 +28,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - Need an authorized code change in verified stages? Use `implement-in-stages`; use `review-gated-implementation` when each stage also needs the delegated review gate.
 - Need a read-only audit? Use `review-tests` for tests or `improve-code-comments` for comments and docstrings; use `review-loop` for a bounded review-and-fix loop.
 - Need focused current docs and discoverable history? Use `docs-context-curator` to organize reading paths, archive historical material, and check migration references without adopting a documentation framework.
+- Need Godot screenshots or motion keyframes without desktop windows? Use `godot-silent-review` with an existing compatible project-local Web capture runner; the Uncounted profile is documented.
 - Need to locate prior local history? Use `codex-session-recovery` for Codex JSONL or `opencode-session-toolkit` for OpenCode SQLite sessions.
 - Need to report findings from this chat to an existing Codex task? Use `codex-thread-report`.
 - Need to prepare a user-facing artifact for delivery? Use `sanitize-artifacts` to remove prompt and production residue while preserving audience requirements.
@@ -95,6 +96,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 
 ### Engineering
 
+- [`godot-silent-review`](./skills/engineering/godot-silent-review/SKILL.md) — Inspect Godot Web screenshots and motion keyframes without desktop windows; requires a compatible project-local runner and documents the Uncounted profile.
 - [`docs-context-curator`](./skills/engineering/docs-context-curator/SKILL.md) — Organize current documentation and searchable history with optional read-only checks; preserve current rules and repair necessary migration references.
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — Audit and improve comments and docstrings without changing executable code.
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — Audit a project test suite for prioritized, evidence-backed defects without modifying it.
@@ -173,6 +175,8 @@ The original repository documentation is retained under [`docs/archive`](./docs/
 `implement-in-stages` is a self-contained variant derived from `review-gated-implementation`. Their shared planning, execution, checks, commit, and reporting wording intentionally stays parallel so common updates can be synchronized directly.
 
 `docs-context-curator` is an original synthesis informed by [daymade's documentation governance](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-docs/docs-cleaner/SKILL.md), [progressive disclosure](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-claude-code/claude-md-progressive-disclosurer/SKILL.md), and [Driftlock's archive boundaries](https://github.com/KairosSignal/driftlock-agent-docs/tree/c51bca5c0904e0b0f8bd38e86430f4c9214e3678). It uses optional scoped checks instead of a persistent documentation graph or lock. No upstream files were imported. Its manual reading-path cases do not establish token savings until actually run and measured.
+
+`godot-silent-review` was adapted from the project-local Uncounted skill. Its project-specific commands and checkpoints live in an optional reference; the capture runner, engine, browser, fonts, game assets and run evidence remain outside this repository.
 
 ## License
 

@@ -28,6 +28,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要将已授权的代码变更分阶段并验证交付？使用 `implement-in-stages`；如果每个阶段还需要委托审查门，使用 `review-gated-implementation`。
 - 需要只读审查？测试用 `review-tests`，注释和 docstring 用 `improve-code-comments`；需要有轮次上限的审查修复循环时用 `review-loop`。
 - 需要让当前文档更聚焦、历史仍可查找？使用 `docs-context-curator` 整理阅读入口、归档历史资料并检查迁移引用，无需引入文档框架。
+- 需要静默检查 Godot 截图或动作关键帧？使用 `godot-silent-review`，需要项目已有兼容的 Web 后台出图脚本；已提供 Uncounted 的参考配置。
 - 需要定位本地历史？Codex JSONL 用 `codex-session-recovery`，OpenCode SQLite 会话用 `opencode-session-toolkit`。
 - 需要将本会话的调查结论回报给现有 Codex 会话？使用 `codex-thread-report`。
 - 需要准备面向用户交付的成品？使用 `sanitize-artifacts` 清除提示词及生产过程残留，同时保留受众需要的信息。
@@ -95,6 +96,7 @@ git diff --check
 
 ### Engineering
 
+- [`godot-silent-review`](./skills/engineering/godot-silent-review/SKILL.md) — 静默检查 Godot Web 截图和动作关键帧；需要项目已有兼容的后台脚本，附 Uncounted 参考配置。
 - [`docs-context-curator`](./skills/engineering/docs-context-curator/SKILL.md) — 整理当前文档与可检索历史，按需使用只读检查，保留现行规则并修复必要的迁移引用。
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — 在不修改可执行代码的前提下审查和改进注释与 docstring。
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — 以只读方式审查项目测试套件，返回按优先级排序、有证据支持的缺陷。
@@ -173,6 +175,8 @@ git diff --check
 `implement-in-stages` 是从 `review-gated-implementation` 派生的自包含变体。两者共有的规划、执行、检查、提交与报告措辞有意保持平行，便于直接同步通用更新。
 
 `docs-context-curator` 是原创综合设计，参考了 [daymade 的文档治理](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-docs/docs-cleaner/SKILL.md)、[渐进式披露](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-claude-code/claude-md-progressive-disclosurer/SKILL.md)及 [Driftlock 的归档边界](https://github.com/KairosSignal/driftlock-agent-docs/tree/c51bca5c0904e0b0f8bd38e86430f4c9214e3678)。它使用可选的有界检查，不引入持久文档依赖图或锁文件。未直接迁入上游文件；人工阅读路径用例需实际执行和测量后，才能作为 token 收益的证据。
+
+`godot-silent-review` 改编自 Uncounted 项目内的 skill。项目专属命令和检查点放在按需读取的参考文件中；出图脚本、引擎、浏览器、字体、游戏素材和运行证据继续保存在项目或本机，不迁入本仓库。
 
 ## 许可证
 
