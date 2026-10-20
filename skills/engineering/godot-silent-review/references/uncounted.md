@@ -4,12 +4,12 @@ Use this profile for the Uncounted Godot project (`config/name="未计入"`) whe
 
 ## Prerequisites and command
 
-The macOS runner needs Python 3, Node.js, Playwright, an executable independent `chrome-headless-shell`, the project's pinned Godot engine and matching Web debug export template. Its review copy bundles a local CJK system font. Keep the engine, browser, font copy and generated artifacts in the target project or its existing local caches; none is distributed with this skill.
+The macOS runner needs Python 3, Node.js, the environment's configured Playwright, its matching independent `chrome-headless-shell`, the project's pinned Godot engine and matching Web debug export template. The runner queries that Playwright's read-only `install --dry-run chromium-headless-shell` output for the required browser location; it does not pick unrelated cached revisions or install missing dependencies. Its review copy bundles a local CJK system font. Keep the engine, browser, font copy and generated artifacts in the target project or its existing local caches; none is distributed with this skill.
 
 From the target project root:
 
 ```sh
-python3 tests/run_offscreen_web.py --sizes 1280
+python3 tests/run_offscreen_web.py
 ```
 
 For a layout review across the supported sizes:
@@ -18,7 +18,7 @@ For a layout review across the supported sizes:
 python3 tests/run_offscreen_web.py --sizes 960,1280,1600
 ```
 
-The default route is `capture_scene_refinement`. It must acknowledge all ten checkpoints in order:
+The runner uses the project's default size unless the user supplies `--sizes`. It runs `capture_scene_refinement` and acknowledges all ten checkpoints in order:
 
 1. `cabin-speech`
 2. `door-conversation`
@@ -31,7 +31,7 @@ The default route is `capture_scene_refinement`. It must acknowledge all ten che
 9. `observation`
 10. `history-large`
 
-Do not shorten `--stages`: the Web harness waits at each checkpoint. Select which resulting images to inspect instead. Other chapters and the prologue are not covered by this route.
+The Web harness waits at each checkpoint. Select which resulting images to inspect after the full capture. Other chapters and the prologue are not covered by this route. Run captures serially for the same project so they can reuse its existing import cache.
 
 ## Result contract
 
