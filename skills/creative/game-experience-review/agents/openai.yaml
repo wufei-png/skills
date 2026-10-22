@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Experience Review"
+  short_description: "Review games through independent player perspectives"
+  default_prompt: "Use $game-experience-review to assess this game's experience with three independent, read-only perspectives, inspect relevant code and evidence, and recommend testable improvements."
+
+policy:
+  allow_implicit_invocation: false

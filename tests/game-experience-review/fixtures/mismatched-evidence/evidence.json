@@ -1,0 +1,29 @@
+{
+  "target_build": "warehouse-b",
+  "records": [
+    {
+      "build": "warehouse-a",
+      "kind": "video_metadata_only",
+      "recording_supplied": false,
+      "encoded_fps": 60,
+      "size": [1920, 1080],
+      "audio": "muted",
+      "text_scale": 1.0,
+      "reduced_motion": false
+    },
+    {
+      "build": "warehouse-b",
+      "kind": "authored_frame_description",
+      "image_supplied": false,
+      "size": [1024, 700],
+      "text_scale": 1.3,
+      "reduced_motion": true,
+      "description": "A robot is beside a box and a work card is open."
+    },
+    {
+      "build": "warehouse-b",
+      "kind": "script_assertion",
+      "result": "Audio files exist and have nonzero PCM samples."
+    }
+  ]
+}

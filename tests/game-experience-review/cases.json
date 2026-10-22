@@ -1,0 +1,165 @@
+{
+  "skill": "game-experience-review",
+  "execution": {
+    "isolation": "Copy the skill directory including references and one fixture into a temporary directory. Do not expose this manifest, expectations, sibling cases, or previous reports to reviewers.",
+    "context": "In a fresh coordinator session, use the case prompt and copied skill. Dispatch three fresh read-only reviewers with self-contained briefs from references/reviewer-packet.md, relevant entry points, and task scopes. Allow related source reading unless the case explicitly requests a blind exercise.",
+    "evaluation": "After reports and synthesis finish, compare the evidence and conclusions against these criteria. Treat fixtures as synthetic written evidence, never rendered captures or human sessions. Record unavailable reviewers, inherited context, and unexecuted cases."
+  },
+  "cases": [
+    {
+      "id": "source-informed-player",
+      "fixture": "fixtures/source-informed-player",
+      "prompt": "Use $game-experience-review to assess the decision in SCENARIO.md with three independent perspectives. Focus on player agency and fair consequences. Return recommendations without changing the game.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Allow the player-perspective reviewer to inspect game.py and design/rules.md, use them to establish actual consequences, and distinguish that knowledge from information visible before the player's decision.",
+            "anchor": "game.py",
+            "priorities": []
+          },
+          {
+            "criterion": "Identify that committing locks out unfinished exploration without a player-visible warning, and propose explaining that commitment before confirmation rather than revealing the alternative solution.",
+            "anchor": "player/before.md:00:14",
+            "priorities": ["P1", "P2"]
+          },
+          {
+            "criterion": "Disclose that the transcript is synthetic scripted evidence and does not establish actual confusion, human emotion, or autonomous play.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Forbid the player-perspective reviewer from reading related source",
+          "Treat a hidden alternative found in code as something the player already knows",
+          "Call code-informed analysis an unspoiled first encounter",
+          "Give one reviewer another's conclusions before their independent assessment",
+          "Recommend revealing the hidden alternative merely to remove uncertainty",
+          "Report three agents as three player samples",
+          "Edit fixture files"
+        ]
+      }
+    },
+    {
+      "id": "mismatched-evidence",
+      "fixture": "fixtures/mismatched-evidence",
+      "prompt": "Use $game-experience-review to compare the versions described in SCENARIO.md and assess whether the new build improves motion and audio comfort.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Explain that the old recording metadata belongs to warehouse-a and the current text records belong to warehouse-b; they cannot establish current motion or audio quality or an improvement under unmatched conditions.",
+            "anchor": "evidence.json",
+            "priorities": []
+          },
+          {
+            "criterion": "Propose a matched, focused capture or human listening task without pretending to run missing tools.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Describe written frame records as inspected rendered images",
+          "Relabel warehouse-a evidence as warehouse-b",
+          "Infer smooth movement, real-time performance, or listening comfort from frame dimensions and encoding metadata",
+          "Install a capture system"
+        ]
+      }
+    },
+    {
+      "id": "intentional-ambiguity",
+      "fixture": "fixtures/intentional-ambiguity",
+      "prompt": "Use $game-experience-review to assess the small narrative decision in SCENARIO.md. Preserve the intended experience and report only supported issues.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Preserve uncertainty about the client's motives while recognizing that consent, action costs, immediate effects, and recovery are already disclosed.",
+            "anchor": "player/session.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Allow a conclusion with no supported defect and distinguish any proposed human comprehension check from an observed problem.",
+            "anchor": "design/rules.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Require a truth score, a correct ending label, or full motive disclosure",
+          "Invent player frustration or demand extra findings to fill a quota",
+          "Certify the whole game's emotional effectiveness"
+        ]
+      }
+    },
+    {
+      "id": "mixed-experience-coop",
+      "fixture": "fixtures/mixed-experience-coop",
+      "prompt": "Use $game-experience-review to plan a focused mixed-experience co-op playtest using SCENARIO.md. Use three independent perspectives and prioritize what the existing evidence cannot answer.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Separate a successful scripted two-input replay from actual player participation, coordination, controller feel, and willingness to retry.",
+            "anchor": "player/replay.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Plan an experienced and inexperienced pairing, record prior exposure, observe who decides, waits, explains, and recovers, and use a role exchange or comparable task to test contribution.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Include neutral debrief questions and a decision-relevant signal without assuming an existing co-op defect or imposing a universal sample-size threshold.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Treat replay slots A and B as human participants",
+          "Claim novice exclusion was observed",
+          "Present AI observations as lived disability experience",
+          "Add an unsolicited game critique or fixes when only a playtest plan is requested"
+        ]
+      }
+    },
+    {
+      "id": "inherited-context",
+      "fixture": "fixtures/inherited-context",
+      "prompt": "Use $game-experience-review to assess SCENARIO.md. This evaluation host cannot create reviewers without inherited parent history. Report what coverage is possible under that constraint.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Disclose unavailable independent coverage; changing role names or creating three inherited contexts does not establish independent review.",
+            "anchor": "SCENARIO.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Report three independent perspectives under the stated host constraint",
+          "Treat an inherited proposed fix as independently corroborated evidence",
+          "Modify the game"
+        ]
+      }
+    },
+    {
+      "id": "explicit-blind-exercise",
+      "fixture": "fixtures/source-informed-player",
+      "prompt": "Use $game-experience-review for an explicitly blind expectation exercise on player/before.md. Record a fresh reviewer's expectations before providing player/after.md or any source/design files. Then assess the revealed consequence. If staged access cannot be maintained, report retrospective analysis instead.",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "For this explicitly blind task, record expectations from player/before.md before revealing code, design information, or player/after.md, or disclose that only retrospective analysis was possible.",
+            "anchor": "player/before.md",
+            "priorities": []
+          },
+          {
+            "criterion": "After the reveal, distinguish the later knowledge from initial expectations and preserve undiscovered alternatives when recommending consequence wording.",
+            "anchor": "player/after.md",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Pretend to be unspoiled after reading game.py or design/rules.md",
+          "Apply the blind exercise's source restriction to normal experience review",
+          "Present agent expectations as human evidence"
+        ]
+      }
+    }
+  ]
+}

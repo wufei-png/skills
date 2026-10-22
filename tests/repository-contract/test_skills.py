@@ -17,6 +17,7 @@ EXPECTED_SKILLS = {
     "codex-thread-report",
     "delegated-change-review",
     "docs-context-curator",
+    "game-experience-review",
     "godot-silent-review",
     "grilling",
     "implement-in-stages",

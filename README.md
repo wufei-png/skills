@@ -29,6 +29,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - Need a read-only audit? Use `review-tests` for tests or `improve-code-comments` for comments and docstrings; use `review-loop` for a bounded review-and-fix loop.
 - Need focused current docs and discoverable history? Use `docs-context-curator` to organize reading paths, archive historical material, and check migration references without adopting a documentation framework.
 - Need Godot screenshots or motion keyframes without desktop windows? Use `godot-silent-review` with an existing compatible project-local Web capture runner; the Uncounted profile is documented.
+- Need player and critic perspectives on a game? Use `game-experience-review` for independent experience review, focused playtest planning, or build comparison using existing project evidence.
 - Need to locate prior local history? Use `codex-session-recovery` for Codex JSONL or `opencode-session-toolkit` for OpenCode SQLite sessions.
 - Need to report findings from this chat to an existing Codex task? Use `codex-thread-report`.
 - Need to prepare a user-facing artifact for delivery? Use `sanitize-artifacts` to remove prompt and production residue while preserving audience requirements.
@@ -109,6 +110,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 
 ### Creative
 
+- [`game-experience-review`](./skills/creative/game-experience-review/SKILL.md) — Review, plan playtests, or compare builds with three fresh, read-only perspectives by default. Use code to analyze player-visible choices and recommend testable improvements; reserve blind exercises for explicit requests. Requires a fresh-context subagent mechanism.
 - [`suno-music-explorer`](./skills/creative/suno-music-explorer/SKILL.md) — Explore blank or bounded Suno directions through capped hypotheses, real listening, and human final selection. Requires `suno-create`.
 - [`suno-create`](./skills/creative/suno-create/SKILL.md) — Use an authenticated CUA tab, an isolated Playwright profile, or Computer Use to verify the complete package before an authorized Create; otherwise prepare a manual handoff.
 
@@ -177,6 +179,8 @@ The original repository documentation is retained under [`docs/archive`](./docs/
 `docs-context-curator` is an original synthesis informed by [daymade's documentation governance](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-docs/docs-cleaner/SKILL.md), [progressive disclosure](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-claude-code/claude-md-progressive-disclosurer/SKILL.md), and [Driftlock's archive boundaries](https://github.com/KairosSignal/driftlock-agent-docs/tree/c51bca5c0904e0b0f8bd38e86430f4c9214e3678). It uses optional scoped checks instead of a persistent documentation graph or lock. No upstream files were imported. Its manual reading-path cases do not establish token savings until actually run and measured.
 
 `godot-silent-review` was adapted from the project-local Uncounted skill. Its project-specific commands and checkpoints live in an optional reference; the capture runner, engine, browser, fonts, game assets and run evidence remain outside this repository.
+
+`game-experience-review` is an original synthesis informed by [AlterLab's structured playtest workflow](https://github.com/AlterLab-IEU/AlterLab_GameForge/blob/5f5148d61986b32299070e87fcd4a1ab3718eacf/skills/workflows/game-playtest/SKILL.md) and [Yuki001's design-review approach](https://github.com/Yuki001/game-dev-skills/blob/f0885d41a2db45e2a97eede248f6e94a0f786a8b/skills/game-design-review/SKILL.md). No upstream files were imported. Capture tools and game-specific commands remain in the target projects; synthetic evaluation cases do not establish real-player experience.
 
 ## License
 

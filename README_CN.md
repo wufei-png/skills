@@ -29,6 +29,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要只读审查？测试用 `review-tests`，注释和 docstring 用 `improve-code-comments`；需要有轮次上限的审查修复循环时用 `review-loop`。
 - 需要让当前文档更聚焦、历史仍可查找？使用 `docs-context-curator` 整理阅读入口、归档历史资料并检查迁移引用，无需引入文档框架。
 - 需要静默检查 Godot 截图或动作关键帧？使用 `godot-silent-review`，需要项目已有兼容的 Web 后台出图脚本；已提供 Uncounted 的参考配置。
+- 需要从玩家和评论者视角评审游戏？使用 `game-experience-review`，利用项目现有证据进行独立体验评审、定向试玩规划或版本比较。
 - 需要定位本地历史？Codex JSONL 用 `codex-session-recovery`，OpenCode SQLite 会话用 `opencode-session-toolkit`。
 - 需要将本会话的调查结论回报给现有 Codex 会话？使用 `codex-thread-report`。
 - 需要准备面向用户交付的成品？使用 `sanitize-artifacts` 清除提示词及生产过程残留，同时保留受众需要的信息。
@@ -109,6 +110,7 @@ git diff --check
 
 ### Creative
 
+- [`game-experience-review`](./skills/creative/game-experience-review/SKILL.md) — 默认使用三名全新、只读评审者，进行体验评审、试玩规划或版本比较。允许读代码分析玩家当时可见的选择，提出可复测的改进；盲测仅在明确要求时启用。需要支持全新上下文的子 Agent 机制。
 - [`suno-music-explorer`](./skills/creative/suno-music-explorer/SKILL.md) — 通过有上限的假设、实际试听及用户最终选择，探索空白或带边界的 Suno 音乐方向；需要 `suno-create`。
 - [`suno-create`](./skills/creative/suno-create/SKILL.md) — 使用已登录的 CUA 标签页、独立 Playwright profile 或 Computer Use，完整核验参数后提交已授权的 Create；否则准备手动交接包。
 
@@ -177,6 +179,8 @@ git diff --check
 `docs-context-curator` 是原创综合设计，参考了 [daymade 的文档治理](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-docs/docs-cleaner/SKILL.md)、[渐进式披露](https://github.com/daymade/claude-code-skills/blob/48a374e9d810960f76c690b6e17aa5bdfe016f7e/daymade-claude-code/claude-md-progressive-disclosurer/SKILL.md)及 [Driftlock 的归档边界](https://github.com/KairosSignal/driftlock-agent-docs/tree/c51bca5c0904e0b0f8bd38e86430f4c9214e3678)。它使用可选的有界检查，不引入持久文档依赖图或锁文件。未直接迁入上游文件；人工阅读路径用例需实际执行和测量后，才能作为 token 收益的证据。
 
 `godot-silent-review` 改编自 Uncounted 项目内的 skill。项目专属命令和检查点放在按需读取的参考文件中；出图脚本、引擎、浏览器、字体、游戏素材和运行证据继续保存在项目或本机，不迁入本仓库。
+
+`game-experience-review` 是原创综合设计，参考了 [AlterLab 的结构化试玩流程](https://github.com/AlterLab-IEU/AlterLab_GameForge/blob/5f5148d61986b32299070e87fcd4a1ab3718eacf/skills/workflows/game-playtest/SKILL.md)与 [Yuki001 的设计评审方法](https://github.com/Yuki001/game-dev-skills/blob/f0885d41a2db45e2a97eede248f6e94a0f786a8b/skills/game-design-review/SKILL.md)。未直接迁入上游文件。取证工具与游戏专属命令保留在目标项目中，合成评估用例不代表真实玩家体验。
 
 ## 许可证
 
