@@ -33,6 +33,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要定位本地历史？Codex JSONL 用 `codex-session-recovery`，OpenCode SQLite 会话用 `opencode-session-toolkit`。
 - 需要将本会话的调查结论回报给现有 Codex 会话？使用 `codex-thread-report`。
 - 需要准备面向用户交付的成品？使用 `sanitize-artifacts` 清除提示词及生产过程残留，同时保留受众需要的信息。
+- 需要指定的 skill 只能显式调用？使用 `skill-manual-only` 设置并核验两个宿主对应的调用控制字段。
 - 需要在有上限的预算内探索 Suno 音乐？使用 `suno-music-explorer`；提交已授权的 Create 或有上限的串行批次时使用 `suno-create`。
 
 目录声明需要配套 skill 时，应将配对工作流一起安装。
@@ -94,6 +95,7 @@ git diff --check
 - [`codex-thread-report`](./skills/productivity/codex-thread-report/SKILL.md) — 为现有 Codex 会话整理相关结论，并在明确要求时发送。
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — 安全检查、搜索、诊断及导出本地 OpenCode SQLite 会话。
 - [`sanitize-artifacts`](./skills/productivity/sanitize-artifacts/SKILL.md) — 清除已选交付物中的提示词、对话和生产过程残留，同时保留受众需要的实质信息。
+- [`skill-manual-only`](./skills/productivity/skill-manual-only/SKILL.md) — 为指定 skill 设置并核验两处手动调用字段，保留原有指令及其他配置。
 
 ### Engineering
 

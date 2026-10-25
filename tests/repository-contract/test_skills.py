@@ -28,6 +28,7 @@ EXPECTED_SKILLS = {
     "review-loop",
     "review-tests",
     "sanitize-artifacts",
+    "skill-manual-only",
     "suno-create",
     "suno-music-explorer",
     "wait-what",

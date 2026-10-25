@@ -1,0 +1,7 @@
+interface:
+  display_name: "Manual-only Skills"
+  short_description: "Require explicit invocation for selected skills"
+  default_prompt: "Use $skill-manual-only to set and verify both manual-only invocation fields for the skills I specify, preserving their other content."
+
+policy:
+  allow_implicit_invocation: false

@@ -22,7 +22,7 @@ jobs:
       - name: Discover installable skills
         run: |
           NO_COLOR=1 npx -y skills@latest add . --list | tee /tmp/skills-list.txt
-          grep -F "Found 21 skills" /tmp/skills-list.txt
+          grep -F "Found 22 skills" /tmp/skills-list.txt
           for skill in \
             consensus-change-review \
             consensus-gated-grilling \
@@ -42,6 +42,7 @@ jobs:
             codex-thread-report \
             opencode-session-toolkit \
             sanitize-artifacts \
+            skill-manual-only \
             suno-create \
             suno-music-explorer \
             wait-what
@@ -50,7 +51,7 @@ jobs:
           done
       - name: Validate manual-only metadata
         run: |
-          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 21
+          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 22
           for metadata in $(find skills -path '*/agents/openai.yaml')
           do
             grep -F "allow_implicit_invocation: false" "$metadata"

@@ -33,6 +33,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - Need to locate prior local history? Use `codex-session-recovery` for Codex JSONL or `opencode-session-toolkit` for OpenCode SQLite sessions.
 - Need to report findings from this chat to an existing Codex task? Use `codex-thread-report`.
 - Need to prepare a user-facing artifact for delivery? Use `sanitize-artifacts` to remove prompt and production residue while preserving audience requirements.
+- Need selected skills to require explicit invocation? Use `skill-manual-only` to set and verify both host-specific metadata fields.
 - Need bounded Suno exploration? Use `suno-music-explorer`; use `suno-create` for an authorized Create or bounded serial batch.
 
 Install paired workflows together when the catalog says a companion is required.
@@ -94,6 +95,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 - [`codex-thread-report`](./skills/productivity/codex-thread-report/SKILL.md) — Summarize relevant findings for an existing Codex thread and send them on explicit request.
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — Inspect, search, diagnose, and export local OpenCode SQLite sessions safely.
 - [`sanitize-artifacts`](./skills/productivity/sanitize-artifacts/SKILL.md) — Remove prompt, conversation, and production residue from selected deliverables without hiding material audience information.
+- [`skill-manual-only`](./skills/productivity/skill-manual-only/SKILL.md) — Set and verify both manual-only invocation fields for selected skills while preserving their instructions and other configuration.
 
 ### Engineering
 
