@@ -34,7 +34,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - Need to report findings from this chat to an existing Codex task? Use `codex-thread-report`.
 - Need to prepare a user-facing artifact for delivery? Use `sanitize-artifacts` to remove prompt and production residue while preserving audience requirements.
 - Need selected skills to require explicit invocation? Use `skill-manual-only` to set and verify both host-specific metadata fields.
-- Need bounded Suno exploration? Use `suno-music-explorer`; use `suno-create` for an authorized Create or bounded serial batch.
+- Need bounded Suno exploration? Use `suno-music-explorer`; use `suno-create` for an authorized Create or bounded serial batch, and `suno-studio-download` for selected whole-song WAVs.
 
 Install paired workflows together when the catalog says a companion is required.
 
@@ -64,6 +64,8 @@ npx skills@latest add wufei-png/skills \
   -g -y --agent codex
 ```
 
+`suno-studio-download` requires Python 3.11+ and an authenticated [paperfoot/suno-cli](https://github.com/paperfoot/suno-cli).
+
 ## Validate
 
 Validate catalog discovery, repository contracts, scripted skill CLIs, and changed-file whitespace from the repository root:
@@ -76,6 +78,7 @@ node --test tests/suno-create/*.test.mjs
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
 python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
+python3 -m unittest discover -s tests/suno-studio-download -p 'test_*.py' -v
 git diff --check
 ```
 
@@ -115,6 +118,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 - [`game-experience-review`](./skills/creative/game-experience-review/SKILL.md) — Review, plan playtests, or compare builds with three fresh, read-only perspectives by default. Use code to analyze player-visible choices and recommend testable improvements; reserve blind exercises for explicit requests. Requires a fresh-context subagent mechanism.
 - [`suno-music-explorer`](./skills/creative/suno-music-explorer/SKILL.md) — Explore blank or bounded Suno directions through capped hypotheses, real listening, and human final selection. Requires `suno-create`.
 - [`suno-create`](./skills/creative/suno-create/SKILL.md) — Use an authenticated CUA tab, an isolated Playwright profile, or Computer Use to verify the complete package before an authorized Create; otherwise prepare a manual handoff.
+- [`suno-studio-download`](./skills/creative/suno-studio-download/SKILL.md) — Download selected songs as Studio WAVs, checking account counters after each song; requires `paperfoot/suno-cli`.
 
 ## Paired variants
 

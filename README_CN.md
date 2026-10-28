@@ -34,7 +34,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要将本会话的调查结论回报给现有 Codex 会话？使用 `codex-thread-report`。
 - 需要准备面向用户交付的成品？使用 `sanitize-artifacts` 清除提示词及生产过程残留，同时保留受众需要的信息。
 - 需要指定的 skill 只能显式调用？使用 `skill-manual-only` 设置并核验两个宿主对应的调用控制字段。
-- 需要在有上限的预算内探索 Suno 音乐？使用 `suno-music-explorer`；提交已授权的 Create 或有上限的串行批次时使用 `suno-create`。
+- 需要在有上限的预算内探索 Suno 音乐？使用 `suno-music-explorer`；提交已授权的 Create 或串行批次时使用 `suno-create`，下载选定整曲 WAV 时使用 `suno-studio-download`。
 
 目录声明需要配套 skill 时，应将配对工作流一起安装。
 
@@ -64,6 +64,8 @@ npx skills@latest add wufei-png/skills \
   -g -y --agent codex
 ```
 
+`suno-studio-download` 需要 Python 3.11+ 和已登录的 [paperfoot/suno-cli](https://github.com/paperfoot/suno-cli)。
+
 ## 校验
 
 在仓库根目录校验 skill 发现、仓库契约、带脚本的 skill CLI，以及已修改文件的空白格式：
@@ -76,6 +78,7 @@ node --test tests/suno-create/*.test.mjs
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
 python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
+python3 -m unittest discover -s tests/suno-studio-download -p 'test_*.py' -v
 git diff --check
 ```
 
@@ -115,6 +118,7 @@ git diff --check
 - [`game-experience-review`](./skills/creative/game-experience-review/SKILL.md) — 默认使用三名全新、只读评审者，进行体验评审、试玩规划或版本比较。允许读代码分析玩家当时可见的选择，提出可复测的改进；盲测仅在明确要求时启用。需要支持全新上下文的子 Agent 机制。
 - [`suno-music-explorer`](./skills/creative/suno-music-explorer/SKILL.md) — 通过有上限的假设、实际试听及用户最终选择，探索空白或带边界的 Suno 音乐方向；需要 `suno-create`。
 - [`suno-create`](./skills/creative/suno-create/SKILL.md) — 使用已登录的 CUA 标签页、独立 Playwright profile 或 Computer Use，完整核验参数后提交已授权的 Create；否则准备手动交接包。
+- [`suno-studio-download`](./skills/creative/suno-studio-download/SKILL.md) — 将选定歌曲下载为 Studio WAV，逐首检查账户计数；需要 `paperfoot/suno-cli`。
 
 ## 配对变体
 

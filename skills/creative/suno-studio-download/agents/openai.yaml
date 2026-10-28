@@ -1,0 +1,7 @@
+interface:
+  display_name: "Suno Studio Download"
+  short_description: "Download selected Suno songs as Studio WAVs"
+  default_prompt: "Use $suno-studio-download to download the selected Suno song links as whole-song WAV files, checking download counters before and after each song."
+
+policy:
+  allow_implicit_invocation: false

@@ -22,7 +22,7 @@ jobs:
       - name: Discover installable skills
         run: |
           NO_COLOR=1 npx -y skills@latest add . --list | tee /tmp/skills-list.txt
-          grep -F "Found 22 skills" /tmp/skills-list.txt
+          grep -F "Found 23 skills" /tmp/skills-list.txt
           for skill in \
             consensus-change-review \
             consensus-gated-grilling \
@@ -45,13 +45,14 @@ jobs:
             skill-manual-only \
             suno-create \
             suno-music-explorer \
+            suno-studio-download \
             wait-what
           do
             grep -F "$skill" /tmp/skills-list.txt
           done
       - name: Validate manual-only metadata
         run: |
-          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 22
+          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 23
           for metadata in $(find skills -path '*/agents/openai.yaml')
           do
             grep -F "allow_implicit_invocation: false" "$metadata"
@@ -70,3 +71,5 @@ jobs:
         run: python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
       - name: Test Suno music explorer ledger
         run: python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
+      - name: Test Suno Studio downloads
+        run: python3 -m unittest discover -s tests/suno-studio-download -p 'test_*.py' -v

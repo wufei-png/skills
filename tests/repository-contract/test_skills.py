@@ -31,6 +31,7 @@ EXPECTED_SKILLS = {
     "skill-manual-only",
     "suno-create",
     "suno-music-explorer",
+    "suno-studio-download",
     "wait-what",
 }
 VALID_PRIORITIES = {"P0", "P1", "P2", "P3"}
