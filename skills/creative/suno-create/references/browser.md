@@ -62,4 +62,6 @@ The CUA rich-text `fill("")` operation was observed leaving the previous song in
 
 Weirdness and Style Influence expose 0–100, while Variety exposes 0–4. The approved exact-style setting is Variety 0; it is not a percentage. Set and re-read Personalize Off as well as Max Mode. The adapter rejects unsupported references and modes rather than dropping their settings. A successful no-spend preparation is not a successful Create.
 
+For Custom duration, the adapter checks that the displayed time and slider agree and that the requested seconds are within the live range. To return to Auto, it uses the Duration reset control when the Auto button is absent, then verifies the selected mode and absence of Custom controls. Choice groups and uniquely located controls exclude elements under an `aria-hidden` ancestor.
+
 Live Max Mode tooltip: “Costs 2x credits per song.” The [official v6 FAQ](https://help.suno.com/en/articles/13924481) states the base Create returns two songs for 10 credits, making this no-reference Max Mode package 20 credits per Create at the checked date. Recheck at runtime and record the observed debit. This note does not authorize spending.
