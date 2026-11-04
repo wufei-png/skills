@@ -33,7 +33,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - Need to locate prior local history? Use `codex-session-recovery` for Codex JSONL or `opencode-session-toolkit` for OpenCode SQLite sessions.
 - Need to report findings from this chat to an existing Codex task? Use `codex-thread-report`.
 - Need to prepare a user-facing artifact for delivery? Use `sanitize-artifacts` to remove prompt and production residue while preserving audience requirements.
-- Need selected skills to require explicit invocation? Use `skill-manual-only` to set and verify both host-specific metadata fields.
+- Need selected skills to require explicit invocation in supported hosts? Use `skill-manual-only` to set and verify their host-specific metadata.
 - Need bounded Suno exploration? Use `suno-music-explorer`; use `suno-create` for an authorized Create or bounded serial batch, and `suno-studio-download` for selected whole-song WAVs.
 
 Install paired workflows together when the catalog says a companion is required.
@@ -82,7 +82,7 @@ python3 -m unittest discover -s tests/suno-studio-download -p 'test_*.py' -v
 git diff --check
 ```
 
-For manual-only skills, also keep `disable-model-invocation: true` paired with `policy.allow_implicit_invocation: false`. OpenAI's base-schema `quick_validate.py` does not accept the Claude Code and Pi invocation field, so it is not a pass/fail gate for this cross-host catalog.
+Keep `disable-model-invocation: true` paired with `policy.allow_implicit_invocation: false`. The frontmatter field is a host extension outside the Agent Skills base specification; OpenAI's `quick_validate.py` and the Agent Skills [reference validator](https://github.com/agentskills/agentskills/tree/main/skills-ref) reject it, so neither is a pass/fail gate for this cross-host catalog.
 
 The `tests/**/cases.json` files are manual evaluation protocols. CI checks their manifests, fixtures, skill structure, and deterministic scripts; it does not run an AI/provider evaluation runner.
 
@@ -98,7 +98,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 - [`codex-thread-report`](./skills/productivity/codex-thread-report/SKILL.md) — Summarize relevant findings for an existing Codex thread and send them on explicit request.
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — Inspect, search, diagnose, and export local OpenCode SQLite sessions safely.
 - [`sanitize-artifacts`](./skills/productivity/sanitize-artifacts/SKILL.md) — Remove prompt, conversation, and production residue from selected deliverables without hiding material audience information.
-- [`skill-manual-only`](./skills/productivity/skill-manual-only/SKILL.md) — Set and verify both manual-only invocation fields for selected skills while preserving their instructions and other configuration.
+- [`skill-manual-only`](./skills/productivity/skill-manual-only/SKILL.md) — Set and verify host-specific manual-only metadata, report conflicts, and fill required OpenAI plugin interface fields when needed.
 
 ### Engineering
 
@@ -137,7 +137,9 @@ These opt-in variants keep their base skills unchanged and add bounded, evidence
 | `delegated-change-review` | `consensus-change-review` | One code-review gate |
 | `review-loop` | `consensus-review-loop` | Review-and-fix rounds |
 
-All skills in the current catalog are manual-only. Each `SKILL.md` sets `disable-model-invocation: true` for Claude Code and Pi, while the paired `agents/openai.yaml` sets `policy.allow_implicit_invocation: false` for ChatGPT and Codex. Keep both fields in sync. `review-gated-grilling` and the review skills are Codex-first because they expect a fresh subagent mechanism; the code review skills additionally use the built-in `$review-agent` skill where referenced. Reviewers do not edit implementation files or ask the user questions directly. Whether code reviewers run tests or checks is a review-strategy decision based on the concrete problem. The primary agent still adjudicates findings and owns the user-facing result.
+Catalog skills carry manual-only metadata for supported hosts: `disable-model-invocation: true` for Claude Code, Pi, VS Code Copilot, Cursor, and OpenCode 2, and `policy.allow_implicit_invocation: false` for Codex. Keep both fields in sync. Other hosts can ignore these extensions; for example, [OpenCode 1](https://opencode.ai/docs/skills/) does not use them to control automatic selection. Host settings can also conflict, so verify behavior in the target host when needed.
+
+`review-gated-grilling` and the review skills are Codex-first because they expect a fresh subagent mechanism; the code review skills additionally use the built-in `$review-agent` skill where referenced. Reviewers do not edit implementation files or ask the user questions directly. Whether code reviewers run tests or checks is a review-strategy decision based on the concrete problem. The primary agent still adjudicates findings and owns the user-facing result.
 
 ## External projects
 

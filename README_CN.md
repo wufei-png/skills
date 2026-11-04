@@ -33,7 +33,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要定位本地历史？Codex JSONL 用 `codex-session-recovery`，OpenCode SQLite 会话用 `opencode-session-toolkit`。
 - 需要将本会话的调查结论回报给现有 Codex 会话？使用 `codex-thread-report`。
 - 需要准备面向用户交付的成品？使用 `sanitize-artifacts` 清除提示词及生产过程残留，同时保留受众需要的信息。
-- 需要指定的 skill 只能显式调用？使用 `skill-manual-only` 设置并核验两个宿主对应的调用控制字段。
+- 需要指定的 skill 在支持的宿主中只能显式调用？使用 `skill-manual-only` 设置并核验对应的宿主配置。
 - 需要在有上限的预算内探索 Suno 音乐？使用 `suno-music-explorer`；提交已授权的 Create 或串行批次时使用 `suno-create`，下载选定整曲 WAV 时使用 `suno-studio-download`。
 
 目录声明需要配套 skill 时，应将配对工作流一起安装。
@@ -82,7 +82,7 @@ python3 -m unittest discover -s tests/suno-studio-download -p 'test_*.py' -v
 git diff --check
 ```
 
-对于只能手动调用的 skill，还需保持 `disable-model-invocation: true` 与 `policy.allow_implicit_invocation: false` 成对存在。OpenAI 的基础 schema `quick_validate.py` 不接受 Claude Code 与 Pi 的调用字段，因此不作为这个跨宿主目录的通过门禁。
+保持 `disable-model-invocation: true` 与 `policy.allow_implicit_invocation: false` 成对存在。前者是 Agent Skills 基础规范之外的宿主扩展；OpenAI 的 `quick_validate.py` 和 Agent Skills 的[参考校验器](https://github.com/agentskills/agentskills/tree/main/skills-ref)都不接受它，因此不作为这个跨宿主目录的通过门禁。
 
 `tests/**/cases.json` 是人工评估协议。CI 只检查 manifest、fixture、skill 结构和确定性脚本，不运行 AI/provider 评估 runner。
 
@@ -98,7 +98,7 @@ git diff --check
 - [`codex-thread-report`](./skills/productivity/codex-thread-report/SKILL.md) — 为现有 Codex 会话整理相关结论，并在明确要求时发送。
 - [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — 安全检查、搜索、诊断及导出本地 OpenCode SQLite 会话。
 - [`sanitize-artifacts`](./skills/productivity/sanitize-artifacts/SKILL.md) — 清除已选交付物中的提示词、对话和生产过程残留，同时保留受众需要的实质信息。
-- [`skill-manual-only`](./skills/productivity/skill-manual-only/SKILL.md) — 为指定 skill 设置并核验两处手动调用字段，保留原有指令及其他配置。
+- [`skill-manual-only`](./skills/productivity/skill-manual-only/SKILL.md) — 设置并核验指定 skill 的宿主手动调用配置，报告冲突，并在需要时补齐 OpenAI 插件界面字段。
 
 ### Engineering
 
@@ -137,7 +137,9 @@ git diff --check
 | `delegated-change-review` | `consensus-change-review` | 单次代码审查门 |
 | `review-loop` | `consensus-review-loop` | 审查与修复轮次 |
 
-当前目录中的所有 skill 都只能手动调用。每个 `SKILL.md` 都通过 `disable-model-invocation: true` 管理 Claude Code 与 Pi；配套的 `agents/openai.yaml` 则通过 `policy.allow_implicit_invocation: false` 管理 ChatGPT 与 Codex，两处字段必须保持同步。`review-gated-grilling` 与审查 skill 以 Codex 为主要运行环境，因为它们需要全新 subagent 机制；代码审查 skill 还会在标明的位置依赖内置 `$review-agent`。Reviewer 不编辑实现文件，也不直接向用户提问；代码 reviewer 是否运行测试或检查，由具体问题的审查策略决定。主 Agent 仍负责裁决发现并对面向用户的最终结果负责。
+目录中的 skill 均为支持的宿主配置了手动调用：`disable-model-invocation: true` 适用于 Claude Code、Pi、VS Code Copilot、Cursor 和 OpenCode 2，`policy.allow_implicit_invocation: false` 适用于 Codex。两处字段必须保持同步。其他宿主可能忽略这些扩展；例如 [OpenCode 1](https://opencode.ai/docs/skills/) 不使用它们控制自动选择。宿主设置也可能发生冲突，需要时应在目标宿主中验证实际行为。
+
+`review-gated-grilling` 与审查 skill 以 Codex 为主要运行环境，因为它们需要全新 subagent 机制；代码审查 skill 还会在标明的位置依赖内置 `$review-agent`。Reviewer 不编辑实现文件，也不直接向用户提问；代码 reviewer 是否运行测试或检查，由具体问题的审查策略决定。主 Agent 仍负责裁决发现并对面向用户的最终结果负责。
 
 ## 外部项目
 
