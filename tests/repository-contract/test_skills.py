@@ -23,6 +23,7 @@ EXPECTED_SKILLS = {
     "implement-in-stages",
     "improve-code-comments",
     "opencode-session-toolkit",
+    "reference-style-iteration",
     "review-gated-grilling",
     "review-gated-implementation",
     "review-loop",
@@ -102,6 +103,28 @@ class SkillRepositoryContractTest(unittest.TestCase):
                         (skill_dir / relative).is_file(),
                         f"missing {skill_dir / relative}",
                     )
+
+    def test_reference_style_iteration_is_self_contained_and_attributed(self) -> None:
+        skill_dir = SKILLS_ROOT / "creative/reference-style-iteration"
+        documents = (
+            skill_dir / "SKILL.md",
+            skill_dir / "RESEARCH.md",
+            skill_dir / "vendor/unimage/UPSTREAM-SKILL.md",
+            skill_dir / "vendor/unimage/VENDOR.md",
+        )
+        for document in documents:
+            for target in re.findall(r"\]\(([^)]+)\)", document.read_text(encoding="utf-8")):
+                if target.startswith(("https://", "http://", "#")):
+                    continue
+                path = (document.parent / target.split("#", 1)[0]).resolve()
+                with self.subTest(document=document.name, target=target):
+                    self.assertTrue(path.is_relative_to(skill_dir.resolve()), path)
+                    self.assertTrue(path.is_file(), path)
+
+        license_file = skill_dir / "vendor/unimage/LICENSE"
+        license_bytes = license_file.read_bytes()
+        self.assertIn(b"Copyright (c) 2026 huanmu-team", license_bytes)
+        self.assertEqual(license_bytes, (ROOT / "LICENSES/unimage-MIT.txt").read_bytes())
 
     def test_runtime_skill_folders_exclude_test_artifacts(self) -> None:
         for skill_dir in skill_directories():

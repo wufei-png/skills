@@ -1,0 +1,7 @@
+interface:
+  display_name: "Reference Style Iteration"
+  short_description: "Refine style prompts from reference images"
+  default_prompt: "Use $reference-style-iteration to analyze reference images, develop reusable style prompts, and validate authorized visual studies."
+
+policy:
+  allow_implicit_invocation: false

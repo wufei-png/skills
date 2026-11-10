@@ -22,7 +22,7 @@ jobs:
       - name: Discover installable skills
         run: |
           NO_COLOR=1 npx -y skills@latest add . --list | tee /tmp/skills-list.txt
-          grep -F "Found 23 skills" /tmp/skills-list.txt
+          grep -F "Found 24 skills" /tmp/skills-list.txt
           for skill in \
             consensus-change-review \
             consensus-gated-grilling \
@@ -33,6 +33,7 @@ jobs:
             godot-silent-review \
             review-gated-implementation \
             implement-in-stages \
+            reference-style-iteration \
             review-loop \
             review-tests \
             grilling \
@@ -52,7 +53,7 @@ jobs:
           done
       - name: Validate manual-only metadata
         run: |
-          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 23
+          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 24
           for metadata in $(find skills -path '*/agents/openai.yaml')
           do
             grep -F "allow_implicit_invocation: false" "$metadata"
