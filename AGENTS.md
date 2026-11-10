@@ -24,7 +24,7 @@ The first command verifies catalog discovery. The Python commands check reposito
 
 Use kebab-case for skill directories and keep the frontmatter `name` identical to the directory name. All current skills are manual-only: pair `disable-model-invocation: true` in `SKILL.md` with `policy.allow_implicit_invocation: false` in `agents/openai.yaml`. Keep paired variants described in the root README behaviorally parallel except for their stated difference.
 
-Assume the model already knows common coding practices. Keep only instructions that change behavior for the task: its workflow, decisions, safety limits, tool contracts, and output requirements. Use short, familiar wording; avoid repeating general advice or inventing terms. Put rarely needed details in `references/` and repeated, fragile operations in `scripts/`.
+Assume the model already knows common domain knowledge and practices. Keep only instructions that change behavior for the task: its workflow, decisions, safety limits, tool contracts, and output requirements. Arrange sections in task order and avoid duplicated rules or unnecessary mandatory steps and reads. Use short, familiar wording; avoid repeating general advice or inventing terms. Put rarely needed details in `references/` and read them only when relevant; put repeated, fragile operations in `scripts/`.
 
 Python targets 3.11 and the standard library. No repository-wide formatter is configured, so preserve nearby formatting.
 
