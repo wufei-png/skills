@@ -1,0 +1,7 @@
+interface:
+  display_name: "Reference Image Prompt"
+  short_description: "Develop prompts from reference images"
+  default_prompt: "Use $reference-image-prompt to develop a prompt from reference images and, if requested, test and refine it using generated or supplied images."
+
+policy:
+  allow_implicit_invocation: false

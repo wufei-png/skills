@@ -33,7 +33,7 @@ jobs:
             godot-silent-review \
             review-gated-implementation \
             implement-in-stages \
-            reference-style-iteration \
+            reference-image-prompt \
             review-loop \
             review-tests \
             grilling \

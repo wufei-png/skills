@@ -23,7 +23,7 @@ EXPECTED_SKILLS = {
     "implement-in-stages",
     "improve-code-comments",
     "opencode-session-toolkit",
-    "reference-style-iteration",
+    "reference-image-prompt",
     "review-gated-grilling",
     "review-gated-implementation",
     "review-loop",
@@ -104,8 +104,8 @@ class SkillRepositoryContractTest(unittest.TestCase):
                         f"missing {skill_dir / relative}",
                     )
 
-    def test_reference_style_iteration_is_self_contained_and_attributed(self) -> None:
-        skill_dir = SKILLS_ROOT / "creative/reference-style-iteration"
+    def test_reference_image_prompt_is_self_contained_and_attributed(self) -> None:
+        skill_dir = SKILLS_ROOT / "creative/reference-image-prompt"
         documents = (
             skill_dir / "SKILL.md",
             skill_dir / "RESEARCH.md",
