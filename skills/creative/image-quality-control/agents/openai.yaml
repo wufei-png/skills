@@ -1,0 +1,7 @@
+interface:
+  display_name: "Image Quality Control"
+  short_description: "Review generated image quality"
+  default_prompt: "Use $image-quality-control to review the raster artwork and suggest or apply authorized targeted corrections."
+
+policy:
+  allow_implicit_invocation: false

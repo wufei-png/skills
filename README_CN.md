@@ -35,6 +35,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要准备面向用户交付的成品？使用 `sanitize-artifacts` 清除提示词及生产过程残留，同时保留受众需要的信息。
 - 需要指定的 skill 在支持的宿主中只能显式调用？使用 `skill-manual-only` 设置并核验对应的宿主配置。
 - 需要根据参考图片编写提示词？使用 `reference-image-prompt`，并可按需结合图片进行验证和迭代。
+- 需要按材质检查生成作品的视觉质量？独立使用 `image-quality-control` 审查图片并规划针对性修改。
 - 需要在有上限的预算内探索 Suno 音乐？使用 `suno-music-explorer`；提交已授权的 Create 或串行批次时使用 `suno-create`，下载选定整曲 WAV 时使用 `suno-studio-download`。
 
 目录声明需要配套 skill 时，应将配对工作流一起安装。
@@ -116,7 +117,8 @@ git diff --check
 
 ### Creative
 
-- [`reference-image-prompt`](./skills/creative/reference-image-prompt/SKILL.md) — 根据参考图片编写提示词，并可按需使用生成或已有的图片验证和迭代。
+- [`reference-image-prompt`](./skills/creative/reference-image-prompt/SKILL.md) — 根据参考图片编写提示词，并可按需使用生成或已有的图片验证和迭代。需要详细视觉质检时可单独使用 `image-quality-control`。
+- [`image-quality-control`](./skills/creative/image-quality-control/SKILL.md) — 检查生成或编辑后的位图作品，处理干扰细节和视觉漂移，同时保留预期风格。可独立于 `reference-image-prompt` 使用。
 - [`game-experience-review`](./skills/creative/game-experience-review/SKILL.md) — 默认使用三名全新、只读评审者，进行体验评审、试玩规划或版本比较。允许读代码分析玩家当时可见的选择，提出可复测的改进；盲测仅在明确要求时启用。需要支持全新上下文的子 Agent 机制。
 - [`suno-music-explorer`](./skills/creative/suno-music-explorer/SKILL.md) — 通过有上限的假设、实际试听及用户最终选择，探索空白或带边界的 Suno 音乐方向；需要 `suno-create`。
 - [`suno-create`](./skills/creative/suno-create/SKILL.md) — 使用已登录的 CUA 标签页、独立 Playwright profile 或 Computer Use，完整核验参数后提交已授权的 Create；否则准备手动交接包。
@@ -167,6 +169,7 @@ git diff --check
 | 迁移内容                      | 来源快照                                                                                                                                                                                                          |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `reference-image-prompt` | 保留 [`huanmu-team/unimage@db916e7`](https://github.com/huanmu-team/unimage/tree/db916e7ea2764e99e8c379adcb63a8c32f06e7ee) 的原始入口作为来源记录，并复用六份参考文档；上游 MIT 声明保存在 `LICENSES/unimage-MIT.txt` 和可安装 skill 中。 |
+| `image-quality-control` | 基于 `ai_images` 项目中的 `b039f14` 版本适配（原入口 SHA-256 `4c7efabb6349ac0ccd89c8217b28e355f707e378b5d611e41ac1967b28d883ee`），增加仅手动调用配置，并将材质与审核指导通用化。 |
 | `wait-what`                   | 改编自 [`mattpocock/skills@6fd9479`：`skills/productivity/wait-what/SKILL.md`](https://github.com/mattpocock/skills/blob/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/productivity/wait-what/SKILL.md)。将使用 Simplified Technical English 的要求改为沿用当前对话的主要语言，并直接写入从 [ASD-STE100](https://www.asd-ste100.org/STE_faq.html) 提炼的表达原则；此适配不宣称完全符合 STE 标准。上游 MIT 声明保存在 `LICENSES/mattpocock-skills-MIT.txt`。 |
 | `grilling`                    | [`wufei-png/grilling@64853fe`](https://github.com/wufei-png/grilling/tree/64853fedfc2d02f53013bb8c1666c6316760d289)                                                                                               |
 | `review-loop`                 | 基于 [`wufei-png/agent-review-skills@df3a8e6`](https://github.com/wufei-png/agent-review-skills/tree/df3a8e6c76cab0433d10529b50cc6dae573eb9c0)，并恢复了仅手动调用字段                                            |
@@ -179,9 +182,9 @@ git diff --check
 | `suno-music-explorer`         | 从 [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/autonomous-music-explorer) 通用化，增加有上限授权、持久恢复和用户最终选择 |
 | `suno-create`                 | 从 [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/suno-create) 通用化，支持 CUA、Playwright、Computer Use 浏览器能力选路、有上限批次和失败关闭式对账 |
 
-`reference-image-prompt` 由 `ai_images` 项目内的工作流通用化。其视觉审核背景包括 [`image-quality-control` 的 `b039f14` 版本](https://github.com/wufei-png/ai_images/blob/b039f14802ef39cc249aa83ffff509944706e98e/.agents/skills/image-quality-control/SKILL.md)，本仓库未捆绑该技能。原工作流还使用宿主提供的 `imagegen` 技能（本机 `SKILL.md` 的 SHA-256 为 `681ddb4ad6d06a2acc78a3535b583f8d0c1ea800ecda3d56370d3310fd2cd4ba`）。[OpenAI 公开的 imagegen 技能](https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md)是相关的公开参考；核对时本机快照与该文件并非逐字节相同。实际可用的生成与质检工作流取决于宿主和目标项目。
+`reference-image-prompt` 由 `ai_images` 项目内的工作流通用化。相关的 [`image-quality-control`](./skills/creative/image-quality-control/SKILL.md) 可单独安装，两个 skill 不互为依赖。原工作流还使用宿主提供的 `imagegen` 技能（本机 `SKILL.md` 的 SHA-256 为 `681ddb4ad6d06a2acc78a3535b583f8d0c1ea800ecda3d56370d3310fd2cd4ba`）。[OpenAI 公开的 imagegen 技能](https://github.com/openai/skills/blob/main/skills/.system/imagegen/SKILL.md)是相关的公开参考；核对时本机快照与该文件并非逐字节相同。实际可用的生成与质检工作流取决于宿主和目标项目。
 
-来源仓库的原始文档保存在 [`docs/archive`](./docs/archive/) 中，作为历史来源材料；当前策略以上文为准。上表保留了来源仓库及其完整 Git 历史链接。合并完成后，`improve-code-comments`、`codex-session-recovery` 和 `opencode-session-toolkit` 的旧仓库只作为冻结分发源；后续开发和安装统一使用本仓库，本仓库不再维护它们的独立 installer、版本、Release 压缩包或 ClawHub 发布流程。
+来源仓库的原始文档保存在 [`docs/archive`](./docs/archive/) 中，作为历史来源材料；当前策略以上文为准。上表保留了公开来源仓库及其 Git 历史链接。合并完成后，`improve-code-comments`、`codex-session-recovery` 和 `opencode-session-toolkit` 的旧仓库只作为冻结分发源；后续开发和安装统一使用本仓库，本仓库不再维护它们的独立 installer、版本、Release 压缩包或 ClawHub 发布流程。
 
 `review-tests` 是原创综合设计，参考了 [OpenAI Codex `review-agent@83a4187`](https://github.com/openai/codex/blob/83a418783707f4446aa832b2799d6cacfef75011/codex-rs/skills/src/assets/samples/review-agent/SKILL.md) 的 defect-first 合同、[levnikolaevich/claude-code-skills@ac4f240](https://github.com/levnikolaevich/claude-code-skills/blob/ac4f240070065a8fcebb8ada19a93e07cdd12266/plugins/codebase-audit-suite/skills/ln-23-test-suite-auditor/SKILL.md) 的证据规则、[posit-dev/skills@6d48d6b](https://github.com/posit-dev/skills/blob/6d48d6bef92ff3f2194d5b00e61974e61125711e/posit-dev/review-testing/SKILL.md) 的测试设计审查维度，以及 [obra/superpowers@caa1826](https://github.com/obra/superpowers/blob/caa1826cbadeb88f88c7ad7b3f66178cba01e57d/skills/test-driven-development/writing-good-tests.md) 的独立 oracle 指导。未直接迁入上游文件。
 

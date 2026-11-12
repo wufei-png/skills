@@ -20,6 +20,7 @@ EXPECTED_SKILLS = {
     "game-experience-review",
     "godot-silent-review",
     "grilling",
+    "image-quality-control",
     "implement-in-stages",
     "improve-code-comments",
     "opencode-session-toolkit",
@@ -94,6 +95,12 @@ class SkillRepositoryContractTest(unittest.TestCase):
                 referenced_paths.extend(
                     re.findall(
                         r"<skill-directory>/((?:references|scripts)/[^\s\\\"]+)",
+                        text,
+                    )
+                )
+                referenced_paths.extend(
+                    re.findall(
+                        r"\]\(((?:\./)?(?:references|scripts)/[^)#\s]+)(?:#[^)]*)?\)",
                         text,
                     )
                 )
