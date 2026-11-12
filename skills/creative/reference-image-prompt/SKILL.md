@@ -22,4 +22,4 @@ Use the vendored Unimage guides as needed; the [vendor record](vendor/unimage/VE
 
 ## Preserve and hand off
 
-Keep or report the actual reference sources and roles, submitted prompts and tool arguments, output versions, and observations as required by the user or project. Preserve original references and approved outputs. Respect any requested review gate: approval of a direction is not approval of each resulting image.
+Keep or report the actual reference sources and roles, submitted prompts and tool arguments, output versions, and observations as required by the user or project. When reporting tests or comparing supplied outputs with prompt candidates, associate each result with its submitted prompt if known; state when the association is unknown and label untested candidates as such. Preserve original references and approved outputs. Respect any requested review gate: approval of a direction is not approval of each resulting image.
