@@ -16,7 +16,7 @@ Use the vendored Unimage guides as needed; the [vendor record](vendor/unimage/VE
 
 ## Test and refine
 
-- Generate only when requested or authorized, following the host's image tool and the target project's quality guidance. Pass relevant references and their roles when supported. If requested generation or visual inspection is unavailable, say so. Review a supplied, inspectable output when requested even without a generator.
+- Generate only when requested or authorized, following the host's image tool and the target project's quality guidance. Pass relevant references and their roles when supported and appropriate to the task. If requested generation or visual inspection is unavailable, say so. Review a supplied, inspectable output when requested even without a generator.
 - Compare actual outputs with the request and each reference's intended aspects at thumbnail and original resolution. Use [draft validation](vendor/unimage/references/draft_validation.md) and [QC / repair](vendor/unimage/references/qc_inspector.md) when useful.
 - For an edit, identify the exact target and what must remain, and report visible drift. Do not impose candidate or round counts or a numeric fidelity score.
 
