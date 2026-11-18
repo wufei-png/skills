@@ -20,6 +20,10 @@ Install one skill non-interactively:
 npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 ```
 
+## Prompt templates
+
+Find Chinese prompts for engineering, game development, and music production in the [bilingual prompt index](./docs/prompts/README.md).
+
 ## Choose a workflow
 
 - Need a point re-explained because it did not make sense? Use `wait-what` for missing context and clear, consistent terms.
