@@ -9,12 +9,10 @@ import json
 import os
 import re
 import subprocess
-import sys
 from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from urllib.parse import urljoin, urlsplit
 from urllib.request import url2pathname
-
 
 DOC_SUFFIXES = {".md", ".markdown", ".rst", ".adoc", ".txt", ".html", ".htm"}
 TEMPLATE_MARKERS = ("{{", "${", "<%")
@@ -393,7 +391,7 @@ def links(scan: Scan) -> int:
         text = scan.read(path)
         if text is None:
             continue
-        for line, token, kind, base in static_links(path, text):
+        for line, token, _kind, base in static_links(path, text):
             resolved, error = local_destination(scan.root, token, base)
             if error or (resolved is not None and not resolved.exists()):
                 items.append(

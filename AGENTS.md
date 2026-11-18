@@ -9,16 +9,22 @@ Installable skills live in `skills/productivity/`, `skills/engineering/`, and `s
 This repository has no build step or local package manifest. Run checks from the repository root:
 
 ```bash
-NO_COLOR=1 npx -y skills@latest add . --list
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
+python3 tests/repository-contract/verify_installer.py --package skills@1.9.0
+python3 tests/repository-contract/verify_installer.py --package skills@latest
 python3 -m unittest discover -s tests/docs-context-curator -p 'test_*.py' -v
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
 python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
+python3 -m unittest discover -s tests/suno-studio-download -p 'test_*.py' -v
+node --test tests/suno-create/*.test.mjs
+python3 -m pip install --disable-pip-version-check ruff==0.16.5
+ruff check skills tests
+ruff format --check .
 git diff --check
 ```
 
-The first command verifies catalog discovery. The Python commands check repository contracts and the scripted skill products. `git diff --check` catches whitespace errors. CI runs the same checks on pushes and pull requests.
+The contract tests compare the skill tree with the independent `EXPECTED_SKILLS` set and validate entrypoints, metadata, unique names, and manual-only flags. The installer commands verify that fixed and latest discovery both match the tree and the expected set; install Ruff 0.16.5 once before running the lint and format commands. `git diff --check` catches whitespace errors. CI runs the same checks on pushes and pull requests, and also runs the latest installer weekly.
 
 ## Coding Style & Naming Conventions
 
@@ -26,7 +32,7 @@ Use kebab-case for skill directories and keep the frontmatter `name` identical t
 
 Assume the model already knows common domain knowledge and practices. Keep only instructions that change behavior for the task: its workflow, decisions, safety limits, tool contracts, and output requirements. Arrange sections in task order and avoid duplicated rules or unnecessary mandatory steps and reads. Use short, familiar wording; avoid repeating general advice or inventing terms. Put rarely needed details in `references/` and read them only when relevant; put repeated, fragile operations in `scripts/`.
 
-Python targets 3.11 and the standard library. No repository-wide formatter is configured, so preserve nearby formatting.
+Python targets 3.11 and the standard library. Ruff 0.16.5 enforces lint and formatting for `skills` and `tests`; test fixtures under `tests/**/fixtures/**` are excluded from lint but still formatted, and archived documents under `docs/archive/` are excluded from formatting.
 
 ## Testing Guidelines
 

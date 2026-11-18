@@ -40,6 +40,12 @@ jobs:
         run: python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
       - name: Test Suno Studio downloads
         run: python3 -m unittest discover -s tests/suno-studio-download -p 'test_*.py' -v
+      - name: Install Ruff
+        run: python3 -m pip install --disable-pip-version-check ruff==0.16.5
+      - name: Lint Python
+        run: ruff check skills tests
+      - name: Check Python formatting
+        run: ruff format --check .
 
   skills-latest:
     runs-on: ubuntu-latest

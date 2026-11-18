@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "skills/creative/suno-music-explorer/scripts/ledger.py"
 SPEC = importlib.util.spec_from_file_location("suno_explorer_ledger", SCRIPT)
