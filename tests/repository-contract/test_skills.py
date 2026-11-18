@@ -41,9 +41,7 @@ VALID_PRIORITIES = {"P0", "P1", "P2", "P3"}
 
 
 def skill_directories() -> list[Path]:
-    return sorted(
-        path.parent for path in SKILLS_ROOT.glob("*/*/SKILL.md")
-    )
+    return sorted(path.parent for path in SKILLS_ROOT.glob("*/*/SKILL.md"))
 
 
 def frontmatter(text: str) -> dict[str, str]:
@@ -117,7 +115,9 @@ class SkillRepositoryContractTest(unittest.TestCase):
         references = skill_dir / "vendor/unimage/references"
         documents = (skill_dir / "SKILL.md", *sorted(references.glob("*.md")))
         for document in documents:
-            for target in re.findall(r"\]\(([^)]+)\)", document.read_text(encoding="utf-8")):
+            for target in re.findall(
+                r"\]\(([^)]+)\)", document.read_text(encoding="utf-8")
+            ):
                 if target.startswith(("https://", "http://", "#")):
                     continue
                 path = (document.parent / target.split("#", 1)[0]).resolve()
@@ -128,7 +128,9 @@ class SkillRepositoryContractTest(unittest.TestCase):
         license_file = skill_dir / "vendor/unimage/LICENSE"
         license_bytes = license_file.read_bytes()
         self.assertIn(b"Copyright (c) 2026 huanmu-team", license_bytes)
-        self.assertEqual(license_bytes, (ROOT / "LICENSES/unimage-MIT.txt").read_bytes())
+        self.assertEqual(
+            license_bytes, (ROOT / "LICENSES/unimage-MIT.txt").read_bytes()
+        )
 
     def test_reference_image_prompt_archives_maintainer_documents(self) -> None:
         skill_dir = SKILLS_ROOT / "creative/reference-image-prompt"
@@ -142,22 +144,28 @@ class SkillRepositoryContractTest(unittest.TestCase):
         license_file = SKILLS_ROOT / "engineering/worktree-triage/LICENSE"
         license_bytes = license_file.read_bytes()
         self.assertIn(b"Copyright (c) 2026 PatrickJS", license_bytes)
-        self.assertEqual(license_bytes, (ROOT / "LICENSES/auto-git-MIT.txt").read_bytes())
+        self.assertEqual(
+            license_bytes, (ROOT / "LICENSES/auto-git-MIT.txt").read_bytes()
+        )
 
     def test_runtime_skill_folders_exclude_test_artifacts(self) -> None:
         for skill_dir in skill_directories():
-            tracked = subprocess.check_output(
-                [
-                    "git",
-                    "ls-files",
-                    "--cached",
-                    "--others",
-                    "--exclude-standard",
-                    "-z",
-                    str(skill_dir.relative_to(ROOT)),
-                ],
-                cwd=ROOT,
-            ).decode().split("\0")
+            tracked = (
+                subprocess.check_output(
+                    [
+                        "git",
+                        "ls-files",
+                        "--cached",
+                        "--others",
+                        "--exclude-standard",
+                        "-z",
+                        str(skill_dir.relative_to(ROOT)),
+                    ],
+                    cwd=ROOT,
+                )
+                .decode()
+                .split("\0")
+            )
             for relative_text in filter(None, tracked):
                 path = Path(relative_text)
                 if not (ROOT / path).is_file():
@@ -183,9 +191,7 @@ class SkillRepositoryContractTest(unittest.TestCase):
             ),
         }
         for relative, required_phrases in required_by_skill.items():
-            text = (SKILLS_ROOT / relative / "SKILL.md").read_text(
-                encoding="utf-8"
-            )
+            text = (SKILLS_ROOT / relative / "SKILL.md").read_text(encoding="utf-8")
             with self.subTest(skill=relative):
                 for phrase in required_phrases:
                     self.assertIn(phrase, text)
@@ -276,9 +282,9 @@ class SkillRepositoryContractTest(unittest.TestCase):
                     self.assertIn(phrase, text)
 
     def test_suno_explorer_declares_create_companion(self) -> None:
-        explorer = (
-            SKILLS_ROOT / "creative/suno-music-explorer/SKILL.md"
-        ).read_text(encoding="utf-8")
+        explorer = (SKILLS_ROOT / "creative/suno-music-explorer/SKILL.md").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("`$suno-create`", explorer)
         self.assertIn("install both skills", explorer)
 
@@ -295,9 +301,7 @@ class SkillRepositoryContractTest(unittest.TestCase):
 
                 execution = manifest.get("execution")
                 self.assertIsInstance(execution, dict)
-                self.assertEqual(
-                    {"isolation", "context", "evaluation"}, set(execution)
-                )
+                self.assertEqual({"isolation", "context", "evaluation"}, set(execution))
                 for value in execution.values():
                     self.assertIsInstance(value, str)
                     self.assertTrue(value.strip())

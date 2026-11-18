@@ -47,7 +47,9 @@ class MutableRecord:
     def archived(self) -> bool:
         return self.archived_sources > 0 and self.active_sources == 0
 
-    def merge_source(self, source_path: Path, archived: bool, evidence_type: str) -> None:
+    def merge_source(
+        self, source_path: Path, archived: bool, evidence_type: str
+    ) -> None:
         self.source_paths.add(str(source_path))
         self.evidence_types.add(evidence_type)
         if archived:
@@ -122,7 +124,9 @@ def parse_timestamp(value: Any) -> datetime | None:
         return None
 
 
-def parse_boundary(value: str | None, tz: tzinfo, end_of_day: bool = False) -> datetime | None:
+def parse_boundary(
+    value: str | None, tz: tzinfo, end_of_day: bool = False
+) -> datetime | None:
     if value is None:
         return None
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
@@ -203,14 +207,18 @@ def id_from_filename(path: Path) -> str | None:
     uuid_match = UUID_RE.search(path.name)
     if uuid_match:
         return uuid_match.group(0)
-    match = re.search(r"rollout-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-(.+)\.jsonl$", path.name)
+    match = re.search(
+        r"rollout-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-(.+)\.jsonl$", path.name
+    )
     if match:
         return match.group(1)
     return None
 
 
 def timestamp_from_filename(path: Path, tz: tzinfo) -> datetime | None:
-    match = re.search(r"rollout-(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-", path.name)
+    match = re.search(
+        r"rollout-(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-", path.name
+    )
     if not match:
         return None
     date_part, hour, minute, second = match.groups()
@@ -225,7 +233,9 @@ def timestamp_from_filename(path: Path, tz: tzinfo) -> datetime | None:
     return datetime.combine(parsed_date, parsed_time, tzinfo=tz)
 
 
-def apply_filename_timestamp(record: MutableRecord, path: Path, fallback_timezone: tzinfo) -> None:
+def apply_filename_timestamp(
+    record: MutableRecord, path: Path, fallback_timezone: tzinfo
+) -> None:
     if record.started_at is not None or record.updated_at is not None:
         return
     filename_timestamp = timestamp_from_filename(path, fallback_timezone)
@@ -353,7 +363,11 @@ def payload_for(obj: dict[str, Any]) -> dict[str, Any]:
 
 
 def note_naive_timestamp(
-    record: MutableRecord | None, warnings: list[str], path: Path, line_number: int, stamp: datetime | None
+    record: MutableRecord | None,
+    warnings: list[str],
+    path: Path,
+    line_number: int,
+    stamp: datetime | None,
 ) -> datetime | None:
     if stamp is None:
         return None
@@ -409,7 +423,9 @@ def parse_jsonl(
                     indexed = record_from_index_line(
                         obj, path, line_number, warnings, fallback_timezone
                     )
-                    if indexed is not None and (include_archived or not indexed.archived):
+                    if indexed is not None and (
+                        include_archived or not indexed.archived
+                    ):
                         records.append(indexed)
                     continue
 
@@ -556,7 +572,9 @@ def matches_query(record: MutableRecord, query: str | None) -> bool:
     return query.casefold() in searchable_blob(record).casefold()
 
 
-def normalize_stamp(record: MutableRecord, stamp: datetime, fallback_timezone: tzinfo) -> datetime:
+def normalize_stamp(
+    record: MutableRecord, stamp: datetime, fallback_timezone: tzinfo
+) -> datetime:
     if stamp.tzinfo is not None:
         return stamp
     warning = "naive timestamp interpreted using filter timezone"
@@ -611,7 +629,9 @@ def score_record(record: MutableRecord, cwd: str | None, query: str | None) -> N
     record.matching_reasons = reasons
 
 
-def short_prompt(record: MutableRecord, show_prompts: bool) -> tuple[str | None, str | None]:
+def short_prompt(
+    record: MutableRecord, show_prompts: bool
+) -> tuple[str | None, str | None]:
     if not show_prompts or not record.user_prompts:
         return None, None
     first = record.user_prompts[0][:160]
@@ -810,7 +830,9 @@ def format_table(result: dict[str, Any]) -> str:
         lines.append("searched paths:")
         lines.extend(f"- {path}" for path in result.get("searched_paths", []))
         lines.append("")
-        lines.append("No matching sessions found. Relax cwd, date, archive, subagent, or query filters.")
+        lines.append(
+            "No matching sessions found. Relax cwd, date, archive, subagent, or query filters."
+        )
         lines.append("Manual check: codex resume --all")
     return "\n".join(lines)
 

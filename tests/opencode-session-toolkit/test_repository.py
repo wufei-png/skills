@@ -19,9 +19,7 @@ class RepositoryTest(unittest.TestCase):
             r"disable-model-invocation: true\n---",
         )
         for relative in re.findall(r"`(references/[^`]+\.md)`", text):
-            self.assertTrue(
-                (SKILL / relative).is_file(), f"missing {SKILL / relative}"
-            )
+            self.assertTrue((SKILL / relative).is_file(), f"missing {SKILL / relative}")
 
     def test_runtime_package_does_not_contain_maintainer_install_docs(self) -> None:
         for markdown in SKILL.rglob("*.md"):

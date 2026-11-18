@@ -146,7 +146,9 @@ def validate_ledger(data: Any) -> dict[str, Any]:
     if not isinstance(grant, dict) or not isinstance(spent, dict):
         raise LedgerError("grant and spent must be objects")
     if "create_limit" not in grant:
-        raise LedgerError("grant.create_limit must be explicit; use null only for an unlimited grant")
+        raise LedgerError(
+            "grant.create_limit must be explicit; use null only for an unlimited grant"
+        )
     create_limit = grant["create_limit"]
     creates_spent = spent.get("creates")
     if create_limit is not None and (

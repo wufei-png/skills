@@ -470,7 +470,10 @@ class CliTest(unittest.TestCase):
         self.assertEqual(2, len(exported))
         self.assertEqual(
             {"ses_percent", "ses_other"},
-            {json.loads(path.read_text(encoding="utf-8"))["session"] for path in exported},
+            {
+                json.loads(path.read_text(encoding="utf-8"))["session"]
+                for path in exported
+            },
         )
         self.assertIn("Written files: 2", result.stdout)
 
@@ -557,8 +560,12 @@ class CliTest(unittest.TestCase):
             return original_replace(source, target)
 
         with mock.patch.object(module.os, "replace", side_effect=fail_second_replace):
-            with self.assertRaisesRegex(module.UserError, "Failed to write export output"):
-                module.write_files_atomically(files, overwrite=False, batch_root=output_dir)
+            with self.assertRaisesRegex(
+                module.UserError, "Failed to write export output"
+            ):
+                module.write_files_atomically(
+                    files, overwrite=False, batch_root=output_dir
+                )
 
         self.assertFalse((output_dir / "one.txt").exists())
         self.assertFalse((output_dir / "two.txt").exists())

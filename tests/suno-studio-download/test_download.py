@@ -7,11 +7,14 @@ import tempfile
 import unittest
 
 
-HELPER = Path(__file__).resolve().parents[2] / "skills/creative/suno-studio-download/scripts/download.py"
+HELPER = (
+    Path(__file__).resolve().parents[2]
+    / "skills/creative/suno-studio-download/scripts/download.py"
+)
 ID1 = "11111111-1111-4111-8111-111111111111"
 ID2 = "22222222-2222-4222-8222-222222222222"
 
-FAKE_SUNO = r'''#!/usr/bin/env python3
+FAKE_SUNO = r"""#!/usr/bin/env python3
 import json
 import os
 from pathlib import Path
@@ -48,7 +51,7 @@ elif args[0] == "download":
 else:
     state_path.write_text(json.dumps(state))
     sys.exit(2)
-'''
+"""
 
 
 def snapshot(used=8, additional=3, credits=100, studio=True):
@@ -75,13 +78,20 @@ class DownloadWorkflowTests(unittest.TestCase):
         self.output = self.root / "output"
 
     def run_helper(self, snapshots, *args, fail_download=False):
-        self.state_path.write_text(json.dumps({"snapshots": snapshots, "calls": [], "fail_download": fail_download}))
+        self.state_path.write_text(
+            json.dumps(
+                {"snapshots": snapshots, "calls": [], "fail_download": fail_download}
+            )
+        )
         env = os.environ.copy()
         env["PATH"] = str(self.root) + os.pathsep + env.get("PATH", "")
         env["SUNO_TEST_STATE"] = str(self.state_path)
         result = subprocess.run(
             [sys.executable, str(HELPER), "--output", str(self.output), *args],
-            capture_output=True, text=True, env=env, timeout=20,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=20,
         )
         events = [json.loads(line) for line in result.stdout.splitlines()]
         state = json.loads(self.state_path.read_text())
@@ -101,10 +111,22 @@ class DownloadWorkflowTests(unittest.TestCase):
         original.write_bytes(b"existing")
         result, events, calls = self.run_helper(
             [snapshot(), snapshot(), snapshot(), snapshot()],
-            "https://suno.com/song/" + ID1, ID2,
+            "https://suno.com/song/" + ID1,
+            ID2,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual([c[0] for c in calls], ["download", "credits", "download", "credits", "credits", "download", "credits"])
+        self.assertEqual(
+            [c[0] for c in calls],
+            [
+                "download",
+                "credits",
+                "download",
+                "credits",
+                "credits",
+                "download",
+                "credits",
+            ],
+        )
         for command in (calls[2], calls[5]):
             self.assertEqual(command[command.index("--source") + 1], "studio")
             self.assertEqual(command[command.index("--format") + 1], "wav")
@@ -116,9 +138,13 @@ class DownloadWorkflowTests(unittest.TestCase):
         self.assertTrue(all(Path(event["path"]).is_file() for event in completed))
 
     def test_additional_counter_decrease_stops_batch_after_first_song(self):
-        result, events, calls = self.run_helper([snapshot(), snapshot(additional=2)], ID1, ID2)
+        result, events, calls = self.run_helper(
+            [snapshot(), snapshot(additional=2)], ID1, ID2
+        )
         self.assertEqual(result.returncode, 1)
-        self.assertEqual(sum(c[0] == "download" and "--help" not in c for c in calls), 1)
+        self.assertEqual(
+            sum(c[0] == "download" and "--help" not in c for c in calls), 1
+        )
         self.assertEqual(events[-1]["counters_after"]["additional_remaining"], 2)
         self.assertTrue(events[-1]["counter_change"])
         self.assertTrue(Path(events[-1]["path"]).is_file())
@@ -143,20 +169,30 @@ class DownloadWorkflowTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("counter check failed", events[-1]["error"])
         self.assertTrue(Path(events[-1]["path"]).is_file())
-        self.assertEqual(sum(c[0] == "download" and "--help" not in c for c in calls), 1)
+        self.assertEqual(
+            sum(c[0] == "download" and "--help" not in c for c in calls), 1
+        )
 
     def test_concurrent_counter_change_stops_before_next_song(self):
-        result, events, calls = self.run_helper([snapshot(), snapshot(), snapshot(used=9)], ID1, ID2)
+        result, events, calls = self.run_helper(
+            [snapshot(), snapshot(), snapshot(used=9)], ID1, ID2
+        )
         self.assertEqual(result.returncode, 1)
         self.assertIn("between downloads", events[-1]["error"])
-        self.assertEqual(sum(c[0] == "download" and "--help" not in c for c in calls), 1)
+        self.assertEqual(
+            sum(c[0] == "download" and "--help" not in c for c in calls), 1
+        )
 
     def test_failed_download_is_checked_and_staged_file_is_retained(self):
-        result, events, calls = self.run_helper([snapshot(), snapshot()], ID1, ID2, fail_download=True)
+        result, events, calls = self.run_helper(
+            [snapshot(), snapshot()], ID1, ID2, fail_download=True
+        )
         self.assertEqual(result.returncode, 1)
         self.assertEqual(calls[-1][0], "credits")
         self.assertTrue(any(Path(events[-1]["staging_directory"]).glob("*.wav")))
-        self.assertEqual(sum(c[0] == "download" and "--help" not in c for c in calls), 1)
+        self.assertEqual(
+            sum(c[0] == "download" and "--help" not in c for c in calls), 1
+        )
 
     def test_invalid_probe_response_still_checks_counters_and_keeps_staging(self):
         probe = self.root / "ffprobe"
@@ -167,7 +203,9 @@ class DownloadWorkflowTests(unittest.TestCase):
         self.assertIn("ffprobe", events[-1]["error"])
         self.assertEqual(events[-1]["counters_after"]["additional_remaining"], 3)
         self.assertTrue(any(Path(events[-1]["staging_directory"]).glob("*.wav")))
-        self.assertEqual(sum(c[0] == "download" and "--help" not in c for c in calls), 1)
+        self.assertEqual(
+            sum(c[0] == "download" and "--help" not in c for c in calls), 1
+        )
 
     def test_duplicate_ids_are_rejected_before_any_cli_call(self):
         result, events, calls = self.run_helper([], ID1, "https://suno.com/song/" + ID1)

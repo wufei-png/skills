@@ -1,0 +1,9 @@
+target-version = "py311"
+
+[lint]
+exclude = ["tests/**/fixtures/**"]
+select = ["E4", "E7", "E9", "F", "I", "B", "C4", "ASYNC", "DTZ005", "DTZ006"]
+
+[format]
+# Keep archived historical documents byte-stable; Python sources and fixtures are formatted.
+exclude = ["docs/archive/**"]
