@@ -6,60 +6,26 @@ import subprocess
 import unittest
 from pathlib import Path
 
+from skill_contract import (
+    EXPECTED_SKILLS,
+    SKILLS_ROOT,
+    frontmatter,
+    inspect_skill_tree,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
-SKILLS_ROOT = ROOT / "skills"
-EXPECTED_SKILLS = {
-    "consensus-change-review",
-    "consensus-gated-grilling",
-    "consensus-review-loop",
-    "codex-session-recovery",
-    "codex-thread-report",
-    "delegated-change-review",
-    "docs-context-curator",
-    "game-experience-review",
-    "godot-silent-review",
-    "grilling",
-    "image-quality-control",
-    "implement-in-stages",
-    "improve-code-comments",
-    "opencode-session-toolkit",
-    "reference-image-prompt",
-    "review-gated-grilling",
-    "review-gated-implementation",
-    "review-loop",
-    "review-tests",
-    "sanitize-artifacts",
-    "skill-manual-only",
-    "suno-create",
-    "suno-music-explorer",
-    "suno-studio-download",
-    "wait-what",
-    "worktree-triage",
-}
 VALID_PRIORITIES = {"P0", "P1", "P2", "P3"}
 
 
 def skill_directories() -> list[Path]:
-    return sorted(path.parent for path in SKILLS_ROOT.glob("*/*/SKILL.md"))
-
-
-def frontmatter(text: str) -> dict[str, str]:
-    match = re.match(r"\A---\n(.*?)\n---(?:\n|\Z)", text, re.DOTALL)
-    if not match:
-        return {}
-    fields: dict[str, str] = {}
-    for line in match.group(1).splitlines():
-        if line and not line.startswith((" ", "\t")) and ":" in line:
-            key, value = line.split(":", 1)
-            fields[key] = value.strip()
-    return fields
+    return sorted(path for path in SKILLS_ROOT.glob("*/*") if path.is_dir())
 
 
 class SkillRepositoryContractTest(unittest.TestCase):
     def test_catalog_has_expected_skills(self) -> None:
-        names = {path.name for path in skill_directories()}
-        self.assertEqual(EXPECTED_SKILLS, names)
+        tree = inspect_skill_tree()
+        self.assertEqual(EXPECTED_SKILLS, set(tree.names))
+        self.assertEqual([], tree.errors)
 
     def test_entrypoints_and_metadata_match(self) -> None:
         for skill_dir in skill_directories():
