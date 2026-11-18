@@ -42,7 +42,7 @@ substantial painted interiors. Preserve intentional dry-brush breaks and
 focal accents; avoid a uniform microtexture layer or global smoothing.
 ```
 
-Do not impose an exact number of highlight bands by default: that can create mechanical repetition. Do not apply a calmer experimental revision when the user chose a more expressive predecessor.
+Avoid fixed highlight-band counts by default to prevent mechanical repetition.
 
 ### Optional brush-width increase
 

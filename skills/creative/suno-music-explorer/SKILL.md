@@ -59,7 +59,3 @@ Give `$suno-create` the current package, remaining grant, ledger path, and hypot
 An ambiguous submission pauses exploration. Reconcile the Suno library and ledger; never switch transport and resubmit the same package unless non-submission is confirmed and the grant still covers it.
 
 Communicate at grant or ledger decisions, listening gates, anomalies, cap changes, and the final handoff. Keep routine ledger updates quiet. Use the user's language.
-
-## Red flags
-
-Unbounded spend; unchanged rerolls; multiple simultaneous Creates; continuing unheard; funding the least-bad direction; treating challenger count as quality proof; retrying an ambiguous submission; calling an unconfirmed result final

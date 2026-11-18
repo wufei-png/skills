@@ -43,4 +43,4 @@ Check representative references against tracked files as well as the local files
 
 ## Reading-path evaluation
 
-After migration, use separate fresh contexts for an ordinary development question and a historical question. Record the host, task, observed file reads, whether current rules were found, and whether the historical record was retrievable. Compare a helper-assisted run with existing commands or a temporary-script run only when actually measuring that tradeoff. CI's deterministic helper tests and manual case manifests do not run or substitute for this evaluation.
+After migration, use separate fresh contexts for an ordinary development question and a historical question. Record the host, task, observed file reads, whether current rules were found, and whether the historical record was retrievable. Compare a helper-assisted run with existing commands or a temporary-script run only when actually measuring that tradeoff.
