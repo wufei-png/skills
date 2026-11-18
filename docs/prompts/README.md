@@ -9,6 +9,7 @@ Copy a Chinese prompt and fill in the angle-bracket placeholders. Remove the `[�
 - [设计决策 / Design decisions](./design-decision.md)
 - [只读评审与意见核实 / Read-only review and finding verification](./review-changes.md)
 - [实施与验证 / Implementation and verification](./implement-and-verify.md)
+- [研判来源不明的工作区改动 / Triage unexplained Git changes](./commit-changes.md#研判来源不明的工作区改动)
 - [按意图提交与交付收尾 / Grouped commits and delivery review](./commit-changes.md)
 - [跨会话交接与接手 / Session handoff and resumption](./session-handoff.md)
 - [资料调研 / Research](./research.md)

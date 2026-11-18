@@ -30,6 +30,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 - 需要在行动前收敛一个有实质影响的取舍？使用 `grilling`；如果每个问题都需要全新的只读第二意见，使用 `review-gated-grilling`。
 - 需要不改变基础流程、增加有上限的 subagent 共识协商？使用对应的 `consensus-*` 变体。
 - 需要将已授权的代码变更分阶段并验证交付？使用 `implement-in-stages`；如果每个阶段还需要委托审查门，使用 `review-gated-implementation`。
+- 工作区有来源不明的改动？用 `worktree-triage` 判断去留，并在明确要求时将可验证的改动分批提交到本地。
 - 需要只读审查？测试用 `review-tests`，注释和 docstring 用 `improve-code-comments`；需要有轮次上限的审查修复循环时用 `review-loop`。
 - 需要让当前文档更聚焦、历史仍可查找？使用 `docs-context-curator` 整理阅读入口、归档历史资料并检查迁移引用，无需引入文档框架。
 - 需要静默检查 Godot 截图或动作关键帧？使用 `godot-silent-review`，需要项目已有兼容的 Web 后台出图脚本；已提供 Uncounted 的参考配置。
@@ -108,6 +109,7 @@ git diff --check
 
 ### Engineering
 
+- [`worktree-triage`](./skills/engineering/worktree-triage/SKILL.md) — 推断未提交改动的用途，建议保留、补齐或丢弃，并在授权后提交已验证的批次。
 - [`godot-silent-review`](./skills/engineering/godot-silent-review/SKILL.md) — 静默检查 Godot Web 截图和动作关键帧；需要项目已有兼容的后台脚本，附 Uncounted 参考配置。
 - [`docs-context-curator`](./skills/engineering/docs-context-curator/SKILL.md) — 整理当前文档与可检索历史，按需使用只读检查，保留现行规则并修复必要的迁移引用。
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — 在不修改可执行代码的前提下审查和改进注释与 docstring。
@@ -172,6 +174,7 @@ git diff --check
 
 | 迁移内容                      | 来源快照                                                                                                                                                                                                          |
 | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `worktree-triage` | 从 `git-intent-audit` 改编工作区盘点、按意图分组和验证建议。补充原会话缺失时的去留判断，以及授权后补齐、丢弃和验证后分批本地提交的流程。待定改动留在原处，上游 MIT 声明随可安装 Skill 分发。 [`async/auto-git@0f11d52`](https://github.com/async/auto-git/tree/0f11d52b4a91ea504f07a19a957d4b18f3a9c227/skills/git-intent-audit) · [MIT 声明](./LICENSES/auto-git-MIT.txt) |
 | `reference-image-prompt` | 保留 [`huanmu-team/unimage@db916e7`](https://github.com/huanmu-team/unimage/tree/db916e7ea2764e99e8c379adcb63a8c32f06e7ee) 的原始入口作为来源记录，并复用六份参考文档；上游 MIT 声明保存在 `LICENSES/unimage-MIT.txt` 和可安装 skill 中。 |
 | `image-quality-control` | 基于 `ai_images` 项目中的 `b039f14` 版本适配（原入口 SHA-256 `4c7efabb6349ac0ccd89c8217b28e355f707e378b5d611e41ac1967b28d883ee`），增加仅手动调用配置，并将材质与审核指导通用化。 |
 | `wait-what`                   | 改编自 [`mattpocock/skills@6fd9479`：`skills/productivity/wait-what/SKILL.md`](https://github.com/mattpocock/skills/blob/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/productivity/wait-what/SKILL.md)。将使用 Simplified Technical English 的要求改为沿用当前对话的主要语言，并直接写入从 [ASD-STE100](https://www.asd-ste100.org/STE_faq.html) 提炼的表达原则；此适配不宣称完全符合 STE 标准。上游 MIT 声明保存在 `LICENSES/mattpocock-skills-MIT.txt`。 |

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Worktree Triage"
+  short_description: "Assess unexplained Git working-tree changes"
+  default_prompt: "Use $worktree-triage to assess this working tree, infer the purpose of existing changes, and recommend what to keep, fix, or discard."
+
+policy:
+  allow_implicit_invocation: false

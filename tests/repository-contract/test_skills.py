@@ -35,6 +35,7 @@ EXPECTED_SKILLS = {
     "suno-music-explorer",
     "suno-studio-download",
     "wait-what",
+    "worktree-triage",
 }
 VALID_PRIORITIES = {"P0", "P1", "P2", "P3"}
 
@@ -132,6 +133,12 @@ class SkillRepositoryContractTest(unittest.TestCase):
         license_bytes = license_file.read_bytes()
         self.assertIn(b"Copyright (c) 2026 huanmu-team", license_bytes)
         self.assertEqual(license_bytes, (ROOT / "LICENSES/unimage-MIT.txt").read_bytes())
+
+    def test_worktree_triage_includes_upstream_license(self) -> None:
+        license_file = SKILLS_ROOT / "engineering/worktree-triage/LICENSE"
+        license_bytes = license_file.read_bytes()
+        self.assertIn(b"Copyright (c) 2026 PatrickJS", license_bytes)
+        self.assertEqual(license_bytes, (ROOT / "LICENSES/auto-git-MIT.txt").read_bytes())
 
     def test_runtime_skill_folders_exclude_test_artifacts(self) -> None:
         for skill_dir in skill_directories():

@@ -1,0 +1,56 @@
+{
+  "skill": "worktree-triage",
+  "execution": {
+    "isolation": "Run sh setup.sh <new scratch directory> from the fixture directory for each case. Give the fresh session only the scratch repository and the skill.",
+    "context": "Start in the scratch repository. Record HEAD, index bytes, and working-tree changes before and after the turn with index auto-refresh disabled.",
+    "evaluation": "Inspect the actual commits and remaining diffs as well as the response. The fixture contains no prior session history."
+  },
+  "cases": [
+    {
+      "id": "read-only-without-session",
+      "fixture": "fixtures/mixed-worktree",
+      "prompt": "用 $worktree-triage 看一下这个工作区。找不到原会话。",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Connect the ticket-key fix and its untracked regression test to the README contract. Identify the contributor command correction as an independent group.",
+            "anchor": "README.md, ticket.py, test_ticket.py, CONTRIBUTING.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Identify the pending retry changes, the untracked experiment, and the staged-only legacy-queue wording that overlaps the USAGE.md correction. Distinguish the ignored cache.",
+            "anchor": "retry.conf, experiment.txt, USAGE.md, .gitignore",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Change HEAD, the index, or working-tree content",
+          "Treat staged status as evidence of user approval"
+        ]
+      }
+    },
+    {
+      "id": "finish-supported-batches",
+      "fixture": "fixtures/mixed-worktree",
+      "prompt": "用 $worktree-triage。原会话找不到，直接完成。",
+      "expectations": {
+        "required": [
+          {
+            "criterion": "Verify and commit the fix and its regression test together. Commit the contributor command correction separately. Report the two commits and checks.",
+            "anchor": "ticket.py, test_ticket.py, CONTRIBUTING.md",
+            "priorities": []
+          },
+          {
+            "criterion": "Preserve the staged-only legacy-queue wording in USAGE.md, the pending retry changes, the untracked experiment, and the ignored cache. Leave USAGE.md uncommitted while the wording remains unresolved. Ask about the pending decisions after the independent commits.",
+            "anchor": "USAGE.md, retry.conf, experiment.txt, cache/result.txt",
+            "priorities": []
+          }
+        ],
+        "forbidden": [
+          "Require a second approval for the two independently verifiable batches",
+          "Stage, commit, move, or discard any pending or ignored change"
+        ]
+      }
+    }
+  ]
+}

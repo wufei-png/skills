@@ -30,6 +30,7 @@ Copy a Chinese prompt for engineering, games, or music from the [bilingual index
 - Need to resolve a consequential tradeoff before acting? Use `grilling`; use `review-gated-grilling` when each question needs a fresh read-only second opinion.
 - Need bounded subagent consensus without changing the base workflow? Use the matching `consensus-*` variant.
 - Need an authorized code change in verified stages? Use `implement-in-stages`; use `review-gated-implementation` when each stage also needs the delegated review gate.
+- Need to make sense of unexplained working-tree changes? Use `worktree-triage` to assess them and, when requested, commit verified batches locally.
 - Need a read-only audit? Use `review-tests` for tests or `improve-code-comments` for comments and docstrings; use `review-loop` for a bounded review-and-fix loop.
 - Need focused current docs and discoverable history? Use `docs-context-curator` to organize reading paths, archive historical material, and check migration references without adopting a documentation framework.
 - Need Godot screenshots or motion keyframes without desktop windows? Use `godot-silent-review` with an existing compatible project-local Web capture runner; the Uncounted profile is documented.
@@ -108,6 +109,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 
 ### Engineering
 
+- [`worktree-triage`](./skills/engineering/worktree-triage/SKILL.md) — Infer why uncommitted changes exist, recommend what to keep, fix, or discard, and commit verified batches when authorized.
 - [`godot-silent-review`](./skills/engineering/godot-silent-review/SKILL.md) — Inspect Godot Web screenshots and motion keyframes without desktop windows; requires a compatible project-local runner and documents the Uncounted profile.
 - [`docs-context-curator`](./skills/engineering/docs-context-curator/SKILL.md) — Organize current documentation and searchable history with optional read-only checks; preserve current rules and repair necessary migration references.
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — Audit and improve comments and docstrings without changing executable code.
@@ -172,6 +174,7 @@ These skill-backed projects remain in their own repositories because their skill
 
 | Imported content              | Source snapshot                                                                                                                                                                                                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `worktree-triage` | Adapts the inventory, intent grouping, and check suggestions from `git-intent-audit`. Adds decisions on what to keep, repair, or discard when the original context is missing, and verified local commits that preserve unresolved work. The upstream MIT notice also ships with the skill. [`async/auto-git@0f11d52`](https://github.com/async/auto-git/tree/0f11d52b4a91ea504f07a19a957d4b18f3a9c227/skills/git-intent-audit) · [MIT notice](./LICENSES/auto-git-MIT.txt) |
 | `reference-image-prompt` | Retains the entrypoint for provenance and reuses six guides from [`huanmu-team/unimage@db916e7`](https://github.com/huanmu-team/unimage/tree/db916e7ea2764e99e8c379adcb63a8c32f06e7ee); the upstream MIT notice is retained in `LICENSES/unimage-MIT.txt` and within the installable skill. |
 | `image-quality-control` | Adapted from the project-local `ai_images` skill at `b039f14` (source entrypoint SHA-256 `4c7efabb6349ac0ccd89c8217b28e355f707e378b5d611e41ac1967b28d883ee`), with manual-only metadata and generalized material and review guidance. |
 | `wait-what`                   | Adapted from [`mattpocock/skills@6fd9479`: `skills/productivity/wait-what/SKILL.md`](https://github.com/mattpocock/skills/blob/6fd947921b935b7e1e69293a200400f0fdd5c15f/skills/productivity/wait-what/SKILL.md). Replaces the instruction to use Simplified Technical English with the conversation's main language and writing principles distilled from [ASD-STE100](https://www.asd-ste100.org/STE_faq.html); this adaptation does not claim full STE compliance. The upstream MIT notice is retained in `LICENSES/mattpocock-skills-MIT.txt`. |

@@ -22,7 +22,7 @@ jobs:
       - name: Discover installable skills
         run: |
           NO_COLOR=1 npx -y skills@latest add . --list | tee /tmp/skills-list.txt
-          grep -F "Found 25 skills" /tmp/skills-list.txt
+          grep -F "Found 26 skills" /tmp/skills-list.txt
           for skill in \
             consensus-change-review \
             consensus-gated-grilling \
@@ -48,13 +48,14 @@ jobs:
             suno-create \
             suno-music-explorer \
             suno-studio-download \
-            wait-what
+            wait-what \
+            worktree-triage
           do
             grep -F "$skill" /tmp/skills-list.txt
           done
       - name: Validate manual-only metadata
         run: |
-          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 25
+          test "$(find skills -path '*/agents/openai.yaml' | wc -l | tr -d ' ')" = 26
           for metadata in $(find skills -path '*/agents/openai.yaml')
           do
             grep -F "allow_implicit_invocation: false" "$metadata"
