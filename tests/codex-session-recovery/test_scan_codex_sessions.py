@@ -10,7 +10,6 @@ import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCANNER_PATH = (
     REPO_ROOT

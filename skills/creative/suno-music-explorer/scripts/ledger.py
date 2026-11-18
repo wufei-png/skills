@@ -12,7 +12,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-
 SCHEMA_VERSION = 1
 PHASES = {"probe", "listen", "variant", "paused", "finished"}
 DECISIONS = {
