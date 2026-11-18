@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 """Read-only, scoped documentation inventory and migration checks. No semantic verdicts."""
+
 from __future__ import annotations
 
 import argparse
@@ -83,8 +84,21 @@ class Scan:
         if not self.args.include_ignored:
             try:
                 result = subprocess.run(
-                    ["git", "--literal-pathspecs", "-C", str(self.root), "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *scopes],
-                    capture_output=True, check=False,
+                    [
+                        "git",
+                        "--literal-pathspecs",
+                        "-C",
+                        str(self.root),
+                        "ls-files",
+                        "-z",
+                        "--cached",
+                        "--others",
+                        "--exclude-standard",
+                        "--",
+                        *scopes,
+                    ],
+                    capture_output=True,
+                    check=False,
                 )
                 if result.returncode == 0:
                     git_files = result.stdout.decode("utf-8").split("\0")
@@ -100,22 +114,35 @@ class Scan:
                 if start.is_file():
                     candidates.add(scope)
                     continue
-                for current, dirs, files in os.walk(start, followlinks=False, onerror=lambda e: self.skip(str(e.filename), "unreadable directory")):
+                for current, dirs, files in os.walk(
+                    start,
+                    followlinks=False,
+                    onerror=lambda e: self.skip(
+                        str(e.filename), "unreadable directory"
+                    ),
+                ):
                     base = Path(current)
                     kept = []
                     for name in dirs:
                         path = base / name
                         rel = path.relative_to(self.root).as_posix()
-                        if name == ".git" or any(within(rel, item) for item in excludes):
+                        if name == ".git" or any(
+                            within(rel, item) for item in excludes
+                        ):
                             continue
                         if path.is_symlink():
                             self.skip(rel, "symlink")
                         else:
                             kept.append(name)
                     dirs[:] = kept
-                    candidates.update((base / name).relative_to(self.root).as_posix() for name in files)
+                    candidates.update(
+                        (base / name).relative_to(self.root).as_posix()
+                        for name in files
+                    )
         for rel in sorted(candidates):
-            if ".git" in PurePosixPath(rel).parts or any(within(rel, item) for item in excludes):
+            if ".git" in PurePosixPath(rel).parts or any(
+                within(rel, item) for item in excludes
+            ):
                 continue
             try:
                 path = checked_path(self.root, rel)
@@ -152,7 +179,7 @@ class Scan:
         offset, limit = self.args.offset, self.args.limit
         payload = {
             "command": self.args.command,
-            "items": items[offset:offset + limit],
+            "items": items[offset : offset + limit],
             "total": len(items),
             "offset": offset,
             "has_more": offset + limit < len(items),
@@ -161,7 +188,10 @@ class Scan:
                 "files_selected": len(self.files),
                 "files_read": self.read_count,
                 "skipped": len(self.skipped),
-                "skipped_examples": [{"path": p, "reason": r} for p, r in sorted(self.skipped.items())[:5]],
+                "skipped_examples": [
+                    {"path": p, "reason": r}
+                    for p, r in sorted(self.skipped.items())[:5]
+                ],
                 "limitations": LIMITATIONS,
             },
         }
@@ -176,7 +206,12 @@ def prose(text: str) -> str:
     for line in text.splitlines(keepends=True):
         match = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line.rstrip("\r\n"))
         if fence:
-            if match and match[1][0] == fence[0] and len(match[1]) >= len(fence) and not match[2].strip():
+            if (
+                match
+                and match[1][0] == fence[0]
+                and len(match[1]) >= len(fence)
+                and not match[2].strip()
+            ):
                 fence = ""
             lines.append("\n" if line.endswith("\n") else "")
         elif match:
@@ -200,7 +235,7 @@ def destination(text: str, start: int) -> str | None:
         return None
     if text[index] == "<":
         end = text.find(">", index + 1)
-        return text[index + 1:end] if end >= 0 else None
+        return text[index + 1 : end] if end >= 0 else None
     token = []
     depth = 0
     while index < len(text):
@@ -249,7 +284,9 @@ def static_links(path: Path, text: str) -> list[tuple[int, str, str, str | None]
     html.feed(cleaned)
     base: str | None = path.as_uri()
     if html.base is not None:
-        if html.base.startswith("/") or any(marker in html.base for marker in TEMPLATE_MARKERS):
+        if html.base.startswith("/") or any(
+            marker in html.base for marker in TEMPLATE_MARKERS
+        ):
             base = None
         else:
             base = urljoin(base, html.base)
@@ -267,8 +304,14 @@ def static_links(path: Path, text: str) -> list[tuple[int, str, str, str | None]
     return sorted(set(found))
 
 
-def local_destination(root: Path, token: str, base: str | None) -> tuple[Path | None, str | None]:
-    if not token or token.startswith(("#", "/")) or any(marker in token for marker in TEMPLATE_MARKERS):
+def local_destination(
+    root: Path, token: str, base: str | None
+) -> tuple[Path | None, str | None]:
+    if (
+        not token
+        or token.startswith(("#", "/"))
+        or any(marker in token for marker in TEMPLATE_MARKERS)
+    ):
         return None, None
     value = urlsplit(urljoin(base or "", token))
     if value.scheme != "file" or value.netloc:
@@ -284,11 +327,21 @@ def local_destination(root: Path, token: str, base: str | None) -> tuple[Path | 
 def inventory(scan: Scan) -> int:
     items = []
     for path in scan.select():
-        item = {"path": path.relative_to(scan.root).as_posix(), "bytes": path.stat().st_size}
+        item = {
+            "path": path.relative_to(scan.root).as_posix(),
+            "bytes": path.stat().st_size,
+        }
         if path.suffix.lower() in DOC_SUFFIXES:
             text = scan.read(path)
             if text is not None:
-                title = next((line.strip().lstrip("# ") for line in prose(text).splitlines() if line.strip().startswith("#")), None)
+                title = next(
+                    (
+                        line.strip().lstrip("# ")
+                        for line in prose(text).splitlines()
+                        if line.strip().startswith("#")
+                    ),
+                    None,
+                )
                 item["title"] = title[:200] if title else None
         items.append(item)
     return scan.report(items)
@@ -310,13 +363,25 @@ def refs(scan: Scan) -> int:
         if path.suffix.lower() in {".md", ".markdown", ".html", ".htm"}:
             for line, token, kind, base in static_links(path, text):
                 resolved, _ = local_destination(scan.root, token, base)
-                if resolved is not None and (resolved == target or (target.is_dir() and resolved.is_relative_to(target))):
-                    items.append({"path": rel, "line": line, "kind": kind, "token": token})
+                if resolved is not None and (
+                    resolved == target
+                    or (target.is_dir() and resolved.is_relative_to(target))
+                ):
+                    items.append(
+                        {"path": rel, "line": line, "kind": kind, "token": token}
+                    )
         needles = (target_rel, target.name + "/" if target.is_dir() else target.name)
         for number, line in enumerate(text.splitlines(), 1):
             needle = next((value for value in needles if value in line), None)
             if needle:
-                items.append({"path": rel, "line": number, "kind": "literal-candidate", "token": needle})
+                items.append(
+                    {
+                        "path": rel,
+                        "line": number,
+                        "kind": "literal-candidate",
+                        "token": needle,
+                    }
+                )
     return scan.report(items)
 
 
@@ -331,12 +396,21 @@ def links(scan: Scan) -> int:
         for line, token, kind, base in static_links(path, text):
             resolved, error = local_destination(scan.root, token, base)
             if error or (resolved is not None and not resolved.exists()):
-                items.append({"path": path.relative_to(scan.root).as_posix(), "line": line, "kind": "unsafe-path" if error else "missing-path", "token": token})
+                items.append(
+                    {
+                        "path": path.relative_to(scan.root).as_posix(),
+                        "line": line,
+                        "kind": "unsafe-path" if error else "missing-path",
+                        "token": token,
+                    }
+                )
     return scan.report(items, failed=bool(items))
 
 
 def overlaps(left: str, right: str) -> bool:
-    return within(left.casefold(), right.casefold()) or within(right.casefold(), left.casefold())
+    return within(left.casefold(), right.casefold()) or within(
+        right.casefold(), left.casefold()
+    )
 
 
 def moves(scan: Scan) -> int:
@@ -353,29 +427,57 @@ def moves(scan: Scan) -> int:
             raise InputError("each move must have only source and target")
         source = checked_path(scan.root, entry["source"])
         target = checked_path(scan.root, entry["target"])
-        a, b = source.relative_to(scan.root).as_posix(), target.relative_to(scan.root).as_posix()
+        a, b = (
+            source.relative_to(scan.root).as_posix(),
+            target.relative_to(scan.root).as_posix(),
+        )
         validated.append((a, b))
         if not source.exists() or not (source.is_file() or source.is_dir()):
-            findings.append({"source": a, "target": b, "kind": "missing-or-special-source"})
+            findings.append(
+                {"source": a, "target": b, "kind": "missing-or-special-source"}
+            )
         if target.exists():
             findings.append({"source": a, "target": b, "kind": "occupied-target"})
         if overlaps(a, b):
-            findings.append({"source": a, "target": b, "kind": "overlapping-source-target"})
+            findings.append(
+                {"source": a, "target": b, "kind": "overlapping-source-target"}
+            )
         for parent in target.parents:
             if parent == scan.root:
                 break
             if parent.exists() and not parent.is_dir():
-                findings.append({"source": a, "target": b, "kind": "target-parent-is-file"})
+                findings.append(
+                    {"source": a, "target": b, "kind": "target-parent-is-file"}
+                )
                 break
         if source.is_dir():
             for current, dirs, files in os.walk(source, followlinks=False):
                 if any((Path(current) / name).is_symlink() for name in dirs + files):
-                    findings.append({"source": a, "target": b, "kind": "source-bundle-contains-symlink"})
+                    findings.append(
+                        {
+                            "source": a,
+                            "target": b,
+                            "kind": "source-bundle-contains-symlink",
+                        }
+                    )
                     break
     for index, (source, target) in enumerate(validated):
         for other_source, other_target in validated[:index]:
-            if overlaps(source, other_source) or overlaps(target, other_target) or overlaps(source, other_target) or overlaps(target, other_source):
-                findings.append({"source": source, "target": target, "kind": "conflicting-moves", "other_source": other_source, "other_target": other_target})
+            if (
+                overlaps(source, other_source)
+                or overlaps(target, other_target)
+                or overlaps(source, other_target)
+                or overlaps(target, other_source)
+            ):
+                findings.append(
+                    {
+                        "source": source,
+                        "target": target,
+                        "kind": "conflicting-moves",
+                        "other_source": other_source,
+                        "other_target": other_target,
+                    }
+                )
     return scan.report(findings, failed=bool(findings))
 
 
@@ -396,11 +498,29 @@ def parser() -> argparse.ArgumentParser:
         command.add_argument("--offset", type=int, default=0)
         command.add_argument("--max-bytes", type=positive, default=1024 * 1024)
         if name == "moves":
-            command.add_argument("--plan", required=True, help="temporary JSON source/target array; never executed")
+            command.add_argument(
+                "--plan",
+                required=True,
+                help="temporary JSON source/target array; never executed",
+            )
         else:
-            command.add_argument("--path", action="append", required=True, help="relative file or subtree; repeat for multiple scopes")
-            command.add_argument("--exclude", action="append", default=[], help="relative file or subtree to exclude")
-            command.add_argument("--include-ignored", action="store_true", help="use filesystem traversal within the explicit scopes")
+            command.add_argument(
+                "--path",
+                action="append",
+                required=True,
+                help="relative file or subtree; repeat for multiple scopes",
+            )
+            command.add_argument(
+                "--exclude",
+                action="append",
+                default=[],
+                help="relative file or subtree to exclude",
+            )
+            command.add_argument(
+                "--include-ignored",
+                action="store_true",
+                help="use filesystem traversal within the explicit scopes",
+            )
         if name == "refs":
             command.add_argument("--target", required=True)
     return result
@@ -412,9 +532,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.offset < 0:
             raise InputError("--offset must be nonnegative")
         scan = Scan(args)
-        return {"inventory": inventory, "refs": refs, "links": links, "moves": moves}[args.command](scan)
+        return {"inventory": inventory, "refs": refs, "links": links, "moves": moves}[
+            args.command
+        ](scan)
     except (ValueError, OSError, UnicodeError, TypeError) as exc:
-        print(json.dumps({"command": args.command, "error": str(exc)}, ensure_ascii=False))
+        print(
+            json.dumps({"command": args.command, "error": str(exc)}, ensure_ascii=False)
+        )
         return 2
 
 

@@ -93,8 +93,14 @@ class ScanCodexSessionsTest(unittest.TestCase):
 
     def test_duplicate_active_and_archived_id_is_reported(self):
         result = self.scan(include_archived=True)
-        duplicate = next(record for record in result["records"] if record["thread_id"] == "duplicate-main")
-        self.assertIn("appears in active and archived sources", "\n".join(duplicate["warnings"]))
+        duplicate = next(
+            record
+            for record in result["records"]
+            if record["thread_id"] == "duplicate-main"
+        )
+        self.assertIn(
+            "appears in active and archived sources", "\n".join(duplicate["warnings"])
+        )
 
     def test_current_metadata_fields_are_exposed_and_searchable(self):
         session_index = self.codex_home / "session_index.jsonl"
@@ -125,7 +131,9 @@ class ScanCodexSessionsTest(unittest.TestCase):
             query="named recovery session",
             include_subagents=True,
         )
-        record = next(item for item in result["records"] if item["thread_id"] == "named-main")
+        record = next(
+            item for item in result["records"] if item["thread_id"] == "named-main"
+        )
 
         self.assertEqual("Named recovery session", record["thread_name"])
         self.assertIn("named-session-id", record["aliases"])
@@ -156,7 +164,9 @@ class ScanCodexSessionsTest(unittest.TestCase):
         )
 
         result = self.scan(cwd=None, query="Canonical session")
-        matching = [item for item in result["records"] if item["thread_id"] == "canonical-main"]
+        matching = [
+            item for item in result["records"] if item["thread_id"] == "canonical-main"
+        ]
 
         self.assertEqual(1, len(matching))
         self.assertIn("transcript-alias", matching[0]["aliases"])
@@ -186,7 +196,9 @@ class ScanCodexSessionsTest(unittest.TestCase):
         )
 
         result = self.scan(cwd=None)
-        record = next(item for item in result["records"] if item["thread_id"] == "forked-main")
+        record = next(
+            item for item in result["records"] if item["thread_id"] == "forked-main"
+        )
 
         self.assertIn("forked-main", self.ids(result))
         self.assertFalse(record["subagent"])
@@ -217,9 +229,7 @@ class ScanCodexSessionsTest(unittest.TestCase):
             handle.write('\n{"id":"unknown-time","cwd":"/Users/example/project"}\n')
 
         filtered = self.scan(since="2026-06-12", cwd=None)
-        included = self.scan(
-            since="2026-06-12", cwd=None, include_unknown_time=True
-        )
+        included = self.scan(since="2026-06-12", cwd=None, include_unknown_time=True)
 
         self.assertNotIn("unknown-time", self.ids(filtered))
         self.assertIn("unknown-time", self.ids(included))
@@ -254,9 +264,13 @@ class ScanCodexSessionsTest(unittest.TestCase):
         )
 
         result = self.scan(cwd=None)
-        active = next(item for item in result["records"] if item["thread_id"] == "active-main")
+        active = next(
+            item for item in result["records"] if item["thread_id"] == "active-main"
+        )
 
-        self.assertIn("multiple active transcript sources", "\n".join(active["warnings"]))
+        self.assertIn(
+            "multiple active transcript sources", "\n".join(active["warnings"])
+        )
 
     def test_date_filter_uses_configured_timezone(self):
         result = self.scan(since="2026-06-12", include_archived=True)
@@ -297,7 +311,9 @@ class ScanCodexSessionsTest(unittest.TestCase):
         result = self.scan(since="2026-06-12", timezone=None)
 
         self.assertNotIn("before-local-midnight", self.ids(result))
-        self.assertEqual(str(self.scanner.local_timezone()), result["filters"]["timezone"])
+        self.assertEqual(
+            str(self.scanner.local_timezone()), result["filters"]["timezone"]
+        )
 
     def test_naive_transcript_timestamps_do_not_crash_date_filtering(self):
         path = (
@@ -318,7 +334,9 @@ class ScanCodexSessionsTest(unittest.TestCase):
             encoding="utf-8",
         )
 
-        result = self.scan(since="2026-06-12T00:00:00+08:00", until="2026-06-13T00:00:00+08:00")
+        result = self.scan(
+            since="2026-06-12T00:00:00+08:00", until="2026-06-13T00:00:00+08:00"
+        )
 
         self.assertIn("naive-main", self.ids(result))
         warnings = "\n".join(result["warnings"])
@@ -384,13 +402,24 @@ class ScanCodexSessionsTest(unittest.TestCase):
             )
 
         result = self.scan(query="keepsake")
-        stale = next(record for record in result["records"] if record["thread_id"] == "stale-index-only")
-        active = next(record for record in result["records"] if record["thread_id"] == "active-main")
+        stale = next(
+            record
+            for record in result["records"]
+            if record["thread_id"] == "stale-index-only"
+        )
+        active = next(
+            record
+            for record in result["records"]
+            if record["thread_id"] == "active-main"
+        )
 
         self.assertLess(stale["match_score"], active["match_score"])
         self.assertIn("query match", stale["matching_reasons"])
         self.assertIn("query match", active["matching_reasons"])
-        self.assertIn("index-only evidence", "\n".join(stale["matching_reasons"] + stale["warnings"]))
+        self.assertIn(
+            "index-only evidence",
+            "\n".join(stale["matching_reasons"] + stale["warnings"]),
+        )
 
     def test_index_only_naive_timestamp_does_not_crash_sorting(self):
         session_index = self.codex_home / "session_index.jsonl"
@@ -456,22 +485,34 @@ class ScanCodexSessionsTest(unittest.TestCase):
 
         self.assertEqual("filename-only-main", record["thread_id"])
         self.assertEqual("2026-06-12T15:30:45+08:00", record["updated_at"])
-        self.assertIn("filename fallback timestamp", "\n".join(record["matching_reasons"] + record["warnings"]))
+        self.assertIn(
+            "filename fallback timestamp",
+            "\n".join(record["matching_reasons"] + record["warnings"]),
+        )
 
     def test_json_output_contains_recovery_commands(self):
         result = self.scan()
-        active = next(record for record in result["records"] if record["thread_id"] == "active-main")
+        active = next(
+            record
+            for record in result["records"]
+            if record["thread_id"] == "active-main"
+        )
         self.assertEqual("codex resume active-main", active["resume_command"])
         self.assertEqual("codex fork active-main", active["fork_command"])
         self.assertNotIn("deep_link", active)
 
     def test_cli_json_exposes_uncapped_integer_match_score_without_old_field(self):
         completed = self.run_cli(
-            "--codex-home", str(self.codex_home),
-            "--cwd", PROJECT_CWD,
-            "--query", "keepsake",
-            "--timezone", "Asia/Shanghai",
-            "--format", "json",
+            "--codex-home",
+            str(self.codex_home),
+            "--cwd",
+            PROJECT_CWD,
+            "--query",
+            "keepsake",
+            "--timezone",
+            "Asia/Shanghai",
+            "--format",
+            "json",
         )
 
         self.assertEqual(0, completed.returncode, completed.stderr)
@@ -516,7 +557,9 @@ class ScanCodexSessionsTest(unittest.TestCase):
     def test_missing_identity_fields_are_reported_without_failing_scan(self):
         session_index = self.codex_home / "session_index.jsonl"
         with session_index.open("a", encoding="utf-8") as handle:
-            handle.write('\n{"cwd":"/Users/example/project","updated_at":"2026-06-12T12:00:00+08:00"}\n')
+            handle.write(
+                '\n{"cwd":"/Users/example/project","updated_at":"2026-06-12T12:00:00+08:00"}\n'
+            )
 
         nameless_path = self.codex_home / "sessions" / "bad" / "nameless.jsonl"
         nameless_path.parent.mkdir(parents=True, exist_ok=True)

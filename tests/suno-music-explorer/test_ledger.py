@@ -85,18 +85,35 @@ class ResolveLedgerTest(unittest.TestCase):
 class LedgerStateTest(unittest.TestCase):
     def test_explicit_unlimited_create_grant_still_enforces_credit_cap(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
-            args = ledger.parser().parse_args([
-                "init", "--ledger-dir", temp, "--session-id", "unlimited-run",
-                "--create-limit", "unlimited", "--credit-limit", "30",
-            ])
+            args = ledger.parser().parse_args(
+                [
+                    "init",
+                    "--ledger-dir",
+                    temp,
+                    "--session-id",
+                    "unlimited-run",
+                    "--create-limit",
+                    "unlimited",
+                    "--credit-limit",
+                    "30",
+                ]
+            )
             created = ledger.command_init(args)
             self.assertIsNone(created["ledger"]["grant"]["create_limit"])
             path = Path(created["file"])
-            record = ledger.parser().parse_args([
-                "record", "--file", str(path),
-                "--event-json", '{"kind":"submission","summary":"confirmed"}',
-                "--creates-spent", "100", "--credits-spent", "30",
-            ])
+            record = ledger.parser().parse_args(
+                [
+                    "record",
+                    "--file",
+                    str(path),
+                    "--event-json",
+                    '{"kind":"submission","summary":"confirmed"}',
+                    "--creates-spent",
+                    "100",
+                    "--credits-spent",
+                    "30",
+                ]
+            )
             ledger.command_record(record)
             self.assertEqual(100, ledger.load(path)["spent"]["creates"])
             record.credits_spent = 31
@@ -106,10 +123,17 @@ class LedgerStateTest(unittest.TestCase):
 
     def test_missing_create_limit_does_not_become_unlimited(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
-            args = ledger.parser().parse_args([
-                "init", "--ledger-dir", temp, "--session-id", "bounded-run",
-                "--create-limit", "3",
-            ])
+            args = ledger.parser().parse_args(
+                [
+                    "init",
+                    "--ledger-dir",
+                    temp,
+                    "--session-id",
+                    "bounded-run",
+                    "--create-limit",
+                    "3",
+                ]
+            )
             data = ledger.command_init(args)["ledger"]
             del data["grant"]["create_limit"]
             with self.assertRaisesRegex(ledger.LedgerError, "must be explicit"):
