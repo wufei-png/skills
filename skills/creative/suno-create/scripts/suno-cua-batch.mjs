@@ -85,8 +85,7 @@ export function cuaForm(tab) {
         const auto=group('Duration').getByRole('button',{name:'Auto',exact:true});
         if(await auto.count()===1)await auto.click();
         else {
-          // Current Custom UI replaces both choices with a Duration-only reset icon.
-          // Its return to the official Auto selection was verified on 2026-10-11.
+          // Custom mode can replace the Auto choice with a Duration reset icon.
           await (await unique(group('Duration').locator('svg.cursor-pointer[data-base-ui-tooltip-trigger]'))).click();
         }
       }

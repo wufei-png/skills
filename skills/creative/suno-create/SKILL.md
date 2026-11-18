@@ -20,22 +20,18 @@ Before submission, obtain direct authorization or use the remaining grant from a
 
 Use the first path that can set and read back every requested field:
 
-1. An authenticated Suno tab controlled through the CUA browser Playwright API (`tab.playwright`), when available. It can batch locator operations in the existing browser context.
-2. The Playwright runner for a supported vocal package or bounded serial batch when it has an authenticated persistent profile or a compatible single-context CDP endpoint.
-3. Computer Use for controls the runner does not support, when the logged-in Suno page exposes those controls and their selected values can be verified.
-4. A reviewed manual package when neither browser path can verify the complete request.
+1. An authenticated Suno tab controlled by [CUA Playwright](references/browser.md#cua-advanced-form) (`tab.playwright`), when available.
+2. The [Playwright CLI runner](references/browser.md#playwright-runner) for a supported vocal package or bounded serial batch with an authenticated persistent profile or a compatible single-context CDP endpoint.
+3. [Computer Use](references/browser.md#computer-use-fallback) when the logged-in page exposes the needed controls and their selected values can be verified.
+4. A reviewed manual package when the complete request cannot be verified through an available browser path.
 
-For route 1, [scripts/suno-cua-batch.mjs](scripts/suno-cua-batch.mjs) provides a macOS CUA adapter for the Advanced v6 form, including vocal and empty-lyrics instrumental packages, explicit Vocal Gender (null for instrumental), Auto or Custom duration, official Max Mode, Weirdness, Style Influence, Variety 0, Personalize Off, and no-reference controls. Custom duration requires `durationSeconds` and matching input and slider readback. Its `prepare()` and `read()` functions never click Create. The caller must still enforce the approved count/spend, durably arm a ledger, click Create once, and reconcile candidate IDs and spend. Do not silently fall back to the legacy runner for a package containing fields that runner cannot verify.
+The [macOS CUA adapter](scripts/suno-cua-batch.mjs) prepares and reads back Advanced v6 vocal and instrumental packages. `prepare()` and `read()` stop before Create. The caller enforces the approved count and spend, durably arms a ledger, clicks Create once, and reconciles candidate IDs and spend.
 
-The CLI runner does not support instrumental packages, audio reference uploads, Audio Influence, Persona, or Extend. Use the authenticated browser path for these only when the corresponding controls are available and can be read back. If a path proves incapable before Create, select the next capable path. If Create was attempted or its outcome is ambiguous, stop and reconcile before changing paths.
-
-For browser setup, supported fields, and recovery, read [references/browser.md](references/browser.md).
-
-For the CLI Playwright runner, use [scripts/suno-batch-playwright.mjs](scripts/suno-batch-playwright.mjs) and the manifest format in [references/batch-manifest.example.json](references/batch-manifest.example.json). Validate the complete manifest first. Install the Playwright-managed Chrome for Testing browser with `playwright-cli install-browser chromium` when using the CLI runner. By default, the runner launches an isolated persistent browser profile; `--setup-profile` opens it for authentication and verifies the signed-in credits control. An existing CDP endpoint can be selected explicitly with `--cdp-url`. A submission requires an exact `--confirm-batch` match, explicit `--max-items` and `--max-credits`, and a ledger path. The runner submits serially, never downloads audio, never retries an uncertain submission, and stops when a package is ambiguous. Do not pass `--submit` unless the user authorized that exact package set and spend bound.
+If a path proves incapable before Create, select the next capable path. If Create was attempted or its outcome is ambiguous, stop and reconcile before changing paths.
 
 ## Submit serially
 
-1. Inspect current account readiness, cost, model options, and relevant controls without mutating them.
+1. Identify the in-scope Create page by its current URL and visible account context. Inspect account readiness, cost, model options, and controls before changing the form. For direct browser interaction, use visible semantic labels or fresh element references after navigation or re-rendering. Dismiss only overlays that block the task.
 2. Normalize slider values only from observed transport schemas. Do not assume that UI and CLI scales match.
 3. For every package, set and read back title, prompt or lyrics, style, exclusions, instrumental or vocal choice, model, duration, vocal gender, official Max Mode, and each requested influence or reference control.
 4. Immediately before each final action, re-check the authorization and expected spend.
@@ -48,14 +44,16 @@ Do not download generated media unless separately requested. A Create authorizat
 
 Classify the attempt as `confirmed`, `failed-before-submit`, or `ambiguous`.
 
-- `confirmed`: record the candidate identifiers and return them.
-- `failed-before-submit`: a different capable transport may be selected while the original authorization remains unspent.
+- `confirmed`: require a visible new generation pair, provider confirmation, or matching new library entries. Record and return the candidate identifiers.
+- `failed-before-submit`: a failure known to precede Create allows a different capable transport while the original authorization remains unspent.
 - `ambiguous`: stop. Check the Suno library, account history, browser result, and ledger for a matching title, timestamp, or package fingerprint. Never resubmit until non-submission is confirmed.
 
-For a runner ledger in `armed` or `ambiguous`, use `--reconcile-not-submitted <package-id>` only after confirming in Suno Library/history that no matching generation was created. Run it with the same manifest, ledger, batch confirmation, and limits; it writes an operator-confirmed reconciliation record before `--resume` can retry the package. The command does not inspect Suno or prove absence itself. If the result remains uncertain, stop and ask the user.
+For a CLI ledger in `armed` or `ambiguous`, use the [runner's recovery procedure](references/browser.md#playwright-runner) only after confirming that no matching generation was created. If the result remains uncertain, ask the user.
 
 CAPTCHA, expired login, inaccessible controls, unexpected price changes, or inability to verify the final action require user intervention. Do not loop through retries.
 
 ## Return
 
 Report the transport, package fingerprint or concise summary, outcome classification, candidate identifiers or manual handoff, observed spend if known, and any unresolved uncertainty. Do not claim that generated audio is good without listening evidence.
+
+For a manual handoff, provide field values, expected spend when known, and a pre-submit checklist, including any sign-in prerequisite.
