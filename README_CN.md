@@ -22,7 +22,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 
 ## 提示词模板
 
-按场景选用工程协作、游戏开发和音乐制作的中文提示词。 [浏览双语索引](./docs/prompts/README.md)
+复制工程、游戏或音乐任务的中文提示词。 [双语索引](./docs/prompts/README.md)
 
 ## 选择工作流
 

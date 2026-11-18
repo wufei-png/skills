@@ -22,7 +22,7 @@ npx skills@latest add wufei-png/skills --skill grilling -g -y --agent codex
 
 ## Prompt templates
 
-Find Chinese prompts for engineering, game development, and music production in the [bilingual prompt index](./docs/prompts/README.md).
+Copy a Chinese prompt for engineering, games, or music from the [bilingual index](./docs/prompts/README.md).
 
 ## Choose a workflow
 
