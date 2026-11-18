@@ -47,7 +47,7 @@ If the user only wants a prompt, do not over-interrogate.
 
 ### 2. Scene Auditor
 
-Read [references/scene_auditor.md](references/scene_auditor.md) and follow it.
+Read [references/scene_auditor.md](https://github.com/huanmu-team/unimage/blob/db916e7ea2764e99e8c379adcb63a8c32f06e7ee/references/scene_auditor.md) and follow it.
 
 This stage decides:
 
@@ -61,14 +61,14 @@ This stage decides:
 
 Read both:
 
-- [references/detail_scanner.md](references/detail_scanner.md)
-- [references/spatial_architect.md](references/spatial_architect.md)
+- [references/detail_scanner.md](https://github.com/huanmu-team/unimage/blob/db916e7ea2764e99e8c379adcb63a8c32f06e7ee/references/detail_scanner.md)
+- [references/spatial_architect.md](https://github.com/huanmu-team/unimage/blob/db916e7ea2764e99e8c379adcb63a8c32f06e7ee/references/spatial_architect.md)
 
 If your runtime supports subagents, run these two stages in parallel. Otherwise do them sequentially.
 
 ### 4. Prompt Engine
 
-Read [references/prompt_engine.md](references/prompt_engine.md) and synthesize the first-pass prompt.
+Read [references/prompt_engine.md](https://github.com/huanmu-team/unimage/blob/db916e7ea2764e99e8c379adcb63a8c32f06e7ee/references/prompt_engine.md) and synthesize the first-pass prompt.
 
 Default output:
 
@@ -78,7 +78,7 @@ Default output:
 
 ### 5. Draft Validation
 
-If a live generator is available, or the user explicitly asks to “补足一轮 / validate / try a few prompt variants”, read [references/draft_validation.md](references/draft_validation.md) and run that loop.
+If a live generator is available, or the user explicitly asks to “补足一轮 / validate / try a few prompt variants”, read [references/draft_validation.md](https://github.com/huanmu-team/unimage/blob/db916e7ea2764e99e8c379adcb63a8c32f06e7ee/references/draft_validation.md) and run that loop.
 
 Use the bundled helper script when appropriate:
 
@@ -90,7 +90,7 @@ Do not block on this step when the user only wants the prompt draft.
 
 ### 6. QC / Repair
 
-If the user provides both source and replica images, or says the first result is wrong and wants corrections, read [references/qc_inspector.md](references/qc_inspector.md).
+If the user provides both source and replica images, or says the first result is wrong and wants corrections, read [references/qc_inspector.md](https://github.com/huanmu-team/unimage/blob/db916e7ea2764e99e8c379adcb63a8c32f06e7ee/references/qc_inspector.md).
 
 Return:
 

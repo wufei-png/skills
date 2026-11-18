@@ -29,12 +29,9 @@ Only mention realism cues that are actually present. Do not invent dust, scratch
 
 ### 3. Text extraction
 
-This is mandatory when text is visible.
-
-- Copy clearly visible text verbatim.
-- Preserve original language and casing.
+- Describe typography when its appearance or placement matters to the request.
+- Copy clearly visible wording, language, and casing only when the text itself needs to carry over.
 - Ignore watermarks, copyright bugs, or platform overlays unless they are part of the design itself.
-- Note style: serif, sans, handwritten, neon, embossed, heavy, thin, and so on.
 
 ### 4. UI / info-density details
 

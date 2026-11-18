@@ -114,12 +114,8 @@ class SkillRepositoryContractTest(unittest.TestCase):
 
     def test_reference_image_prompt_is_self_contained_and_attributed(self) -> None:
         skill_dir = SKILLS_ROOT / "creative/reference-image-prompt"
-        documents = (
-            skill_dir / "SKILL.md",
-            skill_dir / "RESEARCH.md",
-            skill_dir / "vendor/unimage/UPSTREAM-SKILL.md",
-            skill_dir / "vendor/unimage/VENDOR.md",
-        )
+        references = skill_dir / "vendor/unimage/references"
+        documents = (skill_dir / "SKILL.md", *sorted(references.glob("*.md")))
         for document in documents:
             for target in re.findall(r"\]\(([^)]+)\)", document.read_text(encoding="utf-8")):
                 if target.startswith(("https://", "http://", "#")):
@@ -133,6 +129,14 @@ class SkillRepositoryContractTest(unittest.TestCase):
         license_bytes = license_file.read_bytes()
         self.assertIn(b"Copyright (c) 2026 huanmu-team", license_bytes)
         self.assertEqual(license_bytes, (ROOT / "LICENSES/unimage-MIT.txt").read_bytes())
+
+    def test_reference_image_prompt_archives_maintainer_documents(self) -> None:
+        skill_dir = SKILLS_ROOT / "creative/reference-image-prompt"
+        archive = ROOT / "docs/archive/reference-image-prompt"
+        for name in ("RESEARCH.md", "UPSTREAM-SKILL.md", "VENDOR.md"):
+            with self.subTest(name=name):
+                self.assertTrue((archive / name).is_file())
+                self.assertFalse(any(skill_dir.rglob(name)))
 
     def test_worktree_triage_includes_upstream_license(self) -> None:
         license_file = SKILLS_ROOT / "engineering/worktree-triage/LICENSE"

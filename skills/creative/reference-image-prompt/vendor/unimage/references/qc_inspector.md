@@ -11,32 +11,8 @@ Use this stage when the user provides both the source image and the generated re
 5. Lighting direction
 6. Crop and framing
 
-## Rules
+## Report and correct
 
-- Focus on the few mismatches that matter most.
-- Do not write a generic “looks different” critique.
-- Convert every important mismatch into a concrete correction to the next prompt.
-
-## Output Format
-
-```markdown
-### Gap Analysis
-- Fidelity Score: [0-100%]
-- Pass: [what matched]
-- Fail: [what drifted]
-
-### Optimization Directives
-1. ...
-2. ...
-3. ...
-
-### Revised Prompt
-<updated prompt>
-
-### Config
-- aspect_ratio: ...
-- enhance_prompt: ...
-- negative_prompt: ...
-```
-
-Only include config lines that materially improve control.
+- Identify what matched and the mismatches that matter most to the request.
+- Give a concrete correction for each important mismatch. When revising the prompt, preserve the traits that already match.
+- Include tool settings only when they materially improve control.
