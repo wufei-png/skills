@@ -154,11 +154,12 @@ class DocumentationChecksTest(unittest.TestCase):
         report = self.run_check("links", "--path", "docs/site.html")
         self.assertEqual([], report["items"])
 
-    def test_website_and_template_bases_leave_dependent_links_unresolved(self):
+    def test_unsupported_bases_leave_dependent_links_unresolved(self):
         missing_uri = (self.root / "docs/missing.png").as_uri()
         for base in (
             "/",
             "/docs/",
+            "https://[broken.invalid",
             "{{site.baseurl}}/",
             "${SITE_ROOT}/",
             "<% base %>/",
@@ -182,6 +183,14 @@ class DocumentationChecksTest(unittest.TestCase):
             '[Guide](guide(v2).md "Title")\n![Image](file%20one.md)\n[ref]: <file one.md> "Title"\n[Escaped](guide\\(v2\\).md)\n',
         )
         self.assertEqual(0, self.run_check("links", "--path", "docs/index.md")["total"])
+
+    def test_malformed_external_links_do_not_interrupt_local_checks(self):
+        self.write(
+            "docs/index.md",
+            "[External](https://[broken.invalid)\n[Local](missing.md)\n",
+        )
+        report = self.run_check("links", "--path", "docs/index.md", code=1)
+        self.assertEqual(["missing.md"], [item["token"] for item in report["items"]])
 
     def test_fenced_and_inline_examples_are_not_static_link_failures(self):
         self.write(

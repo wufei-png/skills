@@ -276,18 +276,23 @@ class HtmlLinks(HTMLParser):
     handle_startendtag = handle_starttag
 
 
+def outside_local_scope(token: str) -> bool:
+    token = token.lstrip()
+    scheme = re.match(r"([A-Za-z][A-Za-z0-9+.-]*):", token)
+    return (
+        token.startswith("/")
+        or any(marker in token for marker in TEMPLATE_MARKERS)
+        or (scheme is not None and scheme[1].lower() != "file")
+    )
+
+
 def static_links(path: Path, text: str) -> list[tuple[int, str, str, str | None]]:
     cleaned = prose(text) if path.suffix.lower() in {".md", ".markdown"} else text
     html = HtmlLinks()
     html.feed(cleaned)
     base: str | None = path.as_uri()
     if html.base is not None:
-        if html.base.startswith("/") or any(
-            marker in html.base for marker in TEMPLATE_MARKERS
-        ):
-            base = None
-        else:
-            base = urljoin(base, html.base)
+        base = None if outside_local_scope(html.base) else urljoin(base, html.base)
     found = [(line, token, kind, base) for line, token, kind in html.links]
     if path.suffix.lower() in {".md", ".markdown"}:
         for line_no, line in enumerate(cleaned.splitlines(), 1):
@@ -305,11 +310,7 @@ def static_links(path: Path, text: str) -> list[tuple[int, str, str, str | None]
 def local_destination(
     root: Path, token: str, base: str | None
 ) -> tuple[Path | None, str | None]:
-    if (
-        not token
-        or token.startswith(("#", "/"))
-        or any(marker in token for marker in TEMPLATE_MARKERS)
-    ):
+    if not token or token.startswith("#") or outside_local_scope(token):
         return None, None
     value = urlsplit(urljoin(base or "", token))
     if value.scheme != "file" or value.netloc:
