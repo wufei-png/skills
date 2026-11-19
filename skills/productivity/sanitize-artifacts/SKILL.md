@@ -33,6 +33,7 @@ Constraints are not automatically residue. Preserve assumptions, compatibility l
 2. Use appropriate format-specific tools when available. Inspect comments, tracked changes, speaker notes, document properties, author and path metadata, hidden rows or sheets, invisible or off-canvas objects, embedded files, and cached data when the format can carry them.
 3. Rewrite the artifact itself instead of adding explanations about the cleanup. Keep one coherent voice and remove seams left by iterative feedback.
 4. Verify facts, links, citations, required disclosures, and intended behavior. Render or open the delivery format when layout or hidden surfaces matter, then inspect it again.
+   For batch checks of local file links in Markdown or HTML, consult the `docs-context-curator` skill when available.
 5. Report any surface that available tools could not inspect. A text-only review is not proof that a packaged document contains no hidden data.
 
 ## Output
