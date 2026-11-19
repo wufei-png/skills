@@ -6,7 +6,7 @@ Installable skills live in `skills/productivity/`, `skills/engineering/`, and `s
 
 ## Build, Test, and Development Commands
 
-This repository has no build step or runtime package manifest. Contract tests use the pinned PyYAML dependency in `requirements-test.txt`. Run checks from the repository root:
+This repository has no build step or runtime package manifest. The main CI workflow uses Python 3.11 and Node.js 22. Run local checks from the repository root.
 
 ```bash
 python3 -m pip install --disable-pip-version-check -r requirements-test.txt
@@ -26,7 +26,9 @@ ruff format --check .
 git diff --check
 ```
 
-The contract tests compare the skill tree with the independent `EXPECTED_SKILLS` set and validate entrypoints, metadata, unique names, and manual-only flags as YAML 1.2 booleans; only canonical `true`/`false` forms are accepted, not YAML 1.1 values such as `yes`/`no`/`on`/`off` or quoted strings. The installer commands verify that fixed and latest discovery both match the tree and the expected set. Install the pinned PyYAML dependency from `requirements-test.txt` before running the contract tests, and install Ruff 0.16.5 once before running the lint and format commands. `git diff --check` catches whitespace errors. CI runs the same checks on pushes and pull requests, and also runs the latest installer weekly.
+The contract tests compare the skill tree with the independent `EXPECTED_SKILLS` set and validate entrypoints, metadata, unique names, and manual-only flags. The flags must use canonical YAML 1.2 booleans (`true`/`false`). YAML 1.1 aliases (`yes`/`no`/`on`/`off`) and quoted strings are rejected. Both installer checks compare discovery with the skill tree and expected set.
+
+`git diff --check` is a local whitespace check. See [repository CI](./.github/workflows/ci.yml) and [scheduler CI](./.github/workflows/codex-native-scheduler.yml) for automated checks and triggers.
 
 ## Coding Style & Naming Conventions
 
