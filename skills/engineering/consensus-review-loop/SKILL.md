@@ -12,6 +12,7 @@ Use the user's positive round limit, or `3` by default.
 For each round:
 
 1. Start one fresh subagent with `fork_turns: "none"` and `$review-agent` skill. Give it the current review target, goal, acceptance criteria, comparison base, and check results. It may inspect relevant code, tests, and call sites but must only review.
+   Ask the reviewer to consult the `karpathy-guidelines` skill when available.
 2. Wait for its conclusion without rushing a healthy reviewer. Verify every P0-P3 finding yourself. Record rejected findings with the reason. Classify material disagreements as disputed.
 3. For each material dispute, state the provisional disposition, disputed premise, and evidence to the original reviewer. Allow at most two exchange rounds; each response must maintain, revise, or withdraw the finding with evidence.
 4. If the dispute remains, start one fresh, read-only tie-breaker with neutral context and both evidence positions. If it still cannot resolve the dispute, ask the user to adjudicate; do not apply or silently reject the finding.

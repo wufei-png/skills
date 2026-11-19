@@ -14,6 +14,8 @@ Use the user's stage limit when provided; otherwise use at most 10 stages. If a 
 
 Record `START_BASE=$(git rev-parse HEAD)` and the current worktree status so the final review can exclude unrelated pre-existing changes.
 
+Consult the `karpathy-guidelines` skill when available.
+
 Split the change into dependency-ordered stages. Each stage must:
 
 - depend only on earlier stages;

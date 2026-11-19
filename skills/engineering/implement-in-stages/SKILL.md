@@ -12,6 +12,8 @@ Implement an already-authorized change as a sequence of small commits.
 
 Use the user's stage limit when provided; otherwise use at most 10 stages. If a sound breakdown requires more, stop and report why rather than forcing unrelated work together.
 
+Consult the `karpathy-guidelines` skill when available.
+
 Split the change into dependency-ordered stages. Each stage must:
 
 - depend only on earlier stages;
