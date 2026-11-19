@@ -6,7 +6,7 @@ Run commands from the skill directory. Put `--db-path` after the subcommand when
 
 ## Filters and output
 
-Repeated values for one filter are OR alternatives; different filter categories combine with AND. Text filters are literal, case-insensitive substrings, so `%` and `_` are not SQL wildcards.
+Repeated values for one filter combine with OR. Different filters combine with AND. Title, project, and directory filters match literal substrings with Unicode case folding, including literal `%` and `_`.
 
 `list` excludes archived sessions by default and returns 20 rows ordered by update time and session id. Displayed times are UTC ISO-8601. Naive datetimes and date-only bounds use the machine's local timezone; a date-only end includes that whole day.
 

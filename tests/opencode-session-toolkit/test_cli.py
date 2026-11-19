@@ -264,6 +264,35 @@ class CliTest(unittest.TestCase):
         rows = json.loads(result.stdout)
         self.assertEqual([row["id"] for row in rows], ["ses_percent"])
 
+    def test_metadata_search_folds_unicode_case(self) -> None:
+        with closing(sqlite3.connect(self.db_path)) as connection, connection:
+            connection.execute("UPDATE project SET name = 'DÉMO'")
+            connection.execute(
+                "UPDATE session SET title = 'CAFÉ % Straße', directory = '/tmp/ÉTÉ' "
+                "WHERE id = 'ses_percent'"
+            )
+
+        for arguments, expected_ids in (
+            (("list", "--title", "missing", "--title", " café % "), ["ses_percent"]),
+            (("list", "--directory", "/tmp/été"), ["ses_percent"]),
+            (("list", "--project", "démo"), ["ses_other", "ses_percent"]),
+            (("search", "strasse", "--scope", "title"), ["ses_percent"]),
+            (("search", "/tmp/été", "--scope", "title"), ["ses_percent"]),
+            (("list", "--title", "cafe"), []),
+            (("list", "--session-id", "SES_PERCENT"), []),
+        ):
+            with self.subTest(arguments=arguments):
+                result = self.run_cli(
+                    *arguments,
+                    "--db-path",
+                    str(self.db_path),
+                    "--format",
+                    "json",
+                )
+                self.assertEqual(
+                    [row["id"] for row in json.loads(result.stdout)], expected_ids
+                )
+
     def test_same_timestamp_messages_are_not_duplicated(self) -> None:
         result = self.run_cli(
             "show",

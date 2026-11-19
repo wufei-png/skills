@@ -303,6 +303,9 @@ def connect_read_only(db_path: Path) -> sqlite3.Connection:
     uri = f"{db_path.as_uri()}?mode=ro"
     connection = sqlite3.connect(uri, uri=True, timeout=5)
     connection.row_factory = sqlite3.Row
+    connection.create_function(
+        "casefold", 1, lambda value: value.casefold() if value is not None else None
+    )
     connection.execute("PRAGMA query_only = ON")
     try:
         connection.execute("PRAGMA trusted_schema = OFF")
@@ -412,12 +415,18 @@ def optional_column(
     return f"NULL AS {alias}"
 
 
-def substring_condition(expression: str, terms: Sequence[str]) -> tuple[str, list[str]]:
-    cleaned = [term.strip() for term in terms if term.strip()]
-    if not cleaned:
+def substring_condition(
+    expressions: Sequence[str], terms: Sequence[str]
+) -> tuple[str, list[str]]:
+    folded = [term.strip().casefold() for term in terms if term.strip()]
+    if not folded:
         return "", []
-    clause = " OR ".join(f"instr(lower({expression}), lower(?)) > 0" for _ in cleaned)
-    return f"({clause})", cleaned
+    per_term = " OR ".join(
+        f"instr(casefold(CAST({expression} AS TEXT)), ?) > 0"
+        for expression in expressions
+    )
+    clause = " OR ".join(f"({per_term})" for _ in folded)
+    return f"({clause})", [term for term in folded for _ in expressions]
 
 
 def build_filter_clause(
@@ -434,26 +443,13 @@ def build_filter_clause(
     project_expressions = ["s.project_id", "s.directory"]
     if capabilities.has_columns("project", {"id", "name", "worktree"}):
         project_expressions.extend(["coalesce(p.name, '')", "coalesce(p.worktree, '')"])
-    if args.project:
-        term_clauses: list[str] = []
-        for term in (value.strip() for value in args.project if value.strip()):
-            term_clauses.append(
-                "("
-                + " OR ".join(
-                    f"instr(lower({expr}), lower(?)) > 0"
-                    for expr in project_expressions
-                )
-                + ")"
-            )
-            parameters.extend([term] * len(project_expressions))
-        if term_clauses:
-            conditions.append("(" + " OR ".join(term_clauses) + ")")
 
-    for expression, values in (
-        ("s.title", args.title),
-        ("s.directory", args.directory),
+    for expressions, values in (
+        (project_expressions, args.project),
+        (("s.title",), args.title),
+        (("s.directory",), args.directory),
     ):
-        clause, params = substring_condition(expression, values)
+        clause, params = substring_condition(expressions, values)
         if clause:
             conditions.append(clause)
             parameters.extend(params)
@@ -1151,10 +1147,9 @@ def handle_search(
     clauses: list[str] = []
     parameters: list[Any] = []
     if args.scope in ("all", "title"):
-        clauses.append(
-            "(instr(lower(s.title), lower(?)) > 0 OR instr(lower(s.directory), lower(?)) > 0)"
-        )
-        parameters.extend([args.query, args.query])
+        clause, params = substring_condition(("s.title", "s.directory"), (args.query,))
+        clauses.append(clause)
+        parameters.extend(params)
     if args.scope in ("all", "messages"):
         require_capability(capabilities, "message")
         clauses.append(
