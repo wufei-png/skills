@@ -347,6 +347,12 @@ def _finish_job_state(
 ) -> dict[str, Any]:
     with store.short_lock(job_id):
         job = store.load_job(job_id)
+        if run["status"] == "skipped_pending" and (
+            job["status"] != "active"
+            or job["schedule"]["kind"] != "at"
+            or parse_iso(job["schedule"]["at"]) != parse_iso(run["scheduled_for"])
+        ):
+            return job
         stats = job["stats"]
         stats["last_run_id"] = run["id"]
         stats["last_result"] = run["status"]
@@ -564,7 +570,7 @@ def trigger_job(store: Store, reference: str) -> dict[str, Any] | None:
     session_id = (
         job.get("fixed_session_id") if job["session_mode"] == "resume_fixed" else None
     )
-    return _run_with_overlap(
+    result = _run_with_overlap(
         store,
         job,
         run,
@@ -572,6 +578,9 @@ def trigger_job(store: Store, reference: str) -> dict[str, Any] | None:
         scheduled=True,
         resume_session=session_id,
     )
+    if result["status"] == "skipped_pending" and job["schedule"]["kind"] == "at":
+        _finish_job_state(store, job["id"], result, scheduled=True)
+    return result
 
 
 def spawn_trigger(store: Store, reference: str) -> dict[str, Any]:
@@ -635,7 +644,10 @@ def retry_run(store: Store, reference: str) -> dict[str, Any]:
         raise SchedulerError("only a terminal run can be retried")
     snapshot = read_json(original_dir / "job_snapshot.json")
     if snapshot["session_mode"] == QUEUE_MODE:
-        raise SchedulerError("use run-now after resolving any pending queue delivery")
+        raise SchedulerError(
+            "resolve any pending queue delivery, then use run-now for an active job "
+            "or create a new job for a finished one-shot"
+        )
     current_job = store.load_job(original["job_id"])
     prompt = (original_dir / "prompt.txt").read_text(encoding="utf-8")
     session_id = original.get("session_id")

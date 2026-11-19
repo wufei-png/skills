@@ -16,6 +16,10 @@ from .util import atomic_write_text, iso, read_json, run_checked
 
 QUEUE_MODE = "queue_existing"
 QUEUE_RECEIPT = re.compile(r"^Queued message (\S+) for thread (\S+)\.$", re.M)
+QUEUE_PARSE_ERROR = re.compile(
+    r"^error: (?:unexpected argument '[^']+' found|unrecognized subcommand 'queue')$",
+    re.M,
+)
 
 
 def queue_supports_resume(command: list[str], environment: dict[str, str]) -> bool:
@@ -30,7 +34,7 @@ def queue_supports_resume(command: list[str], environment: dict[str, str]) -> bo
     return "--resume" in help_output.stdout
 
 
-def _message(store: Store, job: dict[str, Any], prompt: str) -> str:
+def _message(store: Store, job: dict[str, Any], run_id: str, prompt: str) -> str:
     prefix = shlex.join(
         [
             job["python_command"],
@@ -40,16 +44,15 @@ def _message(store: Store, job: dict[str, Any], prompt: str) -> str:
         ]
     )
     status = f"{prefix} show {job['id']}"
-    ack = f"{prefix} ack {job['id']} <run-id>"
+    ack = f"{prefix} ack {job['id']} {run_id}"
     instructions = (
-        f"Scheduled check {job['id']}. First run `{status}` and remember "
-        "`pending_run_id`. If it is absent, this reminder is stale. "
-        "If the job is paused, cancelled, or decommissioned, only acknowledge it. "
-        f"After checking, run `{ack}` with that ID."
+        f"Run `{status}`. Continue only if `pending_run_id` equals `{run_id}`. "
+        f"Perform the task below, then run `{ack}`. "
+        "For a paused, cancelled, or decommissioned job, acknowledge it and stop."
     )
     if job.get("stop_when"):
         instructions += (
-            f" Pause this schedule by adding `--pause` when you verify: "
+            " Add `--pause` to the acknowledgement only after verifying this condition. "
             f"{job['stop_when']}\nReport if `native_pause_pending` is true."
         )
     return f"{instructions}\n\n{prompt}"
@@ -58,14 +61,14 @@ def _message(store: Store, job: dict[str, Any], prompt: str) -> str:
 def deliver(
     store: Store, run: dict[str, Any], run_dir: Path, job: dict[str, Any]
 ) -> dict[str, Any]:
-    prompt = (run_dir / "prompt.txt").read_text(encoding="utf-8")
     thread = job["fixed_session_id"]
-    argv = [*job["codex"]["command"], "queue", "--thread", thread]
-    if job["queue_resume"]:
-        argv.append("--resume")
-    argv.extend(["--message", _message(store, job, prompt)])
     launch_failed = False
     try:
+        prompt = (run_dir / "prompt.txt").read_text(encoding="utf-8")
+        argv = [*job["codex"]["command"], "queue", "--thread", thread]
+        if job["queue_resume"]:
+            argv.append("--resume")
+        argv.extend(["--message", _message(store, job, run["id"], prompt)])
         result = subprocess.run(
             argv,
             cwd=job["cwd"],
@@ -87,25 +90,22 @@ def deliver(
         stdout, stderr, exit_code = "", str(exc), None
         launch_failed = True
 
-    if launch_failed:
+    receipt = QUEUE_RECEIPT.search(stdout)
+    if receipt and receipt[2] == thread:
+        outcome = {"status": "queued", "queued_message_id": receipt[1]}
+    elif launch_failed:
         outcome = {"status": "failed", "error": "could not launch codex queue"}
+    elif exit_code == 2 and not stdout.strip() and QUEUE_PARSE_ERROR.search(stderr):
+        outcome = {"status": "failed", "error": "Codex rejected the queue command"}
     else:
-        receipt = QUEUE_RECEIPT.search(stdout)
-        if receipt and receipt[2] == thread:
-            outcome = {"status": "queued", "queued_message_id": receipt[1]}
-        else:
-            outcome = {
-                "status": "delivery_unknown",
-                "error": "Codex did not confirm queue acceptance",
-            }
+        outcome = {
+            "status": "delivery_unknown",
+            "error": "Codex did not confirm queue acceptance",
+        }
     atomic_write_text(run_dir / "stdout.log", stdout)
     atomic_write_text(run_dir / "stderr.log", stderr)
     with store.short_lock(job["id"]):
         current = store.load_job(job["id"])
-        if launch_failed and current["pending_run_id"] == run["id"]:
-            current["pending_run_id"] = None
-            current["updated_at"] = iso()
-            store.save_job(current)
         # The target can acknowledge as soon as it receives the prompt.
         run = read_json(run_dir / "run.json")
         run.update(outcome, finished_at=iso(), exit_code=exit_code)
@@ -113,6 +113,10 @@ def deliver(
             "Warning: message was queued, but could not resume" in stderr
         )
         store.save_run(run)
+        if run["status"] == "failed" and current["pending_run_id"] == run["id"]:
+            current["pending_run_id"] = None
+            current["updated_at"] = iso()
+            store.save_job(current)
     return run
 
 

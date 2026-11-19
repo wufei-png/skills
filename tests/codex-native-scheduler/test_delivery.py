@@ -32,11 +32,12 @@ class QueueDeliveryTests(unittest.TestCase):
         self.backend = self.enterContext(
             mock.patch("codex_scheduler.jobs.backend_for")
         ).return_value
-        self.enterContext(
-            mock.patch(
-                "codex_scheduler.delivery.backend_for", return_value=self.backend
+        for module in ("delivery", "runner"):
+            self.enterContext(
+                mock.patch(
+                    f"codex_scheduler.{module}.backend_for", return_value=self.backend
+                )
             )
-        )
         self.backend.status.return_value = {"registered": False}
         self.enterContext(
             mock.patch("codex_scheduler.jobs.selected_backend", return_value="systemd")
@@ -79,15 +80,14 @@ class QueueDeliveryTests(unittest.TestCase):
             parser().parse_args(["--state-dir", str(self.store.root), *args])
         )
 
-    def create(self, *args: str) -> str:
+    def create(self, *args: str, schedule: tuple[str, str] = ("--every", "1h")) -> str:
         created = self.invoke(
             "create",
             "--cwd",
             str(self.root),
             "--session-mode",
             "queue_existing",
-            "--every",
-            "1h",
+            *schedule,
             "--prompt",
             PROMPT,
             *args,
@@ -113,6 +113,8 @@ class QueueDeliveryTests(unittest.TestCase):
         self.assertNotIn("acknowledged_at", first)
         argv = self.send.call_args.args[0]
         self.assertEqual(argv[:5], ["codex", "queue", "--thread", THREAD, "--resume"])
+        self.assertIn(f"ack {job_id} {first['id']}`", argv[-1])
+        self.assertIn(f"`pending_run_id` equals `{first['id']}`", argv[-1])
         self.assertTrue(argv[-1].endswith(PROMPT))
         self.assertIn("The checks pass", argv[-1])
         self.assertIn("'/path with space/python3'", argv[-1])
@@ -128,7 +130,12 @@ class QueueDeliveryTests(unittest.TestCase):
         self.backend.unregister.assert_not_called()
         self.invoke("ack", job_id, first["id"])
         second = self.tick(job_id, 2)
-        self.assertEqual(self.send.call_args.args[0], argv)
+        second_argv = self.send.call_args.args[0]
+        self.assertEqual(second_argv[:-1], argv[:-1])
+        self.assertTrue(second_argv[-1].endswith(PROMPT))
+        self.assertIn(f"ack {job_id} {second['id']}`", second_argv[-1])
+        self.assertNotIn(second["id"], argv[-1])
+        self.assertNotIn(first["id"], second_argv[-1])
         with self.assertRaisesRegex(SchedulerError, "pending delivery"):
             self.invoke("ack", job_id, first["id"], "--pause")
         result = self.invoke("ack", job_id, second["id"], "--pause")
@@ -171,6 +178,65 @@ class QueueDeliveryTests(unittest.TestCase):
             self.invoke("ack", job_id, first["id"], "--pause")
         with self.assertRaisesRegex(SchedulerError, "pending queue"):
             self.invoke("retry", first["id"])
+
+    def test_skipped_one_shot_completes_and_keeps_the_pending_receipt(self) -> None:
+        local_zone = dt.timezone(dt.timedelta(hours=8))
+        with mock.patch(
+            "codex_scheduler.cli.now_local",
+            return_value=dt.datetime(2026, 11, 20, 12, tzinfo=local_zone),
+        ):
+            job_id = self.create(schedule=("--at", "2h"))
+        first = self.invoke("run-now", job_id)
+        scheduled_at = self.store.load_job(job_id)["schedule"]["at"]
+        due = dt.datetime.fromisoformat(scheduled_at).astimezone(dt.UTC)
+
+        with mock.patch("codex_scheduler.runner.now_local", return_value=due):
+            skipped = trigger_job(self.store, job_id)
+            self.assertEqual(skipped["status"], "skipped_pending")
+            finished = self.invoke("show", job_id)
+            self.assertEqual(finished["status"], "completed")
+            self.assertEqual(finished["stats"]["last_result"], "skipped_pending")
+            self.assertEqual(finished["stats"]["scheduled_started"], 0)
+            self.assertEqual(finished["pending_run_id"], first["id"])
+            self.backend.unregister.assert_called_once()
+
+            receipt = self.invoke("ack", job_id, first["id"])
+            self.assertEqual(receipt["status"], "completed")
+            self.assertIsNone(self.invoke("show", job_id)["pending_run_id"])
+            self.assertIsNone(trigger_job(self.store, job_id))
+            self.send.assert_called_once()
+            with self.assertRaisesRegex(SchedulerError, "create a new job"):
+                self.invoke("retry", skipped["id"])
+
+    def test_queue_argument_rejection_releases_the_pending_receipt(self) -> None:
+        job_id = self.create()
+        self.send.side_effect = [
+            subprocess.CompletedProcess(
+                [], 2, "", "error: unexpected argument '--resume' found\n"
+            ),
+            self.send.return_value,
+        ]
+
+        rejected = self.tick(job_id, 0)
+        self.assertEqual(rejected["status"], "failed")
+        self.assertEqual(rejected["exit_code"], 2)
+        self.assertIsNone(self.invoke("show", job_id)["pending_run_id"])
+
+        following = self.tick(job_id, 1)
+        self.assertEqual(following["status"], "queued")
+        self.assertEqual(self.invoke("show", job_id)["pending_run_id"], following["id"])
+
+    def test_cli_failure_without_a_clear_rejection_keeps_the_receipt(self) -> None:
+        job_id = self.create()
+        self.send.return_value = subprocess.CompletedProcess(
+            [], 2, "", "error: connection closed while waiting for queue confirmation"
+        )
+
+        unknown = self.tick(job_id, 0)
+        self.assertEqual(unknown["status"], "delivery_unknown")
+        self.assertEqual(self.invoke("show", job_id)["pending_run_id"], unknown["id"])
+        self.assertEqual(self.tick(job_id, 1)["status"], "skipped_pending")
+        self.send.assert_called_once()
 
     def test_resume_warning_keeps_the_queue_receipt(self) -> None:
         job_id = self.create()
