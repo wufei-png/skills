@@ -282,10 +282,13 @@ def process_start_token(pid: int) -> str | None:
         except (OSError, IndexError):
             return None
     if sys.platform == "darwin":
-        result = run_checked(
-            ["/bin/ps", "-o", "lstart=", "-p", str(pid)],
-            timeout=5,
-        )
+        try:
+            result = run_checked(
+                ["/bin/ps", "-o", "lstart=", "-p", str(pid)],
+                timeout=5,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
         return result.stdout.strip() or None if result.returncode == 0 else None
     if os.name == "nt":
         try:

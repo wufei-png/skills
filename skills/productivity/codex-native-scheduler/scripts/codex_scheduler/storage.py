@@ -7,6 +7,7 @@ import datetime as dt
 import json
 import os
 import shutil
+import subprocess
 import time
 from collections.abc import Iterator
 from pathlib import Path
@@ -329,10 +330,14 @@ class Store:
                         owner = read_json(owner_path)
                     except SchedulerError:
                         owner = {}
-                    if not process_alive(
-                        owner.get("pid"),
-                        owner.get("start_token"),
-                    ):
+                    try:
+                        owner_alive = process_alive(
+                            owner.get("pid"),
+                            owner.get("start_token"),
+                        )
+                    except (OSError, subprocess.TimeoutExpired):
+                        owner_alive = True
+                    if not owner_alive:
                         shutil.rmtree(lock, ignore_errors=True)
                         continue
                 else:
@@ -348,15 +353,15 @@ class Store:
                         f"timed out acquiring job {name} lock"
                     ) from None
                 time.sleep(0.05)
-        atomic_write_json(
-            lock / "owner.json",
-            {
-                "pid": os.getpid(),
-                "start_token": process_start_token(os.getpid()),
-                "acquired_at": iso(),
-            },
-        )
         try:
+            atomic_write_json(
+                lock / "owner.json",
+                {
+                    "pid": os.getpid(),
+                    "start_token": process_start_token(os.getpid()),
+                    "acquired_at": iso(),
+                },
+            )
             yield
         finally:
             shutil.rmtree(lock, ignore_errors=True)

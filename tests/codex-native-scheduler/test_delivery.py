@@ -135,6 +135,20 @@ class QueueDeliveryTests(unittest.TestCase):
         self.assertEqual(self.invoke("run-now", job_id)["status"], "cancelled")
         self.assertEqual(self.send.call_count, 2)
 
+    def test_macos_sandbox_can_pause_without_process_start_time(self) -> None:
+        job_id = self.create("--stop-when", "The checks pass")
+        run = self.tick(job_id, 0)
+        with (
+            mock.patch("codex_scheduler.util.sys.platform", "darwin"),
+            mock.patch("codex_scheduler.util.run_checked", side_effect=PermissionError),
+        ):
+            result = self.invoke("ack", job_id, run["id"], "--pause")
+
+        self.assertEqual(result["status"], "paused")
+        self.assertTrue(result["acknowledged_at"])
+        self.assertFalse(result["native_pause_pending"])
+        self.assertFalse((self.store.job_dir(job_id) / ".state.lock").exists())
+
     def test_unknown_delivery_survives_schedule_update_without_replay(self) -> None:
         job_id = self.create()
         self.send.side_effect = subprocess.TimeoutExpired(["codex", "queue"], 30)
