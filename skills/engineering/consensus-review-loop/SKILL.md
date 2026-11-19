@@ -16,6 +16,6 @@ For each round:
 2. Wait for its conclusion without rushing a healthy reviewer. Verify every P0-P3 finding yourself. Record rejected findings with the reason. Classify material disagreements as disputed.
 3. For each material dispute, state the provisional disposition, disputed premise, and evidence to the original reviewer. Allow at most two exchange rounds; each response must maintain, revise, or withdraw the finding with evidence.
 4. If the dispute remains, start one fresh, read-only tie-breaker with neutral context and both evidence positions. If it still cannot resolve the dispute, ask the user to adjudicate; do not apply or silently reject the finding.
-5. Apply accepted findings one at a time through the implementation owner when one exists, or fix them yourself, then rerun the relevant checks after each fix. Repeat with another fresh reviewer only when a P0-P2 finding was accepted and rounds remain. After the last allowed round, report that boundary as a residual risk.
+5. Apply accepted findings one at a time through the implementation owner when one exists, or fix them yourself, then rerun the relevant checks after each fix. Repeat with another fresh reviewer only if a P0-P2 finding was accepted and rounds remain. Report the round limit as a residual risk only if it prevents that follow-up review, naming the fixes still awaiting review.
 
 Summarize each round's findings, decisions, fixes, verification, unverified items, and risks.

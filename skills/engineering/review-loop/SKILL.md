@@ -15,7 +15,7 @@ For each round:
    Ask the reviewer to consult the `karpathy-guidelines` skill when available.
 2. Wait for its conclusion without rushing a healthy reviewer. Verify every P0-P3 finding yourself. Record rejected findings with the reason.
 3. Apply accepted findings one at a time through the implementation owner when one exists, or fix them yourself, then rerun the relevant checks after each fix.
-4. Repeat with another fresh reviewer only if a P0-P2 finding was accepted and rounds remain. After the last allowed round, report that boundary as a residual risk.
+4. Repeat with another fresh reviewer only if a P0-P2 finding was accepted and rounds remain. Report the round limit as a residual risk only if it prevents that follow-up review, naming the fixes still awaiting review.
 
 ## Finalize
 

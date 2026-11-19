@@ -192,6 +192,12 @@ class SkillRepositoryContractTest(unittest.TestCase):
                 "revise only unfinished stages",
                 "Never stage or commit unrelated pre-existing changes.",
             ),
+            ("engineering/review-loop", "engineering/consensus-review-loop"): (
+                "Repeat with another fresh reviewer only if a P0-P2 finding was "
+                "accepted and rounds remain. Report the round limit as a residual "
+                "risk only if it prevents that follow-up review, naming the fixes "
+                "still awaiting review.",
+            ),
         }
         for relative_pair, required_phrases in pairs.items():
             texts = [
@@ -244,7 +250,6 @@ class SkillRepositoryContractTest(unittest.TestCase):
                 "without rushing a healthy reviewer",
                 "Record rejected findings with the reason.",
                 "through the implementation owner when one exists, or fix them yourself",
-                "After the last allowed round, report that boundary as a residual risk.",
             ),
         }
         for relative, required_phrases in required_by_skill.items():
