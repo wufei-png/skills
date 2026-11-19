@@ -19,6 +19,7 @@ Apply the guides according to the user's request and the target tool's capabilit
 
 - Generate only when requested or authorized, following the host's image tool and the target project's quality guidance. Pass relevant references and their roles when supported and appropriate to the task. If requested generation or visual inspection is unavailable, say so. Review a supplied, inspectable output when requested even without a generator.
 - Compare actual outputs with the request and each reference's intended aspects at thumbnail and original resolution. Use [draft validation](vendor/unimage/references/draft_validation.md) to check drafts against their intended constraints and [QC / repair](vendor/unimage/references/qc_inspector.md) to diagnose and correct visible drift.
+- When an inspectable draft needs a material or brushwork correction, consult the `image-quality-control` skill if available.
 - For an edit, identify the exact target and what must remain, and report visible drift. Do not impose candidate or round counts or a numeric fidelity score.
 
 ## Preserve and hand off
