@@ -62,8 +62,41 @@ class ContractError(RuntimeError):
     """A repository contract input is invalid or ambiguous."""
 
 
+_BOOL_TAG = "tag:yaml.org,2002:bool"
+_YAML_12_BOOLEAN_VALUES = {
+    "true": True,
+    "True": True,
+    "TRUE": True,
+    "false": False,
+    "False": False,
+    "FALSE": False,
+}
+
+
 class _UniqueKeyLoader(yaml.SafeLoader):
-    """Safe YAML loader that rejects merge keys, complex keys, and duplicates."""
+    """Safe YAML loader with YAML 1.2 booleans and unique string keys."""
+
+
+def _construct_strict_bool(loader, node):
+    if not isinstance(node, yaml.ScalarNode):
+        raise ContractError("boolean value must be a scalar")
+    value = loader.construct_scalar(node)
+    if value in _YAML_12_BOOLEAN_VALUES:
+        return _YAML_12_BOOLEAN_VALUES[value]
+    raise ContractError(f"boolean values must be YAML 1.2 true or false, got {value!r}")
+
+
+_UniqueKeyLoader.yaml_implicit_resolvers = {
+    first: [(tag, regexp) for tag, regexp in entries if tag != _BOOL_TAG]
+    for first, entries in yaml.SafeLoader.yaml_implicit_resolvers.items()
+}
+_UniqueKeyLoader.add_implicit_resolver(
+    _BOOL_TAG,
+    re.compile(r"^(?:true|True|TRUE|false|False|FALSE)$"),
+    list("tTfF"),
+)
+_UniqueKeyLoader.yaml_constructors = dict(yaml.SafeLoader.yaml_constructors)
+_UniqueKeyLoader.add_constructor(_BOOL_TAG, _construct_strict_bool)
 
 
 def _construct_unique_mapping(loader, node, deep=False):

@@ -25,7 +25,7 @@ ruff format --check .
 git diff --check
 ```
 
-The contract tests compare the skill tree with the independent `EXPECTED_SKILLS` set and validate entrypoints, metadata, unique names, and manual-only flags as parsed YAML booleans. The installer commands verify that fixed and latest discovery both match the tree and the expected set. Install the pinned PyYAML dependency from `requirements-test.txt` before running the contract tests, and install Ruff 0.16.5 once before running the lint and format commands. `git diff --check` catches whitespace errors. CI runs the same checks on pushes and pull requests, and also runs the latest installer weekly.
+The contract tests compare the skill tree with the independent `EXPECTED_SKILLS` set and validate entrypoints, metadata, unique names, and manual-only flags as YAML 1.2 booleans; only canonical `true`/`false` forms are accepted, not YAML 1.1 values such as `yes`/`no`/`on`/`off` or quoted strings. The installer commands verify that fixed and latest discovery both match the tree and the expected set. Install the pinned PyYAML dependency from `requirements-test.txt` before running the contract tests, and install Ruff 0.16.5 once before running the lint and format commands. `git diff --check` catches whitespace errors. CI runs the same checks on pushes and pull requests, and also runs the latest installer weekly.
 
 ## Coding Style & Naming Conventions
 

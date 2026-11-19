@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
 from skill_contract import (
     InstallerError,
     compare_sets,
@@ -246,6 +247,39 @@ class ManualOnlyYamlContractTest(TreeFixture):
             metadata_text=metadata_with("  allow_implicit_invocation: 0"),
         )
 
+    def test_yaml_1_1_no_policy_is_rejected(self) -> None:
+        errors = self.assert_contract_error(
+            "boolean false",
+            metadata_text=metadata_with("  allow_implicit_invocation: no"),
+        )
+        self.assertTrue(any("'no'" in error for error in errors), errors)
+
+    def test_yaml_1_1_off_policy_is_rejected(self) -> None:
+        errors = self.assert_contract_error(
+            "boolean false",
+            metadata_text=metadata_with("  allow_implicit_invocation: off"),
+        )
+        self.assertTrue(any("'off'" in error for error in errors), errors)
+
+    def test_quoted_off_policy_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "boolean false",
+            metadata_text=metadata_with('  allow_implicit_invocation: "off"'),
+        )
+
+    def test_explicit_bool_no_policy_is_rejected(self) -> None:
+        errors = self.assert_contract_error(
+            "YAML 1.2",
+            metadata_text=metadata_with("  allow_implicit_invocation: !!bool no"),
+        )
+        self.assertTrue(any("'no'" in error for error in errors), errors)
+
+    def test_explicit_bool_off_policy_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "YAML 1.2",
+            metadata_text=metadata_with("  allow_implicit_invocation: !!bool off"),
+        )
+
     def test_block_scalar_cannot_mask_true_policy(self) -> None:
         errors = self.assert_contract_error(
             "boolean false",
@@ -364,6 +398,94 @@ class ManualOnlyYamlContractTest(TreeFixture):
                 "name: alpha\ndescription: Synthetic.\ndisable-model-invocation: false"
             ),
         )
+
+    def test_yaml_1_1_yes_flag_is_rejected(self) -> None:
+        errors = self.assert_contract_error(
+            "boolean true",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\ndisable-model-invocation: yes"
+            ),
+        )
+        self.assertTrue(any("'yes'" in error for error in errors), errors)
+
+    def test_yaml_1_1_on_flag_is_rejected(self) -> None:
+        errors = self.assert_contract_error(
+            "boolean true",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\ndisable-model-invocation: on"
+            ),
+        )
+        self.assertTrue(any("'on'" in error for error in errors), errors)
+
+    def test_quoted_yes_flag_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "boolean true",
+            entrypoint_text=skill_markdown(
+                'name: alpha\ndescription: Synthetic.\ndisable-model-invocation: "yes"'
+            ),
+        )
+
+    def test_explicit_bool_yes_flag_is_rejected(self) -> None:
+        errors = self.assert_contract_error(
+            "YAML 1.2",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\n"
+                "disable-model-invocation: !!bool yes"
+            ),
+        )
+        self.assertTrue(any("'yes'" in error for error in errors), errors)
+
+    def test_explicit_bool_on_flag_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "YAML 1.2",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\n"
+                "disable-model-invocation: !!bool on"
+            ),
+        )
+
+    def test_explicit_bool_noncanonical_scalar_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "YAML 1.2",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\n"
+                "disable-model-invocation: !!bool 1"
+            ),
+        )
+
+    def test_explicit_string_false_flag_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "boolean true",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\n"
+                "disable-model-invocation: !!str false"
+            ),
+        )
+
+    def test_canonical_yaml_1_2_booleans_are_accepted(self) -> None:
+        self.add_skill(
+            "alpha",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\ndisable-model-invocation: TRUE"
+            ),
+            metadata_text=metadata_with("  allow_implicit_invocation: FALSE"),
+        )
+        self.assertEqual([], inspect_skill_tree(self.skills).errors)
+
+    def test_explicit_canonical_booleans_are_accepted(self) -> None:
+        self.add_skill(
+            "alpha",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\n"
+                "disable-model-invocation: !!bool true"
+            ),
+            metadata_text=metadata_with("  allow_implicit_invocation: !!bool false"),
+        )
+        self.assertEqual([], inspect_skill_tree(self.skills).errors)
+
+    def test_global_safe_loader_is_unchanged(self) -> None:
+        # The contract loader must not mutate PyYAML's shared SafeLoader resolver.
+        self.assertIs(True, yaml.safe_load("value: yes")["value"])
 
     def test_missing_flag_is_rejected(self) -> None:
         self.assert_contract_error(
