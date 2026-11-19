@@ -44,6 +44,19 @@ def runner_for(output: str, returncode: int = 0, stderr: str = ""):
     return runner
 
 
+def skill_markdown(frontmatter_text: str) -> str:
+    return f"---\n{frontmatter_text}\n---\n# Synthetic\n"
+
+
+def metadata_with(policy_body: str) -> str:
+    return (
+        'interface:\n  display_name: "Alpha"\n'
+        '  short_description: "Synthetic contract fixture for tests."\n'
+        '  default_prompt: "Use $alpha."\n'
+        f"policy:\n{policy_body}\n"
+    )
+
+
 class InstallerOutputParsingTest(unittest.TestCase):
     def test_installer_output_shape_is_parsed(self) -> None:
         self.assertEqual(
@@ -97,16 +110,18 @@ class TreeFixture(unittest.TestCase):
         metadata: bool = True,
         manual_only: bool = True,
         policy: bool = True,
+        entrypoint_text: str | None = None,
+        metadata_text: str | None = None,
     ) -> Path:
         skill_dir = self.skills / category / name
         skill_dir.mkdir(parents=True)
         if entrypoint:
             flag = "true" if manual_only else "false"
-            (skill_dir / "SKILL.md").write_text(
+            text = entrypoint_text or (
                 f"---\nname: {name}\ndescription: Synthetic contract fixture.\n"
-                f"disable-model-invocation: {flag}\n---\n",
-                encoding="utf-8",
+                f"disable-model-invocation: {flag}\n---\n"
             )
+            (skill_dir / "SKILL.md").write_text(text, encoding="utf-8")
         if metadata:
             (skill_dir / "agents").mkdir()
             policy_text = (
@@ -114,13 +129,13 @@ class TreeFixture(unittest.TestCase):
                 if policy
                 else "policy:\n  allow_implicit_invocation: true"
             )
-            (skill_dir / "agents" / "openai.yaml").write_text(
+            text = metadata_text or (
                 f'interface:\n  display_name: "{name}"\n'
                 f'  short_description: "Synthetic contract fixture for tests."\n'
                 f'  default_prompt: "Use ${name} for the synthetic task."\n'
-                f"{policy_text}\n",
-                encoding="utf-8",
+                f"{policy_text}\n"
             )
+            (skill_dir / "agents" / "openai.yaml").write_text(text, encoding="utf-8")
         return skill_dir
 
 
@@ -163,15 +178,13 @@ class SkillTreeContractTest(TreeFixture):
     def test_manual_only_entrypoint_flag_is_required(self) -> None:
         self.add_skill("alpha", manual_only=False)
         errors = inspect_skill_tree(self.skills).errors
-        self.assertTrue(
-            any("disable-model-invocation: true" in error for error in errors), errors
-        )
+        self.assertTrue(any("boolean true" in error for error in errors), errors)
 
     def test_manual_only_metadata_policy_is_required(self) -> None:
         self.add_skill("alpha", policy=False)
         errors = inspect_skill_tree(self.skills).errors
         self.assertTrue(
-            any("allow_implicit_invocation: false" in error for error in errors),
+            any("boolean false" in error for error in errors),
             errors,
         )
 
@@ -194,6 +207,210 @@ class SkillTreeContractTest(TreeFixture):
         self.add_skill("Not_Kebab")
         errors = inspect_skill_tree(self.skills).errors
         self.assertTrue(any("not kebab-case" in error for error in errors), errors)
+
+
+class ManualOnlyYamlContractTest(TreeFixture):
+    def assert_contract_error(
+        self,
+        pattern: str,
+        *,
+        entrypoint_text: str | None = None,
+        metadata_text: str | None = None,
+    ) -> list[str]:
+        self.add_skill(
+            "alpha",
+            entrypoint_text=entrypoint_text,
+            metadata_text=metadata_text,
+        )
+        errors = inspect_skill_tree(self.skills).errors
+        self.assertTrue(errors)
+        self.assertTrue(any(pattern in error for error in errors), errors)
+        return errors
+
+    def test_policy_string_is_rejected(self) -> None:
+        errors = self.assert_contract_error(
+            "boolean false",
+            metadata_text=metadata_with("  allow_implicit_invocation: false-positive"),
+        )
+        self.assertTrue(any("false-positive" in error for error in errors), errors)
+
+    def test_quoted_policy_value_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "boolean false",
+            metadata_text=metadata_with('  allow_implicit_invocation: "false"'),
+        )
+
+    def test_numeric_policy_value_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "boolean false",
+            metadata_text=metadata_with("  allow_implicit_invocation: 0"),
+        )
+
+    def test_block_scalar_cannot_mask_true_policy(self) -> None:
+        errors = self.assert_contract_error(
+            "boolean false",
+            metadata_text=(
+                "description: |\n"
+                "  policy:\n"
+                "  allow_implicit_invocation: false\n"
+                "policy:\n"
+                "  allow_implicit_invocation: true\n"
+            ),
+        )
+        self.assertTrue(any("got True" in error for error in errors), errors)
+
+    def test_block_scalar_without_real_policy_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "policy mapping",
+            metadata_text=(
+                "description: |\n  policy:\n  allow_implicit_invocation: false\n"
+            ),
+        )
+
+    def test_missing_policy_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "policy mapping",
+            metadata_text=(
+                'interface:\n  display_name: "Alpha"\n'
+                '  short_description: "Synthetic contract fixture for tests."\n'
+                '  default_prompt: "Use $alpha."\n'
+            ),
+        )
+
+    def test_non_mapping_policy_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "policy mapping",
+            metadata_text="policy: disabled\n",
+        )
+
+    def test_duplicate_policy_key_is_rejected(self) -> None:
+        errors = self.assert_contract_error(
+            "duplicate mapping key",
+            metadata_text=(
+                "policy:\n  allow_implicit_invocation: false\n"
+                "policy:\n  allow_implicit_invocation: false\n"
+            ),
+        )
+        self.assertTrue(any("'policy'" in error for error in errors), errors)
+
+    def test_duplicate_policy_value_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "duplicate mapping key",
+            metadata_text=(
+                "policy:\n  allow_implicit_invocation: false\n"
+                "  allow_implicit_invocation: false\n"
+            ),
+        )
+
+    def test_non_string_metadata_key_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "non-string mapping key",
+            metadata_text="true: value\n",
+        )
+
+    def test_merge_keys_are_rejected(self) -> None:
+        self.assert_contract_error(
+            "merge keys",
+            metadata_text=(
+                "base: &base\n"
+                "  allow_implicit_invocation: false\n"
+                "policy:\n"
+                "  <<: *base\n"
+            ),
+        )
+
+    def test_invalid_metadata_yaml_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "invalid YAML",
+            metadata_text="policy: [unterminated\n",
+        )
+
+    def test_non_mapping_metadata_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "expected a YAML mapping",
+            metadata_text="- policy\n",
+        )
+
+    def test_multiple_metadata_documents_are_rejected(self) -> None:
+        self.assert_contract_error(
+            "invalid YAML",
+            metadata_text=(
+                "policy:\n  allow_implicit_invocation: false\n"
+                "---\n"
+                "policy:\n  allow_implicit_invocation: true\n"
+            ),
+        )
+
+    def test_string_true_flag_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "boolean true",
+            entrypoint_text=skill_markdown(
+                'name: alpha\ndescription: Synthetic.\ndisable-model-invocation: "true"'
+            ),
+        )
+
+    def test_numeric_true_flag_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "boolean true",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\ndisable-model-invocation: 1"
+            ),
+        )
+
+    def test_false_flag_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "boolean true",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\ndisable-model-invocation: false"
+            ),
+        )
+
+    def test_missing_flag_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "must set disable-model-invocation: true",
+            entrypoint_text=skill_markdown("name: alpha\ndescription: Synthetic."),
+        )
+
+    def test_duplicate_flag_is_rejected(self) -> None:
+        errors = self.assert_contract_error(
+            "duplicate mapping key",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: Synthetic.\n"
+                "disable-model-invocation: true\n"
+                "disable-model-invocation: true"
+            ),
+        )
+        self.assertTrue(
+            any("disable-model-invocation" in error for error in errors), errors
+        )
+
+    def test_block_scalar_cannot_mask_false_flag(self) -> None:
+        self.assert_contract_error(
+            "boolean true",
+            entrypoint_text=skill_markdown(
+                "name: alpha\ndescription: |\n"
+                "  disable-model-invocation: true\n"
+                "disable-model-invocation: false"
+            ),
+        )
+
+    def test_invalid_frontmatter_yaml_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "invalid YAML",
+            entrypoint_text=skill_markdown("name: [unterminated"),
+        )
+
+    def test_non_mapping_frontmatter_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "expected a YAML mapping",
+            entrypoint_text=skill_markdown("- alpha"),
+        )
+
+    def test_missing_frontmatter_closing_is_rejected(self) -> None:
+        self.assert_contract_error(
+            "closing ---",
+            entrypoint_text="---\nname: alpha\ndisable-model-invocation: true\n",
+        )
 
 
 class InstallerVerificationTest(TreeFixture):

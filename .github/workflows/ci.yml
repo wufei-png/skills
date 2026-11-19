@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install test dependencies
+        run: python3 -m pip install --disable-pip-version-check -r requirements-test.txt
       - name: Test repository contracts
         run: python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
       - name: Verify pinned skill discovery
@@ -59,5 +61,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install test dependencies
+        run: python3 -m pip install --disable-pip-version-check -r requirements-test.txt
       - name: Verify latest skill discovery
         run: python3 tests/repository-contract/verify_installer.py --package skills@latest

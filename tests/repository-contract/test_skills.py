@@ -11,6 +11,7 @@ from skill_contract import (
     SKILLS_ROOT,
     frontmatter,
     inspect_skill_tree,
+    load_yaml_mapping,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,18 +34,23 @@ class SkillRepositoryContractTest(unittest.TestCase):
                 text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
                 fields = frontmatter(text)
                 self.assertEqual(skill_dir.name, fields.get("name"))
-                self.assertTrue(fields.get("description"))
+                description = fields.get("description")
+                self.assertIsInstance(description, str)
+                self.assertTrue(description)
                 self.assertLessEqual(
-                    len(re.findall(r"[A-Za-z0-9_$-]+", fields["description"])),
+                    len(re.findall(r"[A-Za-z0-9_$-]+", description)),
                     40,
                     "Keep always-loaded descriptions concise",
                 )
-                self.assertEqual("true", fields.get("disable-model-invocation"))
+                self.assertIs(True, fields.get("disable-model-invocation"))
 
                 metadata_path = skill_dir / "agents" / "openai.yaml"
                 metadata = metadata_path.read_text(encoding="utf-8")
-                self.assertIn("interface:\n", metadata)
-                self.assertIn("policy:\n  allow_implicit_invocation: false", metadata)
+                metadata_data = load_yaml_mapping(metadata, "agents/openai.yaml")
+                self.assertIsInstance(metadata_data.get("interface"), dict)
+                policy = metadata_data.get("policy")
+                self.assertIsInstance(policy, dict)
+                self.assertIs(False, policy.get("allow_implicit_invocation"))
                 interface: dict[str, str] = {}
                 for key in ("display_name", "short_description", "default_prompt"):
                     match = re.search(rf"(?m)^  {key}: \"(.+)\"$", metadata)

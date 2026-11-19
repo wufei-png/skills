@@ -6,9 +6,10 @@ Installable skills live in `skills/productivity/`, `skills/engineering/`, and `s
 
 ## Build, Test, and Development Commands
 
-This repository has no build step or local package manifest. Run checks from the repository root:
+This repository has no build step or runtime package manifest. Contract tests use the pinned PyYAML dependency in `requirements-test.txt`. Run checks from the repository root:
 
 ```bash
+python3 -m pip install --disable-pip-version-check -r requirements-test.txt
 python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
 python3 tests/repository-contract/verify_installer.py --package skills@1.9.0
 python3 tests/repository-contract/verify_installer.py --package skills@latest
@@ -24,7 +25,7 @@ ruff format --check .
 git diff --check
 ```
 
-The contract tests compare the skill tree with the independent `EXPECTED_SKILLS` set and validate entrypoints, metadata, unique names, and manual-only flags. The installer commands verify that fixed and latest discovery both match the tree and the expected set; install Ruff 0.16.5 once before running the lint and format commands. `git diff --check` catches whitespace errors. CI runs the same checks on pushes and pull requests, and also runs the latest installer weekly.
+The contract tests compare the skill tree with the independent `EXPECTED_SKILLS` set and validate entrypoints, metadata, unique names, and manual-only flags as parsed YAML booleans. The installer commands verify that fixed and latest discovery both match the tree and the expected set. Install the pinned PyYAML dependency from `requirements-test.txt` before running the contract tests, and install Ruff 0.16.5 once before running the lint and format commands. `git diff --check` catches whitespace errors. CI runs the same checks on pushes and pull requests, and also runs the latest installer weekly.
 
 ## Coding Style & Naming Conventions
 
@@ -32,7 +33,7 @@ Use kebab-case for skill directories and keep the frontmatter `name` identical t
 
 Assume the model already knows common domain knowledge and practices. Keep only instructions that change behavior for the task: its workflow, decisions, safety limits, tool contracts, and output requirements. Arrange sections in task order and avoid duplicated rules or unnecessary mandatory steps and reads. Use short, familiar wording; avoid repeating general advice or inventing terms. Put rarely needed details in `references/` and read them only when relevant; put repeated, fragile operations in `scripts/`.
 
-Python targets 3.11 and the standard library. Ruff 0.16.5 enforces lint and formatting for `skills` and `tests`; test fixtures under `tests/**/fixtures/**` are excluded from lint but still formatted, and archived documents under `docs/archive/` are excluded from formatting.
+Python targets 3.11; skill scripts use the standard library, and contract tests use the pinned PyYAML dependency. Ruff 0.16.5 enforces lint and formatting for `skills` and `tests`; test fixtures under `tests/**/fixtures/**` are excluded from lint but still formatted, and archived documents under `docs/archive/` are excluded from formatting.
 
 ## Testing Guidelines
 
