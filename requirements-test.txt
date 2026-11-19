@@ -1,0 +1,2 @@
+# Test-only dependencies, pinned for local and CI reproducibility.
+PyYAML==6.0.3

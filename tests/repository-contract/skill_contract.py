@@ -9,6 +9,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+try:
+    import yaml
+except ImportError as error:
+    raise RuntimeError(
+        "PyYAML is required for repository contract checks; install it with "
+        "'python3 -m pip install -r requirements-test.txt'"
+    ) from error
+
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS_ROOT = ROOT / "skills"
 EXPECTED_CATEGORIES = ("creative", "engineering", "productivity")
@@ -50,6 +58,36 @@ class InstallerError(RuntimeError):
     """The installer could not produce a trustworthy discovery result."""
 
 
+class ContractError(RuntimeError):
+    """A repository contract input is invalid or ambiguous."""
+
+
+class _UniqueKeyLoader(yaml.SafeLoader):
+    """Safe YAML loader that rejects merge keys, complex keys, and duplicates."""
+
+
+def _construct_unique_mapping(loader, node, deep=False):
+    if not isinstance(node, yaml.MappingNode):
+        raise ContractError("expected a YAML mapping node")
+    mapping: dict[str, Any] = {}
+    for key_node, value_node in node.value:
+        if key_node.tag == "tag:yaml.org,2002:merge":
+            raise ContractError("YAML merge keys are not supported")
+        key = loader.construct_object(key_node, deep=deep)
+        if not isinstance(key, str):
+            raise ContractError(f"non-string mapping key: {key!r}")
+        if key in mapping:
+            raise ContractError(f"duplicate mapping key: {key!r}")
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+_UniqueKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    _construct_unique_mapping,
+)
+
+
 @dataclass(frozen=True)
 class SkillTree:
     names: list[str]
@@ -63,16 +101,42 @@ class InstallerReport:
     errors: list[str]
 
 
-def frontmatter(text: str) -> dict[str, str]:
-    match = re.match(r"\A---\n(.*?)\n---(?:\n|\Z)", text, re.DOTALL)
-    if not match:
-        return {}
-    fields: dict[str, str] = {}
-    for line in match.group(1).splitlines():
-        if line and not line.startswith((" ", "\t")) and ":" in line:
-            key, value = line.split(":", 1)
-            fields[key] = value.strip()
-    return fields
+def load_yaml_mapping(text: str, label: str) -> dict[str, Any]:
+    """Parse one YAML document as a string-keyed mapping, failing closed."""
+    try:
+        data = yaml.load(text, Loader=_UniqueKeyLoader)
+    except ContractError as error:
+        raise ContractError(f"{label}: {error}") from error
+    except yaml.YAMLError as error:
+        raise ContractError(f"{label}: invalid YAML: {error}") from error
+    if not isinstance(data, dict):
+        raise ContractError(
+            f"{label}: expected a YAML mapping, got {type(data).__name__}"
+        )
+    return data
+
+
+def frontmatter(text: str) -> dict[str, Any]:
+    """Parse SKILL.md frontmatter, rejecting malformed or ambiguous YAML."""
+    lines = text.splitlines()
+    if not lines or not text.startswith("---") or lines[0].rstrip() != "---":
+        raise ContractError(
+            "SKILL.md must start with YAML frontmatter delimited by ---"
+        )
+    closing = next(
+        (index for index in range(1, len(lines)) if lines[index].rstrip() == "---"),
+        None,
+    )
+    if closing is None:
+        raise ContractError("SKILL.md frontmatter is missing its closing ---")
+    return load_yaml_mapping(
+        "\n".join(lines[1:closing]),
+        "SKILL.md frontmatter",
+    )
+
+
+def display_boolean(value: Any) -> str:
+    return f"{value!r} ({type(value).__name__})"
 
 
 def compare_sets(label: str, expected: set[str], actual: list[str]) -> list[str]:
@@ -113,26 +177,56 @@ def inspect_skill_tree(skills_root: Path = SKILLS_ROOT) -> SkillTree:
             if not skill_file.is_file():
                 errors.append(f"missing SKILL.md: {relative}")
             else:
-                fields = frontmatter(skill_file.read_text(encoding="utf-8"))
-                if fields.get("name") != name:
-                    errors.append(
-                        f"{relative}: SKILL.md name is {fields.get('name')!r}, "
-                        f"expected {name!r}"
-                    )
-                if fields.get("disable-model-invocation") != "true":
-                    errors.append(
-                        f"{relative}: SKILL.md must set disable-model-invocation: true"
-                    )
+                try:
+                    fields = frontmatter(skill_file.read_text(encoding="utf-8"))
+                except ContractError as error:
+                    errors.append(f"{relative}: {error}")
+                else:
+                    if fields.get("name") != name:
+                        errors.append(
+                            f"{relative}: SKILL.md name is "
+                            f"{fields.get('name')!r}, expected {name!r}"
+                        )
+                    if "disable-model-invocation" not in fields:
+                        errors.append(
+                            f"{relative}: SKILL.md must set "
+                            "disable-model-invocation: true"
+                        )
+                    elif fields["disable-model-invocation"] is not True:
+                        errors.append(
+                            f"{relative}: SKILL.md disable-model-invocation must be "
+                            f"boolean true, got "
+                            f"{display_boolean(fields['disable-model-invocation'])}"
+                        )
             metadata_file = skill_dir / "agents" / "openai.yaml"
             if not metadata_file.is_file():
                 errors.append(f"missing agents/openai.yaml: {relative}")
             else:
-                metadata = metadata_file.read_text(encoding="utf-8")
-                if "policy:\n  allow_implicit_invocation: false" not in metadata:
-                    errors.append(
-                        f"{relative}: agents/openai.yaml must set "
-                        "policy.allow_implicit_invocation: false"
+                try:
+                    metadata = load_yaml_mapping(
+                        metadata_file.read_text(encoding="utf-8"),
+                        "agents/openai.yaml",
                     )
+                except ContractError as error:
+                    errors.append(f"{relative}: {error}")
+                else:
+                    policy = metadata.get("policy")
+                    if not isinstance(policy, dict):
+                        errors.append(
+                            f"{relative}: agents/openai.yaml must contain a "
+                            "policy mapping"
+                        )
+                    elif "allow_implicit_invocation" not in policy:
+                        errors.append(
+                            f"{relative}: agents/openai.yaml must set "
+                            "policy.allow_implicit_invocation: false"
+                        )
+                    elif policy["allow_implicit_invocation"] is not False:
+                        errors.append(
+                            f"{relative}: policy.allow_implicit_invocation must be "
+                            f"boolean false, got "
+                            f"{display_boolean(policy['allow_implicit_invocation'])}"
+                        )
 
     paths_by_name: dict[str, list[str]] = {}
     for category in categories:
