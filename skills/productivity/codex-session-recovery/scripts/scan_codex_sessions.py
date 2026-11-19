@@ -698,6 +698,9 @@ def scan(options: dict[str, Any]) -> dict[str, Any]:
     include_archived = bool(options.get("include_archived", False))
     include_subagents = bool(options.get("include_subagents", False))
     cwd = options.get("cwd")
+    if cwd:
+        cwd_path = Path(cwd).expanduser()
+        cwd = str(cwd_path) if cwd_path.is_absolute() else os.path.abspath(cwd_path)
     query = options.get("query")
     include_unknown_time = bool(options.get("include_unknown_time", False))
     show_paths = bool(options.get("show_paths", False))
@@ -839,7 +842,10 @@ def format_table(result: dict[str, Any]) -> str:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Find local Codex sessions safely.")
     parser.add_argument("--codex-home", type=Path, default=default_codex_home())
-    parser.add_argument("--cwd")
+    parser.add_argument(
+        "--cwd",
+        help="Filter by working directory. Resolve relative paths from the current directory.",
+    )
     parser.add_argument("--since")
     parser.add_argument("--until")
     parser.add_argument("--timezone", default=None)

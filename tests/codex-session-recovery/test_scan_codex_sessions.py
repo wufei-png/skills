@@ -61,9 +61,10 @@ class ScanCodexSessionsTest(unittest.TestCase):
     def ids(self, result):
         return [record["thread_id"] for record in result["records"]]
 
-    def run_cli(self, *args):
+    def run_cli(self, *args, cwd=None):
         return subprocess.run(
             [sys.executable, str(SCANNER_PATH), *args],
+            cwd=cwd,
             check=False,
             text=True,
             capture_output=True,
@@ -499,6 +500,28 @@ class ScanCodexSessionsTest(unittest.TestCase):
         self.assertEqual("codex resume active-main", active["resume_command"])
         self.assertEqual("codex fork active-main", active["fork_command"])
         self.assertNotIn("deep_link", active)
+
+    def test_cli_cwd_filter_accepts_paths_relative_to_invocation_directory(self):
+        project = Path(self.tmp.name).resolve() / "project"
+        nested = project / "nested"
+        nested.mkdir(parents=True)
+        session_index = self.codex_home / "session_index.jsonl"
+        with session_index.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"id": "cwd-main", "cwd": str(project)}) + "\n")
+
+        for directory, cwd_filter in ((project, "."), (nested, "..")):
+            with self.subTest(cwd_filter=cwd_filter):
+                completed = self.run_cli(
+                    "--codex-home",
+                    str(self.codex_home),
+                    "--cwd",
+                    cwd_filter,
+                    "--format",
+                    "json",
+                    cwd=directory,
+                )
+                self.assertEqual(0, completed.returncode, completed.stderr)
+                self.assertEqual(["cwd-main"], self.ids(json.loads(completed.stdout)))
 
     def test_cli_json_exposes_uncapped_integer_match_score_without_old_field(self):
         completed = self.run_cli(
