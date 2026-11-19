@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 from support import SCRIPTS  # noqa: F401
@@ -57,11 +58,18 @@ class QueueDeliveryTests(unittest.TestCase):
                 ),
             )
         )
-        self.send = self.enterContext(
+        self.send = mock.Mock(
+            return_value=subprocess.CompletedProcess(
+                [], 0, f"Queued message message-1 for thread {THREAD}.\n", ""
+            )
+        )
+        self.enterContext(
             mock.patch(
-                "codex_scheduler.delivery.subprocess.run",
-                return_value=subprocess.CompletedProcess(
-                    [], 0, f"Queued message message-1 for thread {THREAD}.\n", ""
+                "codex_scheduler.delivery.subprocess",
+                SimpleNamespace(
+                    run=self.send,
+                    DEVNULL=subprocess.DEVNULL,
+                    TimeoutExpired=subprocess.TimeoutExpired,
                 ),
             )
         )
