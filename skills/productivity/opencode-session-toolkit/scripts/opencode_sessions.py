@@ -18,7 +18,6 @@ from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-LOCAL_TZ = datetime.now().astimezone().tzinfo
 CORE_TABLES = ("session", "message", "part", "project")
 REQUIRED_COLUMNS = {
     "session": {
@@ -366,26 +365,33 @@ def parse_time_bound(raw: str | None, *, is_end: bool) -> TimeBound | None:
     if re.fullmatch(r"\d{10,16}", value):
         number = int(value)
         return TimeBound(number * 1000 if len(value) <= 10 else number, True)
-    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+    date_only = re.fullmatch(r"\d{4}-\d{2}-\d{2}", value) is not None
+    if date_only:
         try:
-            day = date.fromisoformat(value)
+            parsed = datetime.combine(date.fromisoformat(value), time.min)
         except ValueError as exc:
             raise UserError(f"Invalid date: {raw}") from exc
-        day_start = datetime.combine(day, time.min, tzinfo=LOCAL_TZ)
-        if is_end:
-            next_day = day_start + timedelta(days=1)
-            return TimeBound(int(next_day.timestamp() * 1000), False)
-        return TimeBound(int(day_start.timestamp() * 1000), True)
-    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+    else:
+        normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
+        try:
+            parsed = datetime.fromisoformat(normalized)
+        except ValueError as exc:
+            raise UserError(
+                f"Invalid time `{raw}`; use ISO date/datetime or Unix time."
+            ) from exc
+
+    include_end_day = date_only and is_end
+    if include_end_day:
+        parsed += timedelta(days=1)
     try:
-        parsed = datetime.fromisoformat(normalized)
-    except ValueError as exc:
-        raise UserError(
-            f"Invalid time `{raw}`; use ISO date/datetime or Unix time."
-        ) from exc
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=LOCAL_TZ)
-    return TimeBound(int(parsed.timestamp() * 1000), True)
+        timestamp = parsed.timestamp()
+    except (OverflowError, OSError, ValueError):
+        if parsed.tzinfo is not None:
+            raise
+        # Use the current offset when the platform cannot resolve the local date.
+        local_timezone = datetime.now().astimezone().tzinfo
+        timestamp = parsed.replace(tzinfo=local_timezone).timestamp()
+    return TimeBound(int(timestamp * 1000), not include_end_day)
 
 
 def to_iso_utc(timestamp_ms: int | None) -> str | None:

@@ -8,7 +8,9 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
@@ -309,6 +311,61 @@ class CliTest(unittest.TestCase):
         )
         rows = json.loads(result.stdout)
         self.assertEqual([row["id"] for row in rows], ["ses_percent"])
+
+    def test_start_accepts_earliest_iso_date(self) -> None:
+        result = self.run_cli_with_env(
+            {**os.environ, "TZ": "UTC"},
+            "list",
+            "--db-path",
+            str(self.db_path),
+            "--start",
+            "0001-01-01",
+            "--format",
+            "json",
+        )
+        self.assertEqual(
+            [row["id"] for row in json.loads(result.stdout)],
+            ["ses_other", "ses_percent"],
+        )
+
+    @unittest.skipUnless(hasattr(time, "tzset"), "requires POSIX timezone rules")
+    def test_local_date_and_datetime_bounds_follow_daylight_saving(self) -> None:
+        sessions = (
+            ("before_start", unix_ms("2026-03-08T04:59:59")),
+            ("at_start", unix_ms("2026-03-08T05:00:00")),
+            ("before_end", unix_ms("2026-03-09T03:59:59")),
+            ("at_end", unix_ms("2026-03-09T04:00:00")),
+        )
+        with closing(sqlite3.connect(self.db_path)) as connection, connection:
+            connection.executemany(
+                "INSERT INTO session (id, project_id, directory, title, "
+                "time_created, time_updated) VALUES (?, 'project-1', '/tmp/demo', ?, ?, ?)",
+                [(name, name, stamp, stamp) for name, stamp in sessions],
+            )
+
+        environment = {**os.environ, "TZ": "EST5EDT,M3.2.0/2,M11.1.0/2"}
+        for start, end in (
+            ("2026-03-08", "2026-03-08"),
+            ("2026-03-08T00:00:00", "2026-03-08T23:59:59"),
+            ("2026-03-08T00:00:00-05:00", "2026-03-08T23:59:59-04:00"),
+        ):
+            with self.subTest(start=start, end=end):
+                result = self.run_cli_with_env(
+                    environment,
+                    "list",
+                    "--db-path",
+                    str(self.db_path),
+                    "--start",
+                    start,
+                    "--end",
+                    end,
+                    "--format",
+                    "json",
+                )
+                self.assertEqual(
+                    ["before_end", "at_start"],
+                    [row["id"] for row in json.loads(result.stdout)],
+                )
 
     def test_export_is_idempotent_and_refuses_changed_output(self) -> None:
         output_dir = self.root / "export"
