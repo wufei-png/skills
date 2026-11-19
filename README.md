@@ -77,20 +77,7 @@ npx skills@latest add wufei-png/skills \
 
 ## Validate
 
-Validate catalog discovery, repository contracts, scripted skill CLIs, and changed-file whitespace from the repository root:
-
-```bash
-NO_COLOR=1 npx -y skills@latest add . --list
-python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
-python3 -m unittest discover -s tests/docs-context-curator -p 'test_*.py' -v
-node --test tests/suno-create/*.test.mjs
-python3 -m unittest discover -s tests/codex-native-scheduler -p 'test_*.py' -v
-python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
-python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
-python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
-python3 -m unittest discover -s tests/suno-studio-download -p 'test_*.py' -v
-git diff --check
-```
+See [Build, Test, and Development Commands](./AGENTS.md#build-test-and-development-commands) for test dependencies and validation commands.
 
 Keep `disable-model-invocation: true` paired with `policy.allow_implicit_invocation: false`. The frontmatter field is a host extension outside the Agent Skills base specification; OpenAI's `quick_validate.py` and the Agent Skills [reference validator](https://github.com/agentskills/agentskills/tree/main/skills-ref) reject it, so neither is a pass/fail gate for this cross-host catalog.
 

@@ -77,20 +77,7 @@ npx skills@latest add wufei-png/skills \
 
 ## 校验
 
-在仓库根目录校验 skill 发现、仓库契约、带脚本的 skill CLI，以及已修改文件的空白格式：
-
-```bash
-NO_COLOR=1 npx -y skills@latest add . --list
-python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
-python3 -m unittest discover -s tests/docs-context-curator -p 'test_*.py' -v
-node --test tests/suno-create/*.test.mjs
-python3 -m unittest discover -s tests/codex-native-scheduler -p 'test_*.py' -v
-python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
-python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
-python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v
-python3 -m unittest discover -s tests/suno-studio-download -p 'test_*.py' -v
-git diff --check
-```
+测试依赖和完整校验步骤见 [开发与校验命令](./AGENTS.md#build-test-and-development-commands)。
 
 保持 `disable-model-invocation: true` 与 `policy.allow_implicit_invocation: false` 成对存在。前者是 Agent Skills 基础规范之外的宿主扩展；OpenAI 的 `quick_validate.py` 和 Agent Skills 的[参考校验器](https://github.com/agentskills/agentskills/tree/main/skills-ref)都不接受它，因此不作为这个跨宿主目录的通过门禁。
 
