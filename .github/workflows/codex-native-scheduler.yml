@@ -1,0 +1,53 @@
+name: Codex Native Scheduler
+
+on:
+  push:
+    branches: [main]
+    paths: &scheduler_paths
+      - 'skills/productivity/codex-native-scheduler/**'
+      - 'tests/codex-native-scheduler/**'
+      - 'scripts/install-codex-native-scheduler.sh'
+      - '.github/workflows/codex-native-scheduler.yml'
+  pull_request:
+    paths: *scheduler_paths
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Test
+        run: python -m unittest discover -s tests/codex-native-scheduler -v
+
+      - name: Task Scheduler live registration canary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $state = Join-Path $env:RUNNER_TEMP "codex-native-scheduler-state"
+          $entry = "skills/productivity/codex-native-scheduler/scripts/codex-schedule"
+          $fakeCodex = (Resolve-Path "tests/codex-native-scheduler/fixtures/fake-codex.cmd").Path
+          python $entry --state-dir $state create `
+            --backend task-scheduler `
+            --name windows-ci-canary `
+            --cwd $PWD `
+            --allow-dirty `
+            --at 2h `
+            --codex-path $fakeCodex `
+            --prompt "CI registration canary; do not run."
+          python $entry --state-dir $state status windows-ci-canary
+          python $entry --state-dir $state delete windows-ci-canary --yes

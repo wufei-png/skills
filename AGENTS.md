@@ -14,6 +14,7 @@ python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
 python3 tests/repository-contract/verify_installer.py --package skills@1.9.0
 python3 tests/repository-contract/verify_installer.py --package skills@latest
 python3 -m unittest discover -s tests/docs-context-curator -p 'test_*.py' -v
+python3 -m unittest discover -s tests/codex-native-scheduler -p 'test_*.py' -v
 python3 -m unittest discover -s tests/codex-session-recovery -p 'test_*.py' -v
 python3 -m unittest discover -s tests/opencode-session-toolkit -p 'test_*.py' -v
 python3 -m unittest discover -s tests/suno-music-explorer -p 'test_*.py' -v

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Codex Native Scheduler"
+  short_description: "Schedule Codex chat reminders and background runs"
+  default_prompt: "Use $codex-native-scheduler to schedule a Codex prompt."
+policy:
+  allow_implicit_invocation: false
