@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SKILLS_ROOT = ROOT / "skills"
 EXPECTED_CATEGORIES = ("creative", "engineering", "productivity")
 EXPECTED_SKILLS = {
+    "codex-native-scheduler",
     "consensus-change-review",
     "consensus-gated-grilling",
     "consensus-review-loop",
