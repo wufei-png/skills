@@ -47,11 +47,15 @@ CLI that supports queueing. With `--resume` support the scheduler also tries
 to wake an unloaded thread. A resume warning keeps the prompt queued. Open the
 target chat if it needs to consume the prompt.
 
-`show JOB` reports the pending run ID. `runs JOB` records queue acceptance
-and acknowledgement separately. While one delivery is pending, later ticks
-and `run-now` skip sending. For a delivery with no clear outcome, check the
-target queue and transcript before taking action. If the original message
-cannot be consumed, run `ack JOB RUN` from the target chat to release it.
+Each reminder includes its run ID and acknowledgement command. `show JOB`
+reports the pending run. `runs JOB` records queue acceptance and acknowledgement.
+Later sends wait for the pending run's receipt. Confirmed pre-send failures
+release it. For an unknown outcome, check the target queue and transcript.
+If the reminder is unrecoverable, run `ack JOB RUN` from the target chat.
+
+A one-shot skipped while a delivery is pending becomes `completed`, with a
+`skipped_pending` run. Acknowledge the pending delivery and create another job
+if you need to send again.
 
 With `--stop-when`, the target chat can use `ack JOB RUN --pause` after
 verifying the condition. The chat needs write access to the state directory.
