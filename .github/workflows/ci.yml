@@ -32,6 +32,11 @@ jobs:
         run: python3 tests/repository-contract/verify_installer.py --package skills@1.9.0
       - name: Test documentation context checks
         run: python3 -m unittest discover -s tests/docs-context-curator -p 'test_*.py' -v
+      - name: Check local documentation links
+        run: >-
+          python3 skills/engineering/docs-context-curator/scripts/doc_checks.py links
+          --root . --path README.md --path README_CN.md --path AGENTS.md
+          --path skills --path docs
       - name: Test Suno Create browser adapters
         run: node --test tests/suno-create/*.test.mjs
       - name: Test Codex session recovery
