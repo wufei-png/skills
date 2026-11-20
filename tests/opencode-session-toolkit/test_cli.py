@@ -666,6 +666,30 @@ class CliTest(unittest.TestCase):
                 with self.assertRaisesRegex(module.UserError, "timed out"):
                     module.run_native_sanitized_export("ses_percent")
 
+    def test_export_preserves_a_file_created_during_publication(self) -> None:
+        module = self.load_cli_module()
+        output_dir = self.root / "batch"
+        first = output_dir / "first.txt"
+        second = output_dir / "second.txt"
+        replace = module.os.replace
+
+        def publish(source, target):
+            if target == first:
+                second.write_text("another export", encoding="utf-8")
+            return replace(source, target)
+
+        with mock.patch.object(module.os, "replace", side_effect=publish):
+            with self.assertRaisesRegex(
+                module.UserError, "Output appeared during export"
+            ):
+                module.write_files_atomically(
+                    [(first, "one"), (second, "two")],
+                    overwrite=False,
+                    batch_root=output_dir,
+                )
+        self.assertFalse(first.exists())
+        self.assertEqual(second.read_text(encoding="utf-8"), "another export")
+
     def test_list_works_without_optional_project_table(self) -> None:
         connection = sqlite3.connect(self.db_path)
         connection.execute("DROP TABLE project")
@@ -682,6 +706,30 @@ class CliTest(unittest.TestCase):
         )
         rows = json.loads(result.stdout)
         self.assertEqual(rows[0]["project"], "demo")
+
+    def test_grouped_export_refuses_output_parent_outside_requested_root(self) -> None:
+        output_dir = self.root / "selected"
+        output_dir.mkdir()
+        outside = self.root / "elsewhere"
+        outside.mkdir()
+        (output_dir / "Demo").symlink_to(outside, target_is_directory=True)
+        for flags in (("--dry-run",), ("--overwrite",)):
+            with self.subTest(flags=flags):
+                result = self.run_cli(
+                    "export",
+                    "--db-path",
+                    str(self.db_path),
+                    "--session-id",
+                    "ses_percent",
+                    "--output-dir",
+                    str(output_dir),
+                    "--group-by-project",
+                    *flags,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("outside the export root", result.stderr)
+                self.assertEqual(list(outside.iterdir()), [])
 
     def test_overwrite_replaces_output_symlink_without_touching_its_target(
         self,

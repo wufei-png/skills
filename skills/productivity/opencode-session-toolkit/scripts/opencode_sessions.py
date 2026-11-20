@@ -880,12 +880,16 @@ def write_files_atomically(
     overwrite: bool,
     batch_root: Path | None = None,
 ) -> tuple[list[Path], list[Path]]:
+    if batch_root is not None:
+        batch_root = Path(os.path.abspath(batch_root))
     conflicts: list[Path] = []
     unchanged: list[Path] = []
     pending: list[tuple[Path, Content]] = []
     for raw_path, content in files:
         path = Path(os.path.abspath(raw_path))
-        status = output_status(path, content, overwrite=overwrite)
+        status = output_status(
+            path, content, overwrite=overwrite, batch_root=batch_root
+        )
         if status == "unchanged":
             unchanged.append(path)
         elif status == "conflict":
@@ -903,7 +907,6 @@ def write_files_atomically(
 
     if batch_root is None:
         batch_root = pending[0][0].parent
-    batch_root = Path(os.path.abspath(batch_root))
     created_directories: list[Path] = []
     stage_dir: Path | None = None
 
@@ -953,6 +956,8 @@ def write_files_atomically(
             ensure_directory(path.parent)
             backup_path: Path | None = None
             if path.exists() or path.is_symlink():
+                if not overwrite:
+                    raise UserError(f"Output appeared during export: {path}")
                 relative = path.relative_to(batch_root)
                 backup_path = backup_root / relative
                 backup_path.parent.mkdir(parents=True, exist_ok=True)
@@ -965,7 +970,7 @@ def write_files_atomically(
             os.replace(staged_path, path)
             published.append((path, backup_path))
         return [path for path, _ in published], unchanged
-    except OSError as exc:
+    except (UserError, OSError) as exc:
         rollback_errors: list[str] = []
         for path, backup_path in reversed(published):
             try:
@@ -988,7 +993,22 @@ def write_files_atomically(
             shutil.rmtree(stage_dir, ignore_errors=True)
 
 
-def output_status(path: Path, content: Content, *, overwrite: bool) -> str:
+def check_output_parent(path: Path, root: Path) -> None:
+    if path.parent != root and not path.parent.resolve().is_relative_to(root.resolve()):
+        raise UserError(
+            f"Output directory resolves outside the export root: {path.parent}"
+        )
+
+
+def output_status(
+    path: Path,
+    content: Content,
+    *,
+    overwrite: bool,
+    batch_root: Path | None = None,
+) -> str:
+    if batch_root is not None:
+        check_output_parent(path, batch_root)
     if not path.exists() and not path.is_symlink():
         ancestor = path.parent
         while not ancestor.exists() and not ancestor.is_symlink():
@@ -1237,7 +1257,9 @@ def handle_export(
     if args.dry_run:
         rows = [
             {
-                "status": output_status(path, content, overwrite=args.overwrite),
+                "status": output_status(
+                    path, content, overwrite=args.overwrite, batch_root=output_root
+                ),
                 "path": str(path),
             }
             for path, content in files
