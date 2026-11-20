@@ -347,11 +347,15 @@ def _finish_job_state(
 ) -> dict[str, Any]:
     with store.short_lock(job_id):
         job = store.load_job(job_id)
-        if run["status"] == "skipped_pending" and (
-            job["status"] != "active"
-            or job["schedule"]["kind"] != "at"
-            or parse_iso(job["schedule"]["at"]) != parse_iso(run["scheduled_for"])
-        ):
+        scheduled_for = run.get("scheduled_for")
+        is_current_one_shot = (
+            scheduled
+            and job["status"] == "active"
+            and job["schedule"]["kind"] == "at"
+            and scheduled_for is not None
+            and parse_iso(job["schedule"]["at"]) == parse_iso(scheduled_for)
+        )
+        if run["status"] == "skipped_pending" and not is_current_one_shot:
             return job
         stats = job["stats"]
         stats["last_run_id"] = run["id"]
@@ -364,7 +368,7 @@ def _finish_job_state(
             )
 
         terminal = False
-        if job["schedule"]["kind"] == "at" and scheduled:
+        if is_current_one_shot:
             if run["status"] in FAILURE_STATUSES:
                 job["status"] = "failed"
             elif run["status"] == "cancelled":
@@ -392,8 +396,8 @@ def _finish_job_state(
         store.save_job(job)
         for candidate in store.retention_candidates(job):
             store.prune_run(candidate)
-    if terminal:
-        backend_for(job["backend"], state_root=store.root).unregister(job)
+        if terminal:
+            backend_for(job["backend"], state_root=store.root).unregister(job)
     return job
 
 

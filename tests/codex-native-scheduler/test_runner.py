@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import os
 import subprocess
 import sys
@@ -12,6 +13,7 @@ from unittest import mock
 from support import job, store_with_job
 
 # isort: split
+from codex_scheduler.cli import dispatch, parser
 from codex_scheduler.errors import SchedulerError
 from codex_scheduler.jobs import resume_job
 from codex_scheduler.runner import (
@@ -21,6 +23,7 @@ from codex_scheduler.runner import (
     retry_run,
     run_now,
     stop_run,
+    trigger_job,
 )
 from codex_scheduler.util import (
     process_start_token,
@@ -254,6 +257,52 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(current["stats"]["scheduled_started"], 0)
             self.assertEqual(current["status"], "completed")
             backend.return_value.unregister.assert_called_once()
+
+    def test_rescheduled_one_shot_runs_at_the_new_time(self) -> None:
+        due = dt.datetime(2026, 7, 20, 10, tzinfo=dt.UTC)
+        rescheduled = due + dt.timedelta(hours=1)
+        root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        metadata = job(
+            root,
+            command=[sys.executable, str(FIXTURE)],
+            schedule={"kind": "at", "at": due.isoformat()},
+        )
+        store = store_with_job(root, metadata)
+        job_id = metadata["id"]
+        update = parser().parse_args(
+            ["--state-dir", str(store.root), "update", job_id, "--at", "1h"]
+        )
+        backend = mock.Mock()
+
+        def reschedule_before_finish(*args, **kwargs):
+            dispatch(update)
+            return execute_run(*args, **kwargs)
+
+        with (
+            mock.patch("codex_scheduler.jobs.backend_for", return_value=backend),
+            mock.patch("codex_scheduler.runner.backend_for", return_value=backend),
+            mock.patch("codex_scheduler.cli.now_local", return_value=due),
+            mock.patch("codex_scheduler.runner.now_local", return_value=due) as clock,
+        ):
+            with mock.patch(
+                "codex_scheduler.runner.execute_run",
+                side_effect=reschedule_before_finish,
+            ):
+                original = trigger_job(store, job_id)
+            self.assertEqual(original["status"], "succeeded")
+            current = store.load_job(job_id)
+            self.assertEqual(current["schedule"]["at"], rescheduled.isoformat())
+            self.assertEqual(current["status"], "active")
+            self.assertEqual(current["stats"]["last_run_id"], original["id"])
+            backend.register.assert_called_once()
+            backend.unregister.assert_not_called()
+
+            clock.return_value = rescheduled
+            following = trigger_job(store, job_id)
+            self.assertEqual(following["status"], "succeeded")
+            self.assertEqual(following["scheduled_for"], rescheduled.isoformat())
+            self.assertEqual(store.load_job(job_id)["status"], "completed")
+            backend.unregister.assert_called_once()
 
     def test_parallel_scheduled_run_stops_if_job_was_cancelled(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

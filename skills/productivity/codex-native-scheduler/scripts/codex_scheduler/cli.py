@@ -569,8 +569,9 @@ def dispatch(args: argparse.Namespace) -> Any:
     if command in {"pause", "resume", "update"}:
         job = store.resolve_job(args.job)
         queue = job["session_mode"] == QUEUE_MODE
-        with store.short_lock(job["id"]) if queue else nullcontext():
-            if queue:
+        lock_state = queue or command == "update"
+        with store.short_lock(job["id"]) if lock_state else nullcontext():
+            if lock_state:
                 job = store.load_job(job["id"])
             if command == "resume":
                 return _redact_job(resume_job(store, job))
