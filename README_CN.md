@@ -138,7 +138,7 @@ npx skills@latest add wufei-png/skills \
 | `delegated-change-review` | `consensus-change-review` | 单次代码审查门 |
 | `review-loop` | `consensus-review-loop` | 审查与修复轮次 |
 
-目录中的 skill 均为支持的宿主配置了手动调用：`disable-model-invocation: true` 适用于 Claude Code、Pi、VS Code Copilot、Cursor 和 OpenCode 2，`policy.allow_implicit_invocation: false` 适用于 Codex。两处字段必须保持同步。其他宿主可能忽略这些扩展；例如 [OpenCode 1](https://opencode.ai/docs/skills/) 不使用它们控制自动选择。宿主设置也可能发生冲突，需要时应在目标宿主中验证实际行为。
+目录中的 skill 均为支持的宿主配置了手动调用：`disable-model-invocation: true` 适用于 Claude Code、Pi、VS Code Copilot、Cursor 和 OpenCode 2，`policy.allow_implicit_invocation: false` 适用于 Codex。两处字段必须保持同步。其他宿主可能忽略这些扩展；例如 [OpenCode 1](https://opencode.ai/v1/docs/skills/) 不使用它们控制自动选择。宿主设置也可能发生冲突，需要时应在目标宿主中验证实际行为。
 
 `review-gated-grilling` 与审查 skill 以 Codex 为主要运行环境，因为它们需要全新 subagent 机制；代码审查 skill 还会在标明的位置依赖内置 `$review-agent`。Reviewer 不编辑实现文件，也不直接向用户提问；代码 reviewer 是否运行测试或检查，由具体问题的审查策略决定。主 Agent 仍负责裁决发现并对面向用户的最终结果负责。
 

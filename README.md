@@ -138,7 +138,7 @@ These opt-in variants keep their base skills unchanged and add bounded, evidence
 | `delegated-change-review` | `consensus-change-review` | One code-review gate |
 | `review-loop` | `consensus-review-loop` | Review-and-fix rounds |
 
-Catalog skills carry manual-only metadata for supported hosts: `disable-model-invocation: true` for Claude Code, Pi, VS Code Copilot, Cursor, and OpenCode 2, and `policy.allow_implicit_invocation: false` for Codex. Keep both fields in sync. Other hosts can ignore these extensions; for example, [OpenCode 1](https://opencode.ai/docs/skills/) does not use them to control automatic selection. Host settings can also conflict, so verify behavior in the target host when needed.
+Catalog skills carry manual-only metadata for supported hosts: `disable-model-invocation: true` for Claude Code, Pi, VS Code Copilot, Cursor, and OpenCode 2, and `policy.allow_implicit_invocation: false` for Codex. Keep both fields in sync. Other hosts can ignore these extensions; for example, [OpenCode 1](https://opencode.ai/v1/docs/skills/) does not use them to control automatic selection. Host settings can also conflict, so verify behavior in the target host when needed.
 
 `review-gated-grilling` and the review skills are Codex-first because they expect a fresh subagent mechanism; the code review skills additionally use the built-in `$review-agent` skill where referenced. Reviewers do not edit implementation files or ask the user questions directly. Whether code reviewers run tests or checks is a review-strategy decision based on the concrete problem. The primary agent still adjudicates findings and owns the user-facing result.
 
