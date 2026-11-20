@@ -312,7 +312,10 @@ def local_destination(
 ) -> tuple[Path | None, str | None]:
     if not token or token.startswith("#") or outside_local_scope(token):
         return None, None
-    value = urlsplit(urljoin(base or "", token))
+    try:
+        value = urlsplit(urljoin(base or "", token))
+    except ValueError as exc:
+        return None, str(exc)
     if value.scheme != "file" or value.netloc:
         return None, None
     path = Path(url2pathname(value.path))

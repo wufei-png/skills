@@ -192,6 +192,14 @@ class DocumentationChecksTest(unittest.TestCase):
         report = self.run_check("links", "--path", "docs/index.md", code=1)
         self.assertEqual(["missing.md"], [item["token"] for item in report["items"]])
 
+    def test_malformed_local_uri_does_not_interrupt_following_links(self):
+        self.write("docs/index.md", "[Bad](file://[broken)\n[Local](missing.md)\n")
+        report = self.run_check("links", "--path", "docs/index.md", code=1)
+        self.assertEqual(
+            [(1, "unsafe-path"), (2, "missing-path")],
+            [(item["line"], item["kind"]) for item in report["items"]],
+        )
+
     def test_fenced_and_inline_examples_are_not_static_link_failures(self):
         self.write(
             "docs/index.md",
