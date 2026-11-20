@@ -120,6 +120,17 @@ class SkillRepositoryContractTest(unittest.TestCase):
             license_bytes, (ROOT / "LICENSES/auto-git-MIT.txt").read_bytes()
         )
 
+    def test_adapted_skills_ship_the_recorded_upstream_notice(self) -> None:
+        for skill, notice in (
+            ("productivity/wait-what", "mattpocock-skills-MIT.txt"),
+            ("engineering/improve-code-comments", "vinta-ai-workflows-MIT.txt"),
+        ):
+            with self.subTest(skill=skill):
+                self.assertEqual(
+                    (SKILLS_ROOT / skill / "LICENSE").read_bytes(),
+                    (ROOT / "LICENSES" / notice).read_bytes(),
+                )
+
     def test_runtime_skill_folders_exclude_test_artifacts(self) -> None:
         for skill_dir in skill_directories():
             tracked = (
