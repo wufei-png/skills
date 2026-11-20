@@ -122,7 +122,7 @@ def latest_due(schedule: dict[str, Any], now: dt.datetime) -> dt.datetime | None
 def next_due(schedule: dict[str, Any], now: dt.datetime) -> dt.datetime | None:
     kind = schedule["kind"]
     if kind == "at":
-        target = parse_iso(schedule["at"]).astimezone(now.tzinfo)
+        target = parse_iso(schedule["at"]).astimezone()
         return target if target > now else None
     if kind == "every":
         anchor = parse_iso(schedule["anchor"]).astimezone(now.tzinfo)

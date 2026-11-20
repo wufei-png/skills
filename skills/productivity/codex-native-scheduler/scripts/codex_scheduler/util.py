@@ -105,15 +105,11 @@ def parse_at(value: str, *, now: dt.datetime | None = None) -> dt.datetime:
     except SchedulerError:
         normalized = raw.replace("Z", "+00:00")
         try:
-            target = dt.datetime.fromisoformat(normalized)
+            target = dt.datetime.fromisoformat(normalized).astimezone()
         except ValueError as exc:
             raise SchedulerError(
                 "invalid time; use an ISO 8601 timestamp or a duration such as 4h"
             ) from exc
-        if target.tzinfo is None:
-            target = target.replace(tzinfo=current.tzinfo)
-        else:
-            target = target.astimezone()
     else:
         target = current + dt.timedelta(seconds=seconds)
     target = ceil_minute(target)

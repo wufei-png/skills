@@ -82,6 +82,22 @@ class ScheduleTests(unittest.TestCase):
         )
 
     @unittest.skipUnless(hasattr(time, "tzset"), "tzset is unavailable")
+    def test_one_shot_uses_the_target_dates_local_offset(self) -> None:
+        self.addCleanup(time.tzset)
+        self.enterContext(mock.patch.dict(os.environ, {"TZ": "America/New_York"}))
+        time.tzset()
+        now = dt.datetime(2026, 3, 6, 12).astimezone()
+        schedule = make_schedule(
+            at="2026-03-09T09:00",
+            every=None,
+            daily_at=None,
+            weekly_at=None,
+            now=now,
+        )
+        self.assertEqual(schedule["at"], "2026-03-09T09:00:00-04:00")
+        self.assertEqual(next_due(schedule, now).isoformat(), schedule["at"])
+
+    @unittest.skipUnless(hasattr(time, "tzset"), "tzset is unavailable")
     def test_nonexistent_dst_wall_time_is_skipped(self) -> None:
         original = os.environ.get("TZ")
         try:
