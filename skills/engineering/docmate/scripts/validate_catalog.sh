@@ -1,0 +1,208 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 <docmate.catalog.json>" >&2
+  exit 1
+fi
+
+CATALOG_PATH="$1"
+
+if [ ! -f "$CATALOG_PATH" ]; then
+  echo "Error: catalog file not found: $CATALOG_PATH" >&2
+  exit 1
+fi
+
+find_node() {
+  if command -v node >/dev/null 2>&1; then
+    command -v node
+    return
+  fi
+
+  local candidate
+  candidate="$(find "$HOME/.nvm/versions/node" -path '*/bin/node' -type f 2>/dev/null | sort -V | tail -n 1 || true)"
+  if [ -n "$candidate" ]; then
+    printf '%s\n' "$candidate"
+    return
+  fi
+
+  echo "Error: node is required but was not found on PATH or under ~/.nvm/versions/node" >&2
+  exit 1
+}
+
+NODE_BIN="$(find_node)"
+
+"$NODE_BIN" - "$CATALOG_PATH" <<'EOF'
+const fs = require("node:fs");
+
+const catalogPath = process.argv[2];
+
+function fail(message) {
+  console.error(`Error: ${message}`);
+  process.exit(1);
+}
+
+function isObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function requireKeys(object, keys, path) {
+  const actual = Object.keys(object).sort();
+  const expected = [...keys].sort();
+  if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) {
+    fail(`${path} must contain exactly these keys: ${expected.join(", ")}`);
+  }
+}
+
+function requireKeysWithOptional(object, requiredKeys, optionalKeys, path) {
+  const required = new Set(requiredKeys);
+  const allowed = new Set([...requiredKeys, ...optionalKeys]);
+  for (const key of required) {
+    if (!Object.prototype.hasOwnProperty.call(object, key)) {
+      fail(`${path} is missing required key: ${key}`);
+    }
+  }
+  for (const key of Object.keys(object)) {
+    if (!allowed.has(key)) {
+      fail(`${path} contains unsupported key: ${key}`);
+    }
+  }
+}
+
+function requireString(value, path, { allowEmpty = false } = {}) {
+  if (typeof value !== "string") {
+    fail(`${path} must be a string`);
+  }
+  if (!allowEmpty && value.trim() === "") {
+    fail(`${path} must be a non-empty string`);
+  }
+}
+
+function requireStringArray(value, path, { allowEmpty = true } = {}) {
+  if (!Array.isArray(value)) {
+    fail(`${path} must be an array`);
+  }
+  if (!allowEmpty && value.length === 0) {
+    fail(`${path} must contain at least one value`);
+  }
+
+  const seen = new Set();
+  value.forEach((entry, index) => {
+    requireString(entry, `${path}[${index}]`);
+    if (seen.has(entry)) {
+      const duplicateKind = path.endsWith(".aliases") ? "alias" : "entry";
+      fail(`${path} contains a duplicate ${duplicateKind}: ${entry}`);
+    }
+    seen.add(entry);
+  });
+}
+
+let data;
+try {
+  data = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
+} catch (error) {
+  fail(`invalid JSON in ${catalogPath}: ${error.message}`);
+}
+
+if (!isObject(data)) {
+  fail("root must be a JSON object");
+}
+
+requireKeysWithOptional(data, ["defaults", "repos"], ["installHosts"], "root");
+
+const supportedHosts = new Set(["openclaw", "claude-code", "opencode", "codex", "hermes"]);
+if (Object.prototype.hasOwnProperty.call(data, "installHosts")) {
+  requireStringArray(data.installHosts, "installHosts", { allowEmpty: false });
+  for (const [index, host] of data.installHosts.entries()) {
+    if (!supportedHosts.has(host)) {
+      fail(`installHosts[${index}] has an unsupported host: ${host}`);
+    }
+  }
+}
+
+if (!isObject(data.defaults)) {
+  fail("defaults must be an object");
+}
+requireKeys(data.defaults, ["update"], "defaults");
+if (!isObject(data.defaults.update)) {
+  fail("defaults.update must be an object");
+}
+
+const supportedModes = new Set(["ask", "auto", "off"]);
+function validateUpdate(update, path) {
+  if (!isObject(update)) {
+    fail(`${path} must be an object`);
+  }
+  requireKeys(update, ["mode"], path);
+  requireString(update.mode, `${path}.mode`);
+  if (!supportedModes.has(update.mode)) {
+    fail("update.mode must be ask, auto, or off");
+  }
+}
+
+validateUpdate(data.defaults.update, "defaults.update");
+
+if (!Array.isArray(data.repos) || data.repos.length === 0) {
+  fail("repos must be a non-empty array");
+}
+
+const seenRepoLabels = new Map();
+const seenRepoPaths = new Set();
+function checkRepoLabel(value, field, repoIndex) {
+  const key = value.normalize("NFKC").toLowerCase();
+  const previous = seenRepoLabels.get(key);
+  if (previous && previous.repoIndex !== repoIndex) {
+    fail(`${field} (${value}) conflicts with ${previous.field} (${previous.value}) in another repository`);
+  }
+  if (!previous) {
+    seenRepoLabels.set(key, { repoIndex, field, value });
+  }
+}
+
+for (const [repoIndex, repo] of data.repos.entries()) {
+  if (!isObject(repo)) {
+    fail(`repos[${repoIndex}] must be an object`);
+  }
+  if (Object.prototype.hasOwnProperty.call(repo, "update")) {
+    fail(`repos[${repoIndex}].update is not supported; use defaults.update.mode`);
+  }
+  requireKeysWithOptional(
+    repo,
+    ["name", "path", "baseBranchCandidates"],
+    ["description", "aliases"],
+    `repos[${repoIndex}]`
+  );
+
+  requireString(repo.name, `repos[${repoIndex}].name`);
+  checkRepoLabel(repo.name, `repos[${repoIndex}].name`, repoIndex);
+
+  if (Object.prototype.hasOwnProperty.call(repo, "description")) {
+    requireString(repo.description, `repos[${repoIndex}].description`, { allowEmpty: true });
+  }
+  requireString(repo.path, `repos[${repoIndex}].path`);
+  if (!repo.path.startsWith("/")) {
+    fail(`repos[${repoIndex}].path must be an absolute path`);
+  }
+  if (seenRepoPaths.has(repo.path)) {
+    fail(`repos contains a duplicate repository path: ${repo.path}`);
+  }
+  seenRepoPaths.add(repo.path);
+
+  if (Object.prototype.hasOwnProperty.call(repo, "aliases")) {
+    requireStringArray(repo.aliases, `repos[${repoIndex}].aliases`);
+    for (const [aliasIndex, alias] of repo.aliases.entries()) {
+      checkRepoLabel(alias, `repos[${repoIndex}].aliases[${aliasIndex}]`, repoIndex);
+    }
+  }
+
+  requireStringArray(repo.baseBranchCandidates, `repos[${repoIndex}].baseBranchCandidates`);
+
+  if (data.defaults.update.mode !== "off") {
+    if (repo.baseBranchCandidates.length === 0) {
+      fail("baseBranchCandidates must contain at least one branch when updates are enabled");
+    }
+  }
+}
+
+process.stdout.write("OK\n");
+EOF

@@ -30,6 +30,8 @@ jobs:
         run: python3 -m unittest discover -s tests/repository-contract -p 'test_*.py' -v
       - name: Verify pinned skill discovery
         run: python3 tests/repository-contract/verify_installer.py --package skills@1.9.0
+      - name: Test DocMate
+        run: python3 -m unittest discover -s tests/docmate -p 'test_*.py' -v
       - name: Test documentation context checks
         run: python3 -m unittest discover -s tests/docs-context-curator -p 'test_*.py' -v
       - name: Check local documentation links

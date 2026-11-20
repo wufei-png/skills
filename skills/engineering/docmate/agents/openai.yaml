@@ -1,0 +1,7 @@
+interface:
+  display_name: "DocMate"
+  short_description: "Answer and verify questions about project documentation"
+  default_prompt: "Use $docmate to answer a question about my project documentation and verify implementation-dependent claims against code."
+
+policy:
+  allow_implicit_invocation: false

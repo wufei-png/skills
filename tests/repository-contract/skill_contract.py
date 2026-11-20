@@ -28,6 +28,7 @@ EXPECTED_SKILLS = {
     "codex-session-recovery",
     "codex-thread-report",
     "delegated-change-review",
+    "docmate",
     "docs-context-curator",
     "game-experience-review",
     "godot-silent-review",

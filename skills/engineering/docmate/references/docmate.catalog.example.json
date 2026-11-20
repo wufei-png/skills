@@ -1,0 +1,19 @@
+{
+  "defaults": {
+    "update": {
+      "mode": "ask"
+    }
+  },
+  "repos": [
+    {
+      "name": "docs-site",
+      "path": "/path/to/docs-site",
+      "baseBranchCandidates": ["main"]
+    },
+    {
+      "name": "internal-runbooks",
+      "path": "/path/to/runbooks",
+      "baseBranchCandidates": ["main"]
+    }
+  ]
+}

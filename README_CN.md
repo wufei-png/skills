@@ -102,6 +102,7 @@ npx skills@latest add wufei-png/skills \
 
 - [`worktree-triage`](./skills/engineering/worktree-triage/SKILL.md) — 推断未提交改动的用途，建议保留、补齐或丢弃，并在授权后提交已验证的批次。
 - [`godot-silent-review`](./skills/engineering/godot-silent-review/SKILL.md) — 静默检查 Godot Web 截图和动作关键帧；需要项目已有兼容的后台脚本，附 Uncounted 参考配置。
+- [`docmate`](./skills/engineering/docmate/SKILL.md) — 基于已配置的仓库回答文档问题，核对实现细节，并按授权修复文档。[安装与升级](./skills/engineering/docmate/references/setup.md)。
 - [`docs-context-curator`](./skills/engineering/docs-context-curator/SKILL.md) — 整理当前文档与可检索历史，按需使用只读检查，保留现行规则并修复必要的迁移引用。
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — 在不修改可执行代码的前提下审查和改进注释与 docstring。
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — 以只读方式审查项目测试套件，返回按优先级排序、有证据支持的缺陷。
@@ -150,7 +151,6 @@ npx skills@latest add wufei-png/skills \
 
 - [`AgentRepoRouter`](https://github.com/wufei-png/AgentRepoRouter) — 在仓库、项目级 skill/agent 与原生 coding CLI 之间路由任务，并将仓库扫描、映射配置生成、多 host 安装及软链接管理保留为一个完整产品。
 - [`animated-sticker-maker`](https://github.com/wufei-png/animated-sticker-maker) — 将静态参考图与动作提示转换为经过验证的透明动态贴纸。
-- [`DocMate`](https://github.com/wufei-png/DocMate) — 基于配置好的文档仓库目录回答问题，并可准备范围严格受控的文档修复。
 
 ### Skill 驱动系统
 
@@ -175,6 +175,7 @@ npx skills@latest add wufei-png/skills \
 | `improve-code-comments`       | [`wufei-png/improve-code-comments@f8d0199`](https://github.com/wufei-png/improve-code-comments/tree/f8d019954c05b458c2fef11b3f6e555f5af733ed)；直接复制可安装文件，并增加仅手动调用 metadata。其纯文本清理规则改编自 [`vintasoftware/vinta-ai-workflows@f80a8e0`：`skills/vinta-derive-skills/resources/foundation-skills/deslop-comments/SKILL.md`](https://github.com/vintasoftware/vinta-ai-workflows/blob/f80a8e08f3df73ac6ecbae747733b95f440d94a5/skills/vinta-derive-skills/resources/foundation-skills/deslop-comments/SKILL.md)，上游 MIT 声明保存在 `LICENSES/`。 |
 | `sanitize-artifacts`          | 基于 [`kotek-7/dotfiles@bdad3ce`：`dot_agents/skills/sanitize-artifacts/SKILL.md`](https://github.com/kotek-7/dotfiles/blob/bdad3cefc3fb96842ecb4c6b4ae77d2f40ae1c0b/dot_agents/skills/sanitize-artifacts/SKILL.md) 大幅修订；补充了成品范围、隐藏内容检查、保留规则和当前仅手动调用 metadata。该版本的来源仓库中未发现许可证文件。 |
 | `codex-native-scheduler`     | 运行代码和测试来自 [`wufei-png/codex-native-scheduler`](https://github.com/wufei-png/codex-native-scheduler)。原 MIT 许可证保存在 `LICENSES/` 和安装目录中。 |
+| `docmate`                    | Skill、安装器和测试来自 [`wufei-png/DocMate@b22b125`](https://github.com/wufei-png/DocMate/tree/b22b125269713cd69100e959f9a2cd25cdfc420d)。原 [MIT 声明](./LICENSES/docmate-MIT.txt) 随 skill 分发。 |
 | `codex-session-recovery`      | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71)；复制后仅调整手动调用策略、monorepo 路径及当前 CLI-first 能力表述 |
 | `opencode-session-toolkit`    | 英文运行包和测试来自 [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9)；中文包及独立发布机制不迁入              |
 | `suno-music-explorer`         | 从 [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/autonomous-music-explorer) 通用化，增加有上限授权、持久恢复和用户最终选择 |

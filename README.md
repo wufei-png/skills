@@ -102,6 +102,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 
 - [`worktree-triage`](./skills/engineering/worktree-triage/SKILL.md) — Infer why uncommitted changes exist, recommend what to keep, fix, or discard, and commit verified batches when authorized.
 - [`godot-silent-review`](./skills/engineering/godot-silent-review/SKILL.md) — Inspect Godot Web screenshots and motion keyframes without desktop windows; requires a compatible project-local runner and documents the Uncounted profile.
+- [`docmate`](./skills/engineering/docmate/SKILL.md) — Answer questions across configured documentation repositories, verify implementation details, and prepare authorized doc repairs. [Install or upgrade](./skills/engineering/docmate/references/setup.md).
 - [`docs-context-curator`](./skills/engineering/docs-context-curator/SKILL.md) — Organize current documentation and searchable history with optional read-only checks; preserve current rules and repair necessary migration references.
 - [`improve-code-comments`](./skills/engineering/improve-code-comments/SKILL.md) — Audit and improve comments and docstrings without changing executable code.
 - [`review-tests`](./skills/engineering/review-tests/SKILL.md) — Audit a project test suite for prioritized, evidence-backed defects without modifying it.
@@ -150,7 +151,6 @@ These skill-backed projects remain in their own repositories because their skill
 
 - [`AgentRepoRouter`](https://github.com/wufei-png/AgentRepoRouter) — Routes coding tasks across repositories, project skills and agents, and native coding CLIs while keeping repository scanning, generated mappings, multi-host installation, and symlink management in one product.
 - [`animated-sticker-maker`](https://github.com/wufei-png/animated-sticker-maker) — Turns a static reference image and motion prompt into a validated transparent animated sticker.
-- [`DocMate`](https://github.com/wufei-png/DocMate) — Answers questions against a configured documentation repository catalog and can prepare tightly scoped documentation repairs.
 
 ### Skill-driven systems
 
@@ -175,6 +175,7 @@ These skill-backed projects remain in their own repositories because their skill
 | `improve-code-comments`       | [`wufei-png/improve-code-comments@f8d0199`](https://github.com/wufei-png/improve-code-comments/tree/f8d019954c05b458c2fef11b3f6e555f5af733ed); installable files copied directly, with manual-only metadata added. Its plain-language cleanup rules are adapted from [`vintasoftware/vinta-ai-workflows@f80a8e0`: `skills/vinta-derive-skills/resources/foundation-skills/deslop-comments/SKILL.md`](https://github.com/vintasoftware/vinta-ai-workflows/blob/f80a8e08f3df73ac6ecbae747733b95f440d94a5/skills/vinta-derive-skills/resources/foundation-skills/deslop-comments/SKILL.md), with the upstream MIT notice retained in `LICENSES/`. |
 | `sanitize-artifacts`          | Substantially revised from [`kotek-7/dotfiles@bdad3ce`: `dot_agents/skills/sanitize-artifacts/SKILL.md`](https://github.com/kotek-7/dotfiles/blob/bdad3cefc3fb96842ecb4c6b4ae77d2f40ae1c0b/dot_agents/skills/sanitize-artifacts/SKILL.md), with artifact scope, hidden-content checks, preservation rules, and current manual-only metadata added. No license file was present in the source repository at this revision. |
 | `codex-native-scheduler`     | Runtime and tests from [`wufei-png/codex-native-scheduler`](https://github.com/wufei-png/codex-native-scheduler). The MIT notice lives under `LICENSES/` and in the installed skill. |
+| `docmate`                    | Skill, installer, and tests from [`wufei-png/DocMate@b22b125`](https://github.com/wufei-png/DocMate/tree/b22b125269713cd69100e959f9a2cd25cdfc420d). The [MIT notice](./LICENSES/docmate-MIT.txt) ships with the installed skill. |
 | `codex-session-recovery`      | [`wufei-png/codex-session-recovery@17fb753`](https://github.com/wufei-png/codex-session-recovery/tree/17fb75369d51173279989b9d0a0d6779a954ac71); copied with manual-only metadata, monorepo paths, and current CLI-first capability wording                               |
 | `opencode-session-toolkit`    | English runtime and tests from [`wufei-png/opencode-session-toolkit@6fb12aa`](https://github.com/wufei-png/opencode-session-toolkit/tree/6fb12aa0a25667964ce1b1090e872194f9bb88c9); the Chinese package and independent release machinery were intentionally not migrated |
 | `suno-music-explorer`         | Generalized from [`wufei-png/suno-band-manager-lab@d4e985c`](https://github.com/wufei-png/suno-band-manager-lab/tree/d4e985c1bb55c85f4b61e6fc7ccb95db3f0b7a60/.agents/skills/autonomous-music-explorer) with bounded grants, durable recovery, and human final selection                       |
