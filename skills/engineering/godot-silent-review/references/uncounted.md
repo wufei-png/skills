@@ -18,20 +18,7 @@ For a layout review across the supported sizes:
 python3 tests/run_offscreen_web.py --sizes 960,1280,1600
 ```
 
-The runner uses the project's default size unless the user supplies `--sizes`. It runs `capture_scene_refinement` and acknowledges all ten checkpoints in order:
-
-1. `cabin-speech`
-2. `door-conversation`
-3. `vehicle-contact`
-4. `choices`
-5. `battery-contact`
-6. `boarded`
-7. `closed-with-battery`
-8. `arrived-with-battery`
-9. `observation`
-10. `history-large`
-
-The Web harness waits at each checkpoint. Select which resulting images to inspect after the full capture. Other chapters and the prologue are not covered by this route. Run captures serially for the same project so they can reuse its existing import cache.
+Use the project's documented default or pass the requested `--sizes`. The Web harness follows the runner's checkpoint list for `capture_scene_refinement`. Run captures serially for the same project to reuse its import cache.
 
 ## Result contract
 
@@ -39,10 +26,10 @@ Each invocation rebuilds current sources. It prints `OUTPUT` for a new `build/of
 
 Read that invocation's `offscreen-report.json` and require:
 
-- `status: passed`, `fresh_export: true`, the requested `sizes` and the complete ordered `stages` list.
-- One existing `frames[].file` per requested width and stage, with the expected 16:9 dimensions.
+- `status: passed`, `fresh_export: true`, the requested `sizes` and the runner's complete ordered `stages` list.
+- One existing `frames[].file` per requested size and stage. Check both width and height.
 - `export_pck_sha256` matching that directory's `index.pck`; `harness_sha256` identifies the adapted capture script.
-- Diagnostics in `logs_<width>` without script errors, failed assertions or warnings. Import, export and capture logs also live in the run directory.
+- Diagnostics in `logs_<size>` without script errors, failed assertions or warnings. Import, export and capture logs also live in the run directory.
 - `renderer`, `headless_shell` and `review_font` identifying the actual render path; `native_device_validation` and `listening` remain false.
 
 Inspect relevant before/after images such as vehicle/battery contact, boarding, closed doors and arrival. Report only what was inspected. SwiftShader and the bundled review font can differ from native rendering; keyframes cannot establish continuous motion or dialogue timing. The local font copy and exported game remain local review materials, not distributable assets.
