@@ -40,12 +40,14 @@ If implementation evidence invalidates the plan, revise only unfinished stages.
 
 Work one stage at a time in the current tree. Never stage or commit unrelated pre-existing changes.
 
+If the index contains other work, isolate the stage diff and preserve those staged changes.
+
 For each stage:
 
 1. Record `STAGE_BASE=$(git rev-parse HEAD)`, implement only that stage, and run its checks.
-2. Stage explicit paths and inspect the staged diff.
+2. Stage and inspect the exact diff to commit.
 3. Use `$delegated-change-review` on that staged diff with the stage goal, acceptance criteria, non-goals, `STAGE_BASE`, and check results.
-4. After accepted fixes are applied, restage, rerun the checks, and commit. Run only one review per stage.
+4. If there are accepted fixes, restage them, inspect the commit diff, and rerun the stage checks. Commit after one completed review or an explicit waiver from the user.
 
 After the final stage, check the complete task and run the full applicable checks. Use `$delegated-change-review` once on the task-related change from `START_BASE`, rerun the checks after accepted fixes, and commit any remaining fixes.
 

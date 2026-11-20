@@ -38,10 +38,12 @@ If implementation evidence invalidates the plan, revise only unfinished stages.
 
 Work one stage at a time in the current tree. Never stage or commit unrelated pre-existing changes.
 
+If the index contains other work, isolate the stage diff and preserve those staged changes.
+
 For each stage:
 
 1. Implement only that stage and run its checks.
-2. Stage explicit paths and inspect the staged diff.
+2. Stage and inspect the exact diff to commit.
 3. Commit once the checks pass.
 
 After the final stage, check the complete change against the task, run the full applicable checks, and commit any resulting verified fixes.
