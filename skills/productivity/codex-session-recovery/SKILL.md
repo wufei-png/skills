@@ -28,7 +28,7 @@ python "<skill-directory>/scripts/scan_codex_sessions.py" \
 
 Use `--help` for all options. The main filters are `--cwd`, `--since`, `--until`, `--timezone`, and `--query`; archived sessions, subagents, prompt snippets, unknown-time records under date filters, and index-referenced paths require explicit flags (`--include-archived`, `--include-subagents`, `--show-prompts`, `--include-unknown-time`, and `--show-paths`). Prefer JSON when another tool consumes the result.
 
-The index or transcript filename provides the canonical thread id. Other observed `id`, `thread_id`, or `session_id` values are merged into that record as aliases. Report the thread name, cwd, time, archived or subagent status, `match_score` and `matching_reasons` as given, source path, and exact `codex resume` and `codex fork` commands. `match_score` is a ranking score within one search and may exceed 100. If nothing matches, state the filters and suggest relaxing one at a time.
+The index or transcript filename provides the canonical thread id. Other observed `id`, `thread_id`, or `session_id` values are merged into that record as aliases. Report the thread name, cwd, time, archived or subagent status, `match_score` and `matching_reasons` as given, source path, and exact `codex resume` and `codex fork` commands. Treat archive status as unknown for index-only results. `match_score` is a ranking score within one search and may exceed 100. If nothing matches, state the filters and suggest relaxing one at a time.
 
 ## Desktop visibility
 

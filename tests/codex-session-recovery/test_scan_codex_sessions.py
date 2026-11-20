@@ -81,6 +81,25 @@ class ScanCodexSessionsTest(unittest.TestCase):
         result = self.scan(include_archived=True)
         self.assertIn("archived-main", self.ids(result))
 
+    def test_named_archive_uses_rollout_location_and_latest_index_title(self):
+        index = self.codex_home / "session_index.jsonl"
+        with index.open("a", encoding="utf-8") as handle:
+            handle.write(
+                '\n{"id":"archived-main","thread_name":"Previous name",'
+                '"updated_at":"2026-06-15T12:00:00Z"}\n'
+                '{"id":"archived-main","thread_name":"Current archive title",'
+                '"updated_at":"2026-06-16T12:00:00Z"}\n'
+            )
+        self.assertNotIn("archived-main", self.ids(self.scan(cwd=None)))
+        result = self.scan(
+            cwd=None, include_archived=True, query="Current archive title"
+        )
+        record = result["records"][0]
+        self.assertEqual("archived-main", record["thread_id"])
+        self.assertEqual("Current archive title", record["thread_name"])
+        self.assertTrue(record["archived"])
+        self.assertFalse(record["warnings"])
+
     def test_include_subagents_adds_subagent_sessions(self):
         result = self.scan(include_subagents=True)
         self.assertIn("subagent-main", self.ids(result))

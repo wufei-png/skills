@@ -22,6 +22,7 @@ UUID_RE = re.compile(
 class MutableRecord:
     thread_id: str
     thread_name: str | None = None
+    index_name_line: int = 0
     cwd: str | None = None
     started_at: datetime | None = None
     updated_at: datetime | None = None
@@ -44,6 +45,11 @@ class MutableRecord:
 
     @property
     def archived(self) -> bool:
+        if self.archived_transcript_sources or self.active_transcript_sources:
+            return (
+                self.archived_transcript_sources > 0
+                and self.active_transcript_sources == 0
+            )
         return self.archived_sources > 0 and self.active_sources == 0
 
     def merge_source(
@@ -66,8 +72,11 @@ class MutableRecord:
             self.aliases.add(other.thread_id)
         self.aliases.update(other.aliases)
         self.aliases.discard(self.thread_id)
-        if self.thread_name is None and other.thread_name is not None:
+        if other.thread_name is not None and (
+            self.thread_name is None or other.index_name_line > self.index_name_line
+        ):
             self.thread_name = other.thread_name
+            self.index_name_line = other.index_name_line
         if self.cwd is None and other.cwd is not None:
             self.cwd = other.cwd
         self.started_at = earlier(self.started_at, other.started_at)
@@ -348,6 +357,8 @@ def record_from_index_line(
         fallback_timezone,
     )
     apply_thread_metadata(record, obj)
+    if record.thread_name is not None:
+        record.index_name_line = line_number
     summary = obj.get("summary") or obj.get("title")
     if isinstance(summary, str):
         record.summaries.append(summary)
@@ -527,7 +538,7 @@ def merge_records(records: list[MutableRecord]) -> dict[str, MutableRecord]:
         for identity in [target.thread_id, *sorted(target.aliases)]:
             by_identity[identity] = target
     for record in merged:
-        if record.active_sources and record.archived_sources:
+        if record.active_transcript_sources and record.archived_transcript_sources:
             record.warnings.append("appears in active and archived sources")
         if record.active_transcript_sources > 1:
             record.warnings.append(
@@ -758,6 +769,23 @@ def scan(options: dict[str, Any]) -> dict[str, Any]:
             continue
         score_record(record, cwd, query)
         filtered.append(record)
+
+    if not include_archived and any(
+        not record.active_transcript_sources for record in filtered
+    ):
+        archived_ids = {
+            id_from_filename(path)
+            for path in (codex_home / "archived_sessions").glob("*.jsonl")
+        }
+        filtered = [
+            record
+            for record in filtered
+            if record.active_transcript_sources
+            or (
+                record.thread_id not in archived_ids
+                and record.aliases.isdisjoint(archived_ids)
+            )
+        ]
 
     floor = datetime.min.replace(tzinfo=resolved_timezone)
     filtered.sort(
