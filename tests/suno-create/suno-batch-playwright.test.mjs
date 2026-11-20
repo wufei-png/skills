@@ -182,6 +182,39 @@ test('preserves ambiguous outcomes and handles both click and response failures'
   }
 });
 
+test('keeps the attempt ambiguous when another generation POST arrives during clip readback', async t => {
+  const { directory, manifest } = packageFixture(t);
+  const item = validateManifest(manifest, { baseDirectory: directory }).items[0];
+  const ledgerPath = join(directory, 'ledger.json');
+  const ledger = { items: { [item.id]: { status: 'pending' } } };
+  const page = fakePage({ lateGenerationPost: true });
+  await assert.rejects(submitOne(page, item, ledger, ledgerPath, 10), /exactly one generation POST/);
+  assert.equal(page.state.clicks, 1);
+  assert.equal(JSON.parse(readFileSync(ledgerPath, 'utf8')).items[item.id].status, 'ambiguous');
+});
+
+test('compares the visible cumulative debit with previously quoted costs before the next Create', async t => {
+  const { directory, manifest } = packageFixture(t);
+  const item = validateManifest(manifest, { baseDirectory: directory }).items[0];
+  const ledgerPath = join(directory, 'ledger.json');
+  const ledger = { items: {} };
+  const creditBaseline = {};
+  const submitWithBalance = async (id, balance, outstanding) => {
+    const page = fakePage();
+    page.locator('button[aria-label^="Credits remaining"]').getAttribute =
+      async () => 'Credits remaining: ' + balance;
+    return submitOne(page, { ...item, id }, ledger, ledgerPath, outstanding, creditBaseline);
+  };
+  await submitWithBalance('first', 100, 30);
+  await submitWithBalance('second', 100, 20); // The first debit has yet to appear.
+  await assert.rejects(submitWithBalance('third', 75, 10), /fell by 25 credits/);
+  const paused = JSON.parse(readFileSync(ledgerPath, 'utf8'));
+  assert.equal(paused.items.second.status, 'confirmed');
+  assert.equal(paused.items.third, undefined);
+  assert.equal(paused.creditBaseline, undefined);
+  assert.equal((await submitWithBalance('third', 80, 10)).status, 'confirmed');
+});
+
 test('CLI resume reports zero new Creates for an already confirmed batch over CDP', t => {
   const { directory, manifest } = packageFixture(t);
   const runnerPath = join(directory, 'runner.mjs');
@@ -319,7 +352,7 @@ test('reconciles uncertain packages only after explicit not-submitted confirmati
   assert.throws(() => reconcileNotSubmitted(ledger, 'missing'), /not present/);
 });
 
-test('reconciliation CLI records an explicit not-submitted outcome without opening a browser', t => {
+test('reconciliation CLI records either verified outcome without opening a browser', t => {
   const { directory, manifest } = packageFixture(t);
   const manifestPath = join(directory, 'batch.json');
   const ledgerPath = join(directory, 'ledger.json');
@@ -331,7 +364,7 @@ test('reconciliation CLI records an explicit not-submitted outcome without openi
       items: validated.items.map(item => item.fingerprint),
     }))
     .digest('hex');
-  atomicWriteJson(ledgerPath, {
+  const uncertainState = {
     version: 1,
     batchId: validated.batchId,
     manifestFingerprint,
@@ -340,26 +373,45 @@ test('reconciliation CLI records an explicit not-submitted outcome without openi
     items: {
       'item-01': { fingerprint: validated.items[0].fingerprint, status: 'ambiguous' },
     },
-  });
+  };
+  atomicWriteJson(ledgerPath, uncertainState);
 
   const runnerPath = fileURLToPath(new URL(
     '../../skills/creative/suno-create/scripts/suno-batch-playwright.mjs',
     import.meta.url,
   ));
-  const result = spawnSync(process.execPath, [
+  const args = [
     runnerPath,
     '--manifest', manifestPath,
-    '--reconcile-not-submitted', 'item-01',
     '--confirm-batch', 'test-batch',
     '--max-items', '1',
     '--max-credits', '10',
     '--ledger', ledgerPath,
+  ];
+  const result = spawnSync(process.execPath, [
+    ...args, '--reconcile-not-submitted', 'item-01',
   ], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /"creates":0/);
   const updated = JSON.parse(readFileSync(ledgerPath, 'utf8'));
   assert.equal(updated.items['item-01'].status, 'failed-before-submit');
   assert.equal(updated.items['item-01'].reconciliation.confirmedByOperator, true);
+
+  atomicWriteJson(ledgerPath, uncertainState);
+  const [first, second] = [
+    '11111111-1111-1111-1111-111111111111',
+    '22222222-2222-2222-2222-222222222222',
+  ];
+  const confirm = [...args, '--reconcile-confirmed', 'item-01', '--clip-id', first];
+  const duplicate = spawnSync(process.execPath, [...confirm, '--clip-id', first], { encoding: 'utf8' });
+  assert.notEqual(duplicate.status, 0);
+  assert.equal(JSON.parse(readFileSync(ledgerPath, 'utf8')).items['item-01'].status, 'ambiguous');
+  const confirmed = spawnSync(process.execPath, [...confirm, '--clip-id', second], { encoding: 'utf8' });
+  assert.equal(confirmed.status, 0, confirmed.stderr);
+  assert.equal(JSON.parse(confirmed.stdout).creates, 0);
+  const entry = JSON.parse(readFileSync(ledgerPath, 'utf8')).items['item-01'];
+  assert.equal(entry.status, 'confirmed');
+  assert.deepEqual(entry.clipIds, [first, second]);
 });
 
 test('reads button state only from a known semantic or visual selection marker', () => {

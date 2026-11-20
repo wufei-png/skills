@@ -1,7 +1,7 @@
 import { runInNewContext } from 'node:vm';
 
 // Evaluate serialized callbacks in a separate realm, as Playwright does.
-export function fakePage({ missingSliderAttribute, missingSliderLabel = 'Weirdness', clickError = false, responseError = false, onCreate, initialVocalGender = 'Female', initialDurationMode = 'Custom' } = {}) {
+export function fakePage({ missingSliderAttribute, missingSliderLabel = 'Weirdness', clickError = false, responseError = false, onCreate, initialVocalGender = 'Female', initialDurationMode = 'Custom', lateGenerationPost = false } = {}) {
   const controls = new Map();
   const listeners = new Map();
   const clipIds = ['11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222'];
@@ -58,6 +58,10 @@ export function fakePage({ missingSliderAttribute, missingSliderLabel = 'Weirdne
       },
       async evaluate(fn, arg) { return runInNewContext('(' + fn.toString() + ')(element, arg)', { element, arg }); },
       async evaluateAll(fn, arg) {
+        if (lateGenerationPost && state.clicks && key === 'a[href^="/song/"]') {
+          lateGenerationPost = false;
+          listeners.get('request')?.({ url: () => 'https://studio-api.suno.ai/api/generate/v2-web/', method: () => 'POST' });
+        }
         const ids = state.clicks ? [existingId, ...clipIds] : [existingId];
         const elements = ids.map(id => ({ getAttribute: () => '/song/' + id }));
         return runInNewContext('(' + fn.toString() + ')(elements, arg)', { elements, arg });

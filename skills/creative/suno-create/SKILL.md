@@ -34,7 +34,7 @@ If a path proves incapable before Create, select the next capable path. If Creat
 1. Identify the in-scope Create page by its current URL and visible account context. Inspect account readiness, cost, model options, and controls before changing the form. For direct browser interaction, use visible semantic labels or fresh element references after navigation or re-rendering. Dismiss only overlays that block the task.
 2. Normalize slider values only from observed transport schemas. Do not assume that UI and CLI scales match.
 3. For every package, set and read back title, prompt or lyrics, style, exclusions, instrumental or vocal choice, model, duration, vocal gender, official Max Mode, and each requested influence or reference control.
-4. Immediately before each final action, re-check the authorization and expected spend.
+4. Before each Create, check the package's verified cost against the remaining authorization.
 5. Trigger Create exactly once per authorized package, serially.
 6. Capture the submission state, returned candidate IDs or URLs, observed spend when available, and enough package identity to reconcile every attempt.
 
@@ -48,7 +48,7 @@ Classify the attempt as `confirmed`, `failed-before-submit`, or `ambiguous`.
 - `failed-before-submit`: a failure known to precede Create allows a different capable transport while the original authorization remains unspent.
 - `ambiguous`: stop. Check the Suno library, account history, browser result, and ledger for a matching title, timestamp, or package fingerprint. Never resubmit until non-submission is confirmed.
 
-For a CLI ledger in `armed` or `ambiguous`, use the [runner's recovery procedure](references/browser.md#playwright-runner) only after confirming that no matching generation was created. If the result remains uncertain, ask the user.
+Once you verify the outcome of an unresolved CLI ledger item, use the [runner's recovery procedure](references/browser.md#playwright-runner).
 
 CAPTCHA, expired login, inaccessible controls, unexpected price changes, or inability to verify the final action require user intervention. Do not loop through retries.
 

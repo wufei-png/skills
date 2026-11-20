@@ -825,22 +825,34 @@ function loadLedger(path, batchId, batchFingerprint, items, resume, grants, allo
   return ledger;
 }
 
-export function reconcileNotSubmitted(ledger, packageId) {
+function reconcileSubmission(ledger, packageId, clipIds) {
   const entry = ledger.items?.[packageId];
   if (!entry) throw new Error('Package id is not present in the ledger.');
   if (!['armed', 'ambiguous'].includes(entry.status)) {
-    throw new Error('Only an armed or ambiguous package can be reconciled as not submitted.');
+    throw new Error('Only an armed or ambiguous package can be reconciled.');
+  }
+  if (clipIds && (clipIds.length !== 2 || clipIds.some(id => !UUID.test(id)) ||
+      new Set(clipIds.map(id => id.toLowerCase())).size !== 2)) {
+    throw new Error('--reconcile-confirmed requires two distinct clip IDs passed with --clip-id.');
   }
   ledger.items[packageId] = {
     ...entry,
-    status: 'failed-before-submit',
+    status: clipIds ? 'confirmed' : 'failed-before-submit',
     reconciledAt: new Date().toISOString(),
     reconciliation: {
-      outcome: 'not-submitted',
+      outcome: clipIds ? 'confirmed' : 'not-submitted',
       confirmedByOperator: true,
     },
   };
+  if (clipIds) {
+    ledger.items[packageId].clipIds = clipIds;
+    ledger.items[packageId].links = clipIds.map(id => 'https://suno.com/song/' + id);
+  }
   return ledger.items[packageId];
+}
+
+export function reconcileNotSubmitted(ledger, packageId) {
+  return reconcileSubmission(ledger, packageId);
 }
 
 function acquireLedgerLock(path) {
@@ -896,7 +908,6 @@ async function findAuthenticatedContext(browser) {
 
 async function waitForSubmittedPair(page, requestCount, response, baselineIds, timeoutMs) {
   await page.waitForTimeout(750);
-  if (requestCount() !== 1) throw new Error('Expected exactly one generation POST; outcome is ambiguous.');
   if (!response.ok()) throw new Error('Generation POST returned HTTP ' + response.status() + '; outcome is ambiguous.');
   const body = await response.json();
   const clips = Array.isArray(body?.clips) ? body.clips : [];
@@ -910,17 +921,14 @@ async function waitForSubmittedPair(page, requestCount, response, baselineIds, t
     const visibleIds = await page.locator('a[href^="/song/"]').evaluateAll(links =>
       links.map(link => (link.getAttribute('href') || '').split('/').pop()),
     );
+    if (requestCount() !== 1) throw new Error('Expected exactly one generation POST; outcome is ambiguous.');
     if (clipIds.every(id => visibleIds.includes(id))) return clipIds;
     await page.waitForTimeout(500);
   }
   throw new Error('Provider returned new clip ids, but the Create page did not show both; outcome is ambiguous.');
 }
 
-export async function submitOne(page, item, ledger, ledgerPath, remainingCredits) {
-  const credits = await readCreditsRemaining(page);
-  if (credits < remainingCredits) {
-    throw new Error('Remaining Suno credits are below the outstanding batch estimate.');
-  }
+export async function submitOne(page, item, ledger, ledgerPath, remainingCredits, creditBaseline = {}) {
   const baselineIds = new Set((await page.locator('a[href^="/song/"]').evaluateAll(links =>
     links.map(link => (link.getAttribute('href') || '').split('/').pop()),
   )).filter(id => UUID.test(id)));
@@ -928,6 +936,18 @@ export async function submitOne(page, item, ledger, ledgerPath, remainingCredits
   const finalVerified = await readPreSubmitState(page, item);
   if (JSON.stringify(verified) !== JSON.stringify(finalVerified)) {
     throw new Error('Form changed after read-back; no Create was submitted.');
+  }
+  const credits = await readCreditsRemaining(page);
+  if (credits < remainingCredits) {
+    throw new Error('Remaining Suno credits are below the outstanding batch estimate.');
+  }
+  creditBaseline.balance ??= credits;
+  creditBaseline.outstanding ??= remainingCredits;
+  const visibleSpend = creditBaseline.balance - credits;
+  const expectedSpend = creditBaseline.outstanding - remainingCredits;
+  if (visibleSpend > expectedSpend) {
+    throw new Error('Suno balance fell by ' + visibleSpend + ' credits. Expected at most ' +
+      expectedSpend + ' for this batch so far. Check the account before another Create.');
   }
   ledger.items[item.id] = {
     ...ledger.items[item.id],
@@ -999,6 +1019,8 @@ function cliOptions() {
       'max-credits': { type: 'string' },
       'confirm-batch': { type: 'string' },
       'reconcile-not-submitted': { type: 'string' },
+      'reconcile-confirmed': { type: 'string' },
+      'clip-id': { type: 'string', multiple: true },
     },
     allowPositionals: false,
     strict: true,
@@ -1025,6 +1047,8 @@ function usage() {
     '  node suno-batch-playwright.mjs --manifest batch.json --submit --resume --confirm-batch batch-id --max-items 8 --max-credits 80 --ledger .suno-create/batches/run.json',
     'After checking Suno Library/history, mark an uncertain package not submitted so it can resume:',
     '  node suno-batch-playwright.mjs --manifest batch.json --reconcile-not-submitted package-id --confirm-batch batch-id --max-items 8 --max-credits 80 --ledger .suno-create/batches/run.json',
+    'For a matching pair found in Suno Library/history, use --reconcile-confirmed package-id',
+    'with two --clip-id values and the same manifest, batch confirmation, limits, and ledger.',
     '',
     'Browser runs use an isolated persistent Chrome profile at ~/.suno-batch-playwright/chrome-profile by default.',
     'Sign in once with --setup-profile. The default profile is separate from your regular Chrome profile; no login data is copied.',
@@ -1039,9 +1063,19 @@ async function main() {
     process.stdout.write(usage() + '\n');
     return;
   }
+  const reconcileConfirmed = options['reconcile-confirmed'];
+  const reconcileNotCreated = options['reconcile-not-submitted'];
+  const reconcileId = reconcileConfirmed ?? reconcileNotCreated;
+  const reconciling = reconcileId != null;
+  if (reconcileConfirmed != null && reconcileNotCreated != null) {
+    throw new Error('Choose one reconciliation outcome.');
+  }
+  if (options['clip-id'] && reconcileConfirmed == null) {
+    throw new Error('--clip-id applies only with --reconcile-confirmed.');
+  }
   if (options['setup-profile']) {
     if (options.manifest || options.submit || options['prepare-only'] || options.resume || options.ledger ||
-        options['confirm-batch'] || options['max-items'] || options['max-credits'] || options['reconcile-not-submitted'] || options['cdp-url']) {
+        options['confirm-batch'] || options['max-items'] || options['max-credits'] || reconciling || options['cdp-url']) {
       throw new Error('--setup-profile runs alone; do not combine it with manifest, submission, reconciliation, or CDP options.');
     }
     const { chromium } = playwrightRequire();
@@ -1053,10 +1087,8 @@ async function main() {
     throw new Error('Choose either --cdp-url or --profile-dir; they select different browser sessions.');
   }
   if (options.submit && options['prepare-only']) throw new Error('Choose either --submit or --prepare-only.');
-  const reconcileId = options['reconcile-not-submitted'];
-  const reconciling = reconcileId != null;
   if (reconciling && (options.submit || options['prepare-only'] || options.resume)) {
-    throw new Error('--reconcile-not-submitted runs alone; do not combine it with --submit, --prepare-only, or --resume.');
+    throw new Error('Reconciliation runs separately from --submit, --prepare-only, and --resume.');
   }
   if (options.resume && !options.submit) throw new Error('--resume applies only with --submit.');
   const manifestPath = resolve(options.manifest);
@@ -1118,12 +1150,15 @@ async function main() {
   let ambiguous = false;
   try {
     if (reconciling) {
-      const entry = reconcileNotSubmitted(ledger, reconcileId);
+      const entry = reconcileSubmission(
+        ledger, reconcileId, reconcileConfirmed == null ? undefined : options['clip-id'] ?? [],
+      );
       atomicWriteJson(ledgerPath, ledger);
       process.stdout.write(JSON.stringify({
         batchId: manifest.batchId,
         id: reconcileId,
         status: entry.status,
+        clipIds: entry.clipIds,
         reconciliation: entry.reconciliation,
         creates: 0,
       }) + '\n');
@@ -1170,6 +1205,7 @@ async function main() {
     }
 
     const results = [];
+    const creditBaseline = {};
     let creates = 0;
     for (const item of manifest.items) {
       const prior = ledger.items[item.id];
@@ -1188,7 +1224,7 @@ async function main() {
         await page.goto(SUNO_CREATE, { waitUntil: 'domcontentloaded' });
         await waitForCreateForm(page, item.mode);
         await waitForCredits(page);
-        results.push(await submitOne(page, item, ledger, ledgerPath, outstanding));
+        results.push(await submitOne(page, item, ledger, ledgerPath, outstanding, creditBaseline));
         creates++;
       } catch (error) {
         ambiguous = ledger.items[item.id].status === 'ambiguous';

@@ -10,9 +10,11 @@ The runner supports vocal packages with simple or custom text, model, duration, 
 
 The runner verifies vocal state from the official Instrumental control when present, or from nonempty lyrics in Advanced mode. Set `durationMode` to `Auto` with `durationSeconds` 0, or to `Custom` with positive whole seconds. When `durationMode` is omitted, 0 means Auto and positive seconds mean Custom. Custom duration is verified through the official input and slider; Auto is verified through its selected button and the absence of Custom duration controls. Vocal Gender uses the Male/Female buttons and Max Mode uses the official Off/On buttons. The runner refuses to proceed if any selected state is unavailable or ambiguous. A prompt string such as `[Is_MAX_MODE: MAX]` is not a Max Mode setting. The currently observed selection classes are used only as a fallback when ARIA state is absent; if Suno changes those classes, the runner stops until its readback is updated and revalidated.
 
-For an authorized `--submit`, pass an exact `--confirm-batch` value, explicit `--max-items` and `--max-credits`, and a `--ledger` path. The runner re-reads package text and sliders, writes a private, synced ledger before each Create, runs one package at a time, checks for one generation request and two new clip IDs, and records uncertain outcomes as `ambiguous`. Its output contains statuses and clip IDs. `estimatedCredits` and `--max-credits` are declared estimates, so verify the current cost for each package before submission.
+Before `--submit`, verify the current price for each package and record it in `estimatedCredits`. Pass the authorized `--max-items` and `--max-credits`, the exact `--confirm-batch` value, and a `--ledger` path. The runner re-reads package fields and writes a private, synced ledger before each Create. It confirms a single generation request and two new clip IDs, or records an uncertain outcome as `ambiguous`.
 
-If a ledger item is `armed` or `ambiguous`, first check Suno Library/history for a matching result. Only after confirming that no generation was created, run:
+Before the next Create, the runner pauses if the balance drop since its first reading exceeds the quoted cost of packages confirmed during the run. A delayed debit may appear after another Create. Resolve unexpected drops before resuming.
+
+If a ledger item is `armed` or `ambiguous`, check Suno Library or account history against the package and attempt. When you find its pair, use `--reconcile-confirmed package-id --clip-id ID1 --clip-id ID2` with the same manifest, batch ID, limits, and ledger. When you verify that nothing was submitted, run the following command.
 
 ```bash
 node /path/to/suno-create/scripts/suno-batch-playwright.mjs \
@@ -24,7 +26,7 @@ node /path/to/suno-create/scripts/suno-batch-playwright.mjs \
   --ledger .suno-create/batches/run.json
 ```
 
-Replace `/path/to/suno-create` with the installed skill directory. This records the operator's confirmation; it does not query Suno or prove absence. Use the same batch id and limits as the ledger. Then `--submit --resume` can continue. If the result is still uncertain or a generation exists, do not use this transition.
+The commands record the outcome you verified. Once uncertain items are resolved, `--submit --resume` skips confirmed packages.
 
 ## Computer Use fallback
 
