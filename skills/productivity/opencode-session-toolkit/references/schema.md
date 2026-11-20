@@ -2,12 +2,14 @@
 
 Treat the database itself as authoritative. OpenCode adds tables and columns over time, and the CLI detects capabilities at runtime instead of assuming one migration snapshot.
 
+The helper supports the legacy OpenCode schema. When V2 tables are present, it warns that results cover only the legacy tables.
+
 ## Core requirements
 
 | Command | Required structures |
 | --- | --- |
 | `list` and title search | `session`: `id`, `project_id`, `directory`, `title`, `time_created`, `time_updated` |
-| message search | the `session` fields above plus `message`: `id`, `session_id`, `time_created`, `data` |
+| message search | the `session` fields above plus `message`: `id`, `session_id`, `time_created`, `data`. Message text also uses `part.session_id` and `part.data` when available. |
 | `show` and `export` | the structures above plus `part`: `id`, `message_id`, `session_id`, `time_created`, `data` |
 
 The `project` table and fields such as `session.version`, summary counts, and archive time are optional enhancements. Their absence must not break commands that do not need them.

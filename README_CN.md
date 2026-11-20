@@ -94,7 +94,7 @@ npx skills@latest add wufei-png/skills \
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — 只读查找本地 Codex 会话，并生成 CLI 优先的恢复步骤。
 - [`codex-native-scheduler`](./skills/productivity/codex-native-scheduler/SKILL.md) — 在 macOS 或 Linux 定时向 Codex 会话发送提示词，会话可按条件自行暂停任务。也管理独立的 Codex CLI 后台任务。
 - [`codex-thread-report`](./skills/productivity/codex-thread-report/SKILL.md) — 为现有 Codex 会话整理相关结论，并在明确要求时发送。
-- [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — 安全检查、搜索、诊断及导出本地 OpenCode SQLite 会话。
+- [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — 检查、搜索、诊断及导出旧版 OpenCode SQLite 结构中的本地会话。
 - [`sanitize-artifacts`](./skills/productivity/sanitize-artifacts/SKILL.md) — 清除已选交付物中的提示词、对话和生产过程残留，同时保留受众需要的实质信息。
 - [`skill-manual-only`](./skills/productivity/skill-manual-only/SKILL.md) — 设置并核验指定 skill 的宿主手动调用配置，报告冲突，并在需要时补齐 OpenAI 插件界面字段。
 

@@ -16,7 +16,7 @@ Table output is for people and JSON is stable for tools. User errors exit with c
 
 `show SESSION_ID` includes text and short tool summaries. It omits reasoning, complete tool inputs and outputs, raw message JSON, and other non-display parts unless `--include-sensitive` is explicit.
 
-`search TEXT` reports matching sessions without surrounding message snippets. Use `show` on a selected session to avoid exposing unrelated payloads.
+`search TEXT` reports matching sessions without surrounding message snippets. Message search includes message metadata and displayable text parts when available.
 
 ## Export
 

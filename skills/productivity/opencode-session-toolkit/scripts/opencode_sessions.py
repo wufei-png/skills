@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 CORE_TABLES = ("session", "message", "part", "project")
+V2_NOTICE = "OpenCode V2 tables detected. Results cover the legacy session schema."
 REQUIRED_COLUMNS = {
     "session": {
         "id",
@@ -62,6 +63,7 @@ class UserError(RuntimeError):
 class Capabilities:
     tables: dict[str, set[str]]
     indexes: dict[str, list[str]]
+    has_v2_sessions: bool = False
 
     def has_table(self, table_name: str) -> bool:
         return table_name in self.tables
@@ -306,6 +308,7 @@ def connect_read_only(db_path: Path) -> sqlite3.Connection:
     connection.create_function(
         "casefold", 1, lambda value: value.casefold() if value is not None else None
     )
+    connection.create_function("text_part", 1, text_part)
     connection.execute("PRAGMA query_only = ON")
     try:
         connection.execute("PRAGMA trusted_schema = OFF")
@@ -345,7 +348,9 @@ def inspect_capabilities(connection: sqlite3.Connection) -> Capabilities:
             str(row["name"])
             for row in connection.execute(f"PRAGMA index_list({quoted})")
         ]
-    return Capabilities(tables=tables, indexes=indexes)
+    return Capabilities(
+        tables=tables, indexes=indexes, has_v2_sessions="session_v2" in known_tables
+    )
 
 
 def require_capability(capabilities: Capabilities, table_name: str) -> None:
@@ -554,6 +559,13 @@ def safe_json_loads(raw: str) -> dict[str, Any] | None:
     except (json.JSONDecodeError, TypeError):
         return None
     return value if isinstance(value, dict) else {"value": value}
+
+
+def text_part(raw: str) -> str | None:
+    payload = safe_json_loads(raw)
+    if payload and payload.get("type") == "text":
+        return string_or_none(payload.get("text"))
+    return None
 
 
 def load_transcript(
@@ -1067,6 +1079,8 @@ def handle_doctor(
         "commands": commands,
         "read_only": True,
     }
+    if capabilities.has_v2_sessions:
+        data["warnings"] = [V2_NOTICE]
     integrity_failure: str | None = None
     if args.integrity:
         results = [str(row[0]) for row in connection.execute("PRAGMA integrity_check")]
@@ -1176,6 +1190,12 @@ def handle_search(
             "EXISTS (SELECT 1 FROM message AS sm WHERE sm.session_id = s.id AND instr(lower(sm.data), lower(?)) > 0)"
         )
         parameters.append(args.query)
+        if capabilities.has_columns("part", {"session_id", "data"}):
+            clauses.append(
+                "EXISTS (SELECT 1 FROM part AS sp WHERE sp.session_id = s.id "
+                "AND instr(casefold(text_part(sp.data)), ?) > 0)"
+            )
+            parameters.append(args.query.casefold())
     sessions = load_sessions(
         connection,
         capabilities,
@@ -1369,6 +1389,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         begin_read_snapshot(connection)
         try:
             capabilities = inspect_capabilities(connection)
+            if capabilities.has_v2_sessions and (
+                args.command != "doctor" or args.format != "json"
+            ):
+                print(f"Warning: {V2_NOTICE}", file=sys.stderr)
             handlers = {
                 "doctor": handle_doctor,
                 "list": handle_list,

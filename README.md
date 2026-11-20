@@ -94,7 +94,7 @@ The `tests/**/cases.json` files are manual evaluation protocols. CI checks their
 - [`codex-session-recovery`](./skills/productivity/codex-session-recovery/SKILL.md) — Find local Codex sessions read-only and produce CLI-first recovery steps.
 - [`codex-native-scheduler`](./skills/productivity/codex-native-scheduler/SKILL.md) — Schedule prompts for a Codex chat on macOS or Linux, with optional self-pause. Also manages unattended Codex CLI jobs.
 - [`codex-thread-report`](./skills/productivity/codex-thread-report/SKILL.md) — Summarize relevant findings for an existing Codex thread and send them on explicit request.
-- [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — Inspect, search, diagnose, and export local OpenCode SQLite sessions safely.
+- [`opencode-session-toolkit`](./skills/productivity/opencode-session-toolkit/SKILL.md) — Inspect, search, diagnose, and export local sessions in the legacy OpenCode SQLite schema.
 - [`sanitize-artifacts`](./skills/productivity/sanitize-artifacts/SKILL.md) — Remove prompt, conversation, and production residue from selected deliverables without hiding material audience information.
 - [`skill-manual-only`](./skills/productivity/skill-manual-only/SKILL.md) — Set and verify host-specific manual-only metadata, report conflicts, and fill required OpenAI plugin interface fields when needed.
 

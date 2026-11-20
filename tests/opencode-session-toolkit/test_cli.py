@@ -293,6 +293,42 @@ class CliTest(unittest.TestCase):
                     [row["id"] for row in json.loads(result.stdout)], expected_ids
                 )
 
+    def test_message_search_matches_only_text_parts_and_metadata(self) -> None:
+        with closing(sqlite3.connect(self.db_path)) as connection, connection:
+            connection.execute(
+                "UPDATE part SET data = ? WHERE id = 'prt_a1'",
+                (json.dumps({"type": "text", "text": "Only Straße"}),),
+            )
+        for query, ids in (
+            ("ONLY STRASSE", ["ses_percent"]),
+            ("test-model", ["ses_percent"]),
+            ("SECRET_REASONING", []),
+        ):
+            with self.subTest(query=query):
+                result = self.run_cli(
+                    "search",
+                    query,
+                    "--scope",
+                    "messages",
+                    "--db-path",
+                    str(self.db_path),
+                    "--format",
+                    "json",
+                )
+                self.assertEqual(
+                    [entry["id"] for entry in json.loads(result.stdout)], ids
+                )
+
+    def test_doctor_reports_legacy_scope_when_v2_tables_are_present(self) -> None:
+        with closing(sqlite3.connect(self.db_path)) as connection, connection:
+            connection.execute("CREATE TABLE session_v2 (id TEXT)")
+        result = self.run_cli(
+            "doctor", "--db-path", str(self.db_path), "--format", "json"
+        )
+        report = json.loads(result.stdout)
+        self.assertTrue(report["commands"]["list"])
+        self.assertIn("legacy session schema", report["warnings"][0])
+
     def test_same_timestamp_messages_are_not_duplicated(self) -> None:
         result = self.run_cli(
             "show",

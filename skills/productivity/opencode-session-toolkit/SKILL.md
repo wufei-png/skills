@@ -12,7 +12,7 @@ Run the bundled read-only CLI from this skill's directory:
 ./scripts/opencode_sessions.py --help
 ```
 
-Run `doctor` before the first query or after an OpenCode upgrade. Check `<command> --help` for unfamiliar options and prefer JSON when another tool consumes stdout.
+The CLI queries the legacy OpenCode session schema. Run `doctor` before the first query or after an OpenCode upgrade. Check `<command> --help` for unfamiliar options and prefer JSON when another tool consumes stdout.
 
 | Need                          | Command           |
 | ----------------------------- | ----------------- |
