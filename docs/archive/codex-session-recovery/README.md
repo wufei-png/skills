@@ -1,6 +1,6 @@
 # codex-session-recovery
 
-![codex-session-recovery cover](docs/assets/codex-session-recovery-cover.png)
+![codex-session-recovery cover](assets/codex-session-recovery-cover.png)
 
 Reusable Codex skill for finding local Codex session history and producing safe, CLI-first recovery instructions.
 
