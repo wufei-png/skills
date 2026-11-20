@@ -20,8 +20,8 @@ Improve comments with the smallest durable change. Edit comments and docstrings 
 
 Use this order:
 
-1. **Remove** comments that are stale, misleading, redundant, commented-out code, author or change-history notes, abandoned alternatives, untracked plans, or text that only lists current callers or describes another module's internals.
-2. **Update** comments that contain useful context but no longer match current behavior.
+1. **Update** useful rationale or constraints when details have gone stale.
+2. **Remove** redundant or stale comments without useful context, commented-out code, author or change-history notes, abandoned alternatives, untracked plans, and text that only lists current callers or describes another module's internals.
 3. **Rewrite** useful comments in short, direct language. Remove prompt or review history, before-state narration, persuasion, metaphors, and vague AI-style wording. Keep precise domain terms.
 4. **Add** comments only for hidden intent: business rules, non-obvious constraints, edge cases, performance or security tradeoffs, workaround reasons, lifecycle requirements, surprising return values, or public API contracts.
 5. **Recommend a non-comment fix** when a name, test, type, function boundary, ADR, or design document should carry the knowledge. Leave the comment in place until that knowledge has a durable home.
@@ -33,7 +33,6 @@ Use this order:
 - Keep public or exported API documentation complete enough for callers. Internal comments should add context that names and types cannot carry.
 - Preserve copyright and license notices, tool directives, compiler or formatter controls, coverage pragmas, doctest syntax, generated-code markers, and genuine security warnings exactly unless the user explicitly asks to change that item and the project permits it.
 - Put one design reason at the place that owns the decision. When code is intentionally duplicated, keep each copy understandable on its own.
-- Preserve accurate institutional knowledge. Do not delete a useful reason merely because its wording needs work.
 - Do not use word blacklists, comment counts, or density targets as automatic edit rules. Judge words in context and each comment by its value.
 - Keep TODO/FIXME/HACK comments only when they name a concrete action and give a blocker, issue or specification reference, owner, or removal condition.
 
