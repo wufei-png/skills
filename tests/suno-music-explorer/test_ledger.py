@@ -202,6 +202,17 @@ class LedgerStateTest(unittest.TestCase):
             unchanged = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(1, unchanged["spent"]["creates"])
 
+            for field in ("creates", "credits"):
+                with self.subTest(field=field):
+                    record_args.creates_spent = 1
+                    record_args.credits_spent = 10
+                    setattr(record_args, f"{field}_spent", 0)
+                    with self.assertRaisesRegex(
+                        ledger.LedgerError, rf"spent\.{field} cannot decrease"
+                    ):
+                        ledger.command_record(record_args)
+                    self.assertEqual(unchanged, ledger.load(path))
+
     def test_sensitive_fields_are_rejected(self) -> None:
         data = {
             "schema_version": 1,

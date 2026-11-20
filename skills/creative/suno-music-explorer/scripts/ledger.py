@@ -260,10 +260,16 @@ def command_record(args: argparse.Namespace) -> dict[str, Any]:
         raise LedgerError("event-json must include a non-empty summary")
     ensure_no_sensitive_keys(event)
 
-    if args.creates_spent is not None:
-        data["spent"]["creates"] = args.creates_spent
-    if args.credits_spent is not None:
-        data["spent"]["credits"] = args.credits_spent
+    for field, total in (
+        ("creates", args.creates_spent),
+        ("credits", args.credits_spent),
+    ):
+        if total is None:
+            continue
+        previous = data["spent"].get(field)
+        if previous is not None and total < previous:
+            raise LedgerError(f"spent.{field} cannot decrease")
+        data["spent"][field] = total
     if args.phase is not None:
         data["phase"] = args.phase
     if args.decision is not None:

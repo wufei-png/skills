@@ -52,7 +52,7 @@ python3 <skill-directory>/scripts/ledger.py record \
   --next-action "audition identity A candidates"
 ```
 
-Totals are absolute, not increments. Validate before resuming:
+Use one writer per ledger. Pass non-decreasing cumulative totals and validate the ledger before resuming.
 
 ```bash
 python3 <skill-directory>/scripts/ledger.py validate \
