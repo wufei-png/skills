@@ -134,6 +134,22 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(result["status"], "failed")
             self.assertEqual(result["attempts"], 1)
 
+    def test_stop_during_retry_backoff_does_not_launch_again(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            counter = root / "counter"
+            metadata, store, run, run_dir = self.prepare(
+                root, mode="transient", counter=counter
+            )
+            with mock.patch(
+                "codex_scheduler.runner.time.sleep",
+                side_effect=lambda _: stop_run(store, run["id"]),
+            ):
+                result = execute_run(store, run, run_dir, metadata, resume_session=None)
+            self.assertEqual(result["status"], "cancelled")
+            self.assertEqual(result["attempts"], 1)
+            self.assertEqual(counter.read_text(), "1")
+
     def test_manual_retry_resumes_captured_session(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

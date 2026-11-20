@@ -184,6 +184,10 @@ def execute_run(
     error: str | None = None
     session_id = resume_session
     for attempt in range(1, 4):
+        if _mark_cancel_requested(run_dir):
+            terminal_status = "cancelled"
+            error = "run was stopped"
+            break
         run["attempts"] = attempt
         attempt_dir = run_dir / "attempts" / str(attempt)
         attempt_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -221,6 +225,8 @@ def execute_run(
                 )
                 run["codex_pid"] = process.pid
                 store.save_run(run)
+                if _mark_cancel_requested(run_dir):
+                    terminate_process_tree(process.pid)
                 try:
                     process.communicate(prompt, timeout=timeout)
                 except subprocess.TimeoutExpired:
@@ -697,6 +703,7 @@ def stop_run(store: Store, reference: str) -> dict[str, Any]:
     if run.get("status") not in {"starting", "running"}:
         raise SchedulerError(f"run is not active: {run['status']}")
     atomic_write_text(run_dir / "cancel.requested", f"{iso()}\n")
+    run = read_json(run_dir / "run.json")
     codex_pid = run.get("codex_pid")
     if codex_pid and process_alive(codex_pid):
         terminate_process_tree(codex_pid)

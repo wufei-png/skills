@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from support import SCRIPTS  # noqa: F401
+from support import job, store_with_job
 
 # isort: split
-from codex_scheduler.cli import parser
+from codex_scheduler.cli import dispatch, parser
 from codex_scheduler.errors import SchedulerError
 from codex_scheduler.jobs import create_job, update_job
 from codex_scheduler.runner import _codex_arguments
@@ -16,6 +16,42 @@ from codex_scheduler.storage import Store
 
 
 class JobCreationTests(unittest.TestCase):
+    def test_purge_requires_owned_state_before_deleting(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "codex-native-scheduler"
+            root.mkdir()
+            document = root / "notes.txt"
+            document.write_text("unrelated")
+            args = parser().parse_args(["--state-dir", str(root), "purge", "--yes"])
+            with self.assertRaisesRegex(SchedulerError, "unrecognized state directory"):
+                dispatch(args)
+            self.assertEqual(list(root.iterdir()), [document])
+
+            Store(root).initialize()
+            with self.assertRaisesRegex(SchedulerError, "unrecognized state directory"):
+                dispatch(args)
+            self.assertEqual(document.read_text(), "unrelated")
+            document.unlink()
+            dispatch(args)
+            self.assertFalse(root.exists())
+
+    def test_decommission_does_not_mark_a_still_registered_job(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            metadata = job(root)
+            store = store_with_job(root, metadata)
+            args = parser().parse_args(["--state-dir", str(store.root), "decommission"])
+            with mock.patch("codex_scheduler.jobs.backend_for") as backend_for:
+                backend = backend_for.return_value
+                backend.status.return_value = {"registered": True}
+                with self.assertRaisesRegex(
+                    SchedulerError, "native registration remains"
+                ):
+                    dispatch(args)
+                self.assertEqual(store.load_job(metadata["id"])["status"], "active")
+                backend.status.return_value = {"registered": False}
+                self.assertEqual(dispatch(args)["decommissioned"], [metadata["id"]])
+
     def test_create_parser_accepts_existing_session_id(self) -> None:
         args = parser().parse_args(
             [

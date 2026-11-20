@@ -594,8 +594,13 @@ def dispatch(args: argparse.Namespace) -> Any:
         job = store.resolve_job(args.job)
         with store.short_lock(job["id"]):
             job = store.load_job(job["id"])
-            if job["schedule"]["kind"] != "at" or job["status"] != "active":
-                raise SchedulerError("only an active pending one-shot can be cancelled")
+            if job["schedule"]["kind"] != "at" or job["status"] not in (
+                "active",
+                "cancelled",
+            ):
+                raise SchedulerError(
+                    "cancel requires a pending or already cancelled one-shot"
+                )
             if int(job["stats"].get("scheduled_started", 0)):
                 raise SchedulerError("one-shot has already started")
             job["status"] = "cancelled"
@@ -631,25 +636,33 @@ def dispatch(args: argparse.Namespace) -> Any:
     if command == "purge":
         if not args.yes:
             raise SchedulerError("purge is permanent; repeat with --yes")
+        root = store.root
+        if root.name != "codex-native-scheduler":
+            raise SchedulerError("refusing to purge a nonstandard state directory")
+        if (
+            not store.config_path.is_file()
+            or not store.jobs_root.is_dir()
+            or store.jobs_root.is_symlink()
+            or set(root.iterdir()) != {store.config_path, store.jobs_root}
+        ):
+            raise SchedulerError("refusing to purge an unrecognized state directory")
+        store.load_config()
+        job_paths = sorted(store.jobs_root.iterdir())
+        if any(path.is_symlink() for path in job_paths):
+            raise SchedulerError("refusing to purge a linked job directory")
+        jobs = [store.load_job(path.name) for path in job_paths]
         non_decommissioned = [
-            job["id"] for job in store.list_jobs() if job["status"] != "decommissioned"
+            job["id"] for job in jobs if job["status"] != "decommissioned"
         ]
         if non_decommissioned:
             raise SchedulerError(
                 "decommission all jobs before purge: " + ", ".join(non_decommissioned)
             )
-        active = [
-            run["id"]
-            for job in store.list_jobs()
-            for run in active_runs(store, job["id"])
-        ]
+        active = [run["id"] for job in jobs for run in active_runs(store, job["id"])]
         if active:
             raise SchedulerError("stop active runs before purge: " + ", ".join(active))
-        for job in store.list_jobs():
-            remove_safe_worktrees(job, state_root=store.root)
-        root = store.root
-        if root.name != "codex-native-scheduler":
-            raise SchedulerError("refusing to purge a nonstandard state directory")
+        for job in jobs:
+            remove_safe_worktrees(job, state_root=root)
         shutil.rmtree(root)
         return {"purged": str(root)}
     if command == "doctor":

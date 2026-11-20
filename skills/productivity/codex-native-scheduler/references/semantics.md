@@ -114,13 +114,12 @@ requires decommissioned jobs and refuses unsafe worktree removal.
 ## Platform and security boundaries
 
 State lives under `$CODEX_HOME/codex-native-scheduler`. `--state-dir` and
-`CODEX_SCHEDULER_STATE_DIR` override it for isolated tests, CI, and canaries;
-native registrations retain the absolute selected path. For deletion safety,
-`purge --yes` requires that path's final component to be exactly
-`codex-native-scheduler`. Other overridden roots remain usable for
-non-destructive commands. POSIX directories and files are private; Windows
-protection is best effort. Captured environment values are redacted from
-ordinary output but are not encrypted on disk.
+`CODEX_SCHEDULER_STATE_DIR` override it for isolated tests, CI, and canaries.
+Native registrations retain the absolute selected path. `purge --yes` requires
+an initialized state directory named `codex-native-scheduler` containing only
+scheduler data. POSIX directories and files are private. Windows protection is
+best effort. Captured environment values are redacted from ordinary output but
+are not encrypted on disk.
 
 The scheduler never enables Linux linger and never falls back to cron, at,
 nohup, a resident process, or another backend. It adds no separate permission

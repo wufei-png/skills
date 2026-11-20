@@ -307,7 +307,18 @@ def update_job(
 
 
 def unregister_job(store: Store, job: dict[str, Any]) -> None:
-    backend_for(job["backend"], state_root=store.root).unregister(job)
+    backend = backend_for(job["backend"], state_root=store.root)
+    backend.unregister(job)
+    native = backend.status(job)
+    if native.get("error"):
+        raise SchedulerError(
+            f"could not verify unregistration of {job['id']}: {native['error']}"
+        )
+    if (
+        native.get("registered")
+        and native.get("native", {}).get("ActiveState") != "inactive"
+    ):
+        raise SchedulerError(f"native registration remains for {job['id']}")
 
 
 def set_job_status(

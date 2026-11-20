@@ -49,5 +49,9 @@ jobs:
             --at 2h `
             --codex-path $fakeCodex `
             --prompt "CI registration canary; do not run."
-          python $entry --state-dir $state status windows-ci-canary
+          $status = python $entry --state-dir $state status windows-ci-canary |
+            Out-String | ConvertFrom-Json
+          if (-not $status.native.registered) {
+            throw "Task Scheduler did not register the canary."
+          }
           python $entry --state-dir $state delete windows-ci-canary --yes

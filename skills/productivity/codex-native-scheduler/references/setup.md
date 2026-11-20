@@ -38,3 +38,9 @@ Keep the job's state directory. The default is
 For a custom install, pass `--target PATH` with the real skill directory to
 the shell installer. It backs up that directory by default and supports `--ref REF`.
 The legacy npm launcher also uses the default installed script.
+
+On macOS, user agents can lose their native registration on logout or restart.
+Linux transient timers are lost when their user manager is recreated. Use
+`status JOB` to check `native.registered` separately from the scheduled
+`next_due` time. To re-register an active job, run
+`update JOB --prompt-file /path/to/the/original-prompt.txt`.
