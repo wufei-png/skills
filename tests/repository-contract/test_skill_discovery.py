@@ -181,6 +181,19 @@ class SkillTreeContractTest(TreeFixture):
         errors = inspect_skill_tree(self.skills).errors
         self.assertTrue(any("boolean true" in error for error in errors), errors)
 
+    def test_opencode_autoinvoke_cannot_override_manual_only(self) -> None:
+        self.add_skill(
+            "alpha",
+            entrypoint_text=(
+                "---\nname: alpha\ndescription: Synthetic contract fixture.\n"
+                "disable-model-invocation: true\nmetadata:\n  opencode/autoinvoke: true\n---\n"
+            ),
+        )
+        errors = inspect_skill_tree(self.skills).errors
+        self.assertTrue(
+            any("metadata.opencode/autoinvoke" in error for error in errors), errors
+        )
+
     def test_manual_only_metadata_policy_is_required(self) -> None:
         self.add_skill("alpha", policy=False)
         errors = inspect_skill_tree(self.skills).errors

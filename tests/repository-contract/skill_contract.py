@@ -232,6 +232,14 @@ def inspect_skill_tree(skills_root: Path = SKILLS_ROOT) -> SkillTree:
                             f"boolean true, got "
                             f"{display_boolean(fields['disable-model-invocation'])}"
                         )
+                    host_metadata = fields.get("metadata")
+                    if (
+                        isinstance(host_metadata, dict)
+                        and host_metadata.get("opencode/autoinvoke") is True
+                    ):
+                        errors.append(
+                            f"{relative}: metadata.opencode/autoinvoke enables implicit invocation"
+                        )
             metadata_file = skill_dir / "agents" / "openai.yaml"
             if not metadata_file.is_file():
                 errors.append(f"missing agents/openai.yaml: {relative}")
