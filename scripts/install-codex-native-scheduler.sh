@@ -87,9 +87,11 @@ if [ -e "$target" ]; then
       ;;
     backup)
       stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-      backup="${target}.backup-${stamp}"
-      mv "$target" "$backup"
-      echo "Backed up existing skill to $backup"
+      backup_root="${HOME}/.agents/skill-backups"
+      mkdir -p "$backup_root"
+      backup="$(mktemp -d "$backup_root/codex-native-scheduler-${stamp}-XXXXXX")"
+      mv "$target" "$backup/"
+      echo "Backed up existing skill to $backup/codex-native-scheduler"
       ;;
     overwrite)
       rm -rf "$target"

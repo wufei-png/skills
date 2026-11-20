@@ -36,7 +36,9 @@ Install in place to preserve the absolute `runner_entrypoint` shown by `show JOB
 Keep the job's state directory. The default is
 `$CODEX_HOME/codex-native-scheduler` (`~/.codex/codex-native-scheduler` by default).
 For a custom install, pass `--target PATH` with the real skill directory to
-the shell installer. It backs up that directory by default and supports `--ref REF`.
+the shell installer. It supports `--ref REF` and puts backups under
+`~/.agents/skill-backups/` by default. Move older sibling `.backup-*` directories
+out of the skill search path if they appear as duplicate skills.
 The legacy npm launcher also uses the default installed script.
 
 On macOS, user agents can lose their native registration on logout or restart.
