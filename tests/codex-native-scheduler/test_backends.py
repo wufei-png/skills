@@ -154,6 +154,29 @@ class BackendTests(unittest.TestCase):
             ["Repetition", "StartBoundary", "Enabled"],
         )
 
+    def test_windows_query_distinguishes_absence_from_access_denied(self) -> None:
+        root = Path("C:/state")
+        execute = mock.Mock(
+            side_effect=[
+                completed([], returncode=0),
+                completed([], returncode=0x80070002),
+                completed([], returncode=0x80070005, stderr="ERROR: Access is denied."),
+            ]
+        )
+        backend = TaskSchedulerBackend(state_root=root, execute=execute)
+        metadata = job(root)
+        with mock.patch(
+            "codex_scheduler.backends.windows.shutil.which", return_value="schtasks"
+        ):
+            self.assertTrue(backend.status(metadata)["registered"])
+            missing = backend.status(metadata)
+            self.assertFalse(missing["registered"])
+            self.assertNotIn("error", missing)
+            self.assertEqual(
+                backend.status(metadata)["error"], "ERROR: Access is denied."
+            )
+        self.assertIn("/HRESULT", execute.call_args.args[0])
+
 
 if __name__ == "__main__":
     unittest.main()

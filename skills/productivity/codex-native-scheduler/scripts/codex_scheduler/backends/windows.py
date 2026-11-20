@@ -16,6 +16,7 @@ from ..util import parse_iso, secure_directory
 from .base import Backend
 
 TASK_NS = "http://schemas.microsoft.com/windows/2004/02/mit/task"
+TASK_NOT_FOUND = 0x80070002  # HRESULT for ERROR_FILE_NOT_FOUND
 ET.register_namespace("", TASK_NS)
 WINDOWS_WEEKDAYS = [
     "Monday",
@@ -167,15 +168,21 @@ class TaskSchedulerBackend(Backend):
         candidate = shutil.which("schtasks") or shutil.which("schtasks.exe")
         if not candidate:
             return {"backend": self.name, "registered": False, "error": "unavailable"}
+        task = self.task_name(job)
         result = self.execute(
-            [candidate, "/Query", "/TN", self.task_name(job), "/FO", "LIST"],
+            [candidate, "/Query", "/TN", task, "/FO", "LIST", "/HRESULT"],
             timeout=15,
         )
-        return {
+        code = result.returncode & 0xFFFFFFFF
+        status = {
             "backend": self.name,
-            "registered": result.returncode == 0,
-            "task": self.task_name(job),
+            "registered": code == 0,
+            "task": task,
         }
+        if code not in (0, TASK_NOT_FOUND):
+            detail = (result.stderr or result.stdout).strip()
+            status["error"] = detail or f"schtasks exited with HRESULT 0x{code:08X}"
+        return status
 
     def doctor(self) -> dict[str, Any]:
         candidate = shutil.which("schtasks") or shutil.which("schtasks.exe")
