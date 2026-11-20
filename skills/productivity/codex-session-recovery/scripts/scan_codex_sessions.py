@@ -433,9 +433,7 @@ def parse_jsonl(
                     indexed = record_from_index_line(
                         obj, path, line_number, warnings, fallback_timezone
                     )
-                    if indexed is not None and (
-                        include_archived or not indexed.archived
-                    ):
+                    if indexed is not None:
                         records.append(indexed)
                     continue
 

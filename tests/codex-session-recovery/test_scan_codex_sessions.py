@@ -100,6 +100,28 @@ class ScanCodexSessionsTest(unittest.TestCase):
         self.assertTrue(record["archived"])
         self.assertFalse(record["warnings"])
 
+    def test_restored_session_keeps_title_from_stale_archive_hint(self):
+        archived = next(
+            (self.codex_home / "archived_sessions").glob("*-archived-main.jsonl")
+        )
+        title = "Restored session title"
+        metadata = {
+            "id": "archived-main",
+            "thread_name": title,
+            "path": f"archived_sessions/{archived.name}",
+        }
+        index = self.codex_home / "session_index.jsonl"
+        with index.open("a", encoding="utf-8") as handle:
+            handle.write(f"\n{json.dumps(metadata)}\n")
+        self.assertEqual(self.scan(query=title)["records"], [])
+        archived.rename(self.codex_home / "sessions" / archived.name)
+        restored = self.scan(query=title)["records"]
+        self.assertEqual(
+            [record["thread_id"] for record in restored], ["archived-main"]
+        )
+        self.assertEqual(restored[0]["thread_name"], title)
+        self.assertFalse(restored[0]["archived"])
+
     def test_include_subagents_adds_subagent_sessions(self):
         result = self.scan(include_subagents=True)
         self.assertIn("subagent-main", self.ids(result))
