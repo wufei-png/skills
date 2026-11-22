@@ -179,17 +179,21 @@ class SkillRepositoryContractTest(unittest.TestCase):
                 for phrase in required_phrases:
                     self.assertIn(phrase, text)
 
-    def test_paired_variants_keep_their_shared_contracts(self) -> None:
-        pairs = {
+    def test_variants_keep_their_shared_contracts(self) -> None:
+        groups = {
             (
                 "productivity/grilling",
                 "productivity/review-gated-grilling",
+                "productivity/consensus-gated-grilling",
             ): (
-                "Interview me relentlessly",
-                "decision tree in dependency order",
-                "per-turn maximum as a ceiling",
-                "wait for feedback",
-                "explain which scenarios favor each option and let the user choose",
+                "Work through the decision tree in dependency order.",
+                "Batch closely related questions whose prerequisites are settled "
+                "and whose answers do not depend on one another. "
+                "Ask one ready question if no batch fits. "
+                "Respect any per-turn limit the user sets. Wait for answers before "
+                "choosing the next round.",
+                "Explain when each viable option fits. Recommend one when established "
+                "priorities support it. Otherwise, let the user choose.",
                 "Do not modify code before approval.",
             ),
             (
@@ -210,13 +214,13 @@ class SkillRepositoryContractTest(unittest.TestCase):
                 "still awaiting review.",
             ),
         }
-        for relative_pair, required_phrases in pairs.items():
+        for group, required_phrases in groups.items():
             texts = [
                 (SKILLS_ROOT / relative / "SKILL.md").read_text(encoding="utf-8")
-                for relative in relative_pair
+                for relative in group
             ]
             for phrase in required_phrases:
-                with self.subTest(pair=relative_pair, phrase=phrase):
+                with self.subTest(group=group, phrase=phrase):
                     for text in texts:
                         self.assertIn(phrase, text)
 
@@ -240,15 +244,12 @@ class SkillRepositoryContractTest(unittest.TestCase):
     def test_consensus_variants_preserve_base_contracts(self) -> None:
         required_by_skill = {
             "productivity/consensus-gated-grilling": (
-                "decision tree in dependency order",
                 "available context or tools",
-                "per-turn maximum as a ceiling",
                 "with the conversation context",
                 "or the positive number the user requested",
                 "distinct, non-leading perspectives",
                 "Never silently self-review or reduce their number.",
                 "when relevant, implementation authorization",
-                "Do not modify code before approval.",
             ),
             "engineering/consensus-change-review": (
                 "without rushing a healthy reviewer",

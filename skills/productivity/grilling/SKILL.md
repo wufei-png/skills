@@ -4,11 +4,11 @@ description: Resolve a plan, decision, or idea through dependency-ordered questi
 disable-model-invocation: true
 ---
 
-Interview me relentlessly, working through the decision tree in dependency order.
+Work through the decision tree in dependency order.
 
-Resolve factual questions from available context or tools. Choose an option directly when the established constraints clearly favor it. Ask only about genuine tradeoffs: present viable options and compare when each fits. Recommend one only when established priorities support it; otherwise explain which scenarios favor each option and let the user choose.
+Resolve factual questions from available context or tools. Choose an option directly when the established constraints clearly favor it. Ask only about genuine tradeoffs. Explain when each viable option fits. Recommend one when established priorities support it. Otherwise, let the user choose.
 
-Ask one question at a time and wait for feedback. Treat a user-provided per-turn maximum as a ceiling; batch only tightly related questions whose prerequisites are settled and whose answers do not depend on one another.
+Batch closely related questions whose prerequisites are settled and whose answers do not depend on one another. Ask one ready question if no batch fits. Respect any per-turn limit the user sets. Wait for answers before choosing the next round.
 
 Reopen a settled decision when new information invalidates its assumptions.
 
