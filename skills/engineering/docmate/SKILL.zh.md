@@ -13,14 +13,9 @@ disable-model-invocation: true
 1. 已安装 skill 的 `references` 目录内的 `docmate.catalog.json`，适用于旧安装和专用安装。
 2. `${XDG_CONFIG_HOME:-$HOME/.config}/docmate/catalog.json`，适用于标准安装。
 
-使用找到的第一份 catalog。如果找不到 catalog，或选定的文件无法读取或无效，报告路径并参考[安装说明](references/setup.md)，再选择仓库。如果用户没有明确指定仓库，不要只根据当前目录猜测。选择前先用行数和字节数判断 catalog 大小。小文件可直接读取。大文件先用 `rg` 或 `jq` 按 `name`、`description`、`aliases` 或 `path` 检索，再读取匹配的条目。
+使用找到的第一份 catalog。如果找不到 catalog，或选定的文件无法读取或无效，报告路径并参考[安装说明](references/setup.md)，再选择仓库。如果用户没有明确指定仓库，不要只根据当前目录猜测。
 
-选择仓库时，比较用户请求和 catalog 中已有的这些字段：
-
-- `name`
-- `description`
-- `aliases`
-- `path`
+先用行数和字节数判断 catalog 大小。按已有的 `name`、`description`、`aliases` 和 `path` 匹配用户请求。小文件可直接读取。大文件先用 `rg` 或 `jq` 定向检索，再读取匹配条目。
 
 如果一个仓库明显最合适，继续处理。如果两个或更多仓库都可能匹配，而且答案会明显不同，询问用户选择。
 
@@ -91,17 +86,15 @@ Blockers: <missing auth, ambiguous target docs, ambiguous remote, or none>
 
 ## 文档修复流程
 
-文档修复属于本 skill 工作流的一部分，不需要 subagent。
+以缺口报告为修复依据。恢复时复用已知修复 worktree 和分支。若 push 或 PR/MR 结果未确认，先按第 6 步的参考查询状态。修复无需 subagent。
 
-1. 用缺口报告确定范围。`ask` 已获当前用户对所列完整范围的确认时只使用一次，无需重复询问；尚未授权则在编辑前确认。只授权本地编辑时，隔离 worktree 中检查 diff 后停止，不暂存或发布。`off` 和预览在任何 Git 写入（包括创建 worktree）前停止。
-2. 核对选定 push remote 的 URL、托管平台，查询该 remote 上每个 `baseBranchCandidates` 候选分支及默认分支。Catalog 候选只是线索，不能证明远端分支存在或是默认分支。写入前将选定远端分支解析为精确 SHA。`auto` 在默认分支不明或选定 base 与默认分支不一致时停止；`ask` 使用非默认 base 需要当前用户明确授权并指明该 base。base 或 remote 状态不明均为 blocker。记录 remote、项目、base ref 和 SHA。
-3. 分配唯一临时目录和未占用的描述性分支名，再从该 base SHA 使用 `git worktree add -b`。允许主工作树 dirty，但绝不 stash、reset 或 clean。分支已存在时换一个唯一名称，不复用或覆盖。
-4. 在新 worktree 中重新核对源文档与缺口，确保每个目标是仓库内的文档源路径，不是符号链接或来源不明的生成输出。若缺口已修复，返回 `already_fixed_upstream` 并安全移除 clean worktree。
-5. 做最小的纯文档改动。若 GitLab CI 或脚本生成文档，编辑已知生成源文件；源与输出关系不明时停止 `auto`。
-6. 检查 `git status --short --untracked-files=all` 和 `git diff`，只暂存明确目标的文档源路径，再检查 `git diff --cached` 和 `git diff --cached --check`。代码或无关文件变化时停止并报告 blocker。只有完整发布授权或有效 `auto` 策略才提交。
-7. 恢复时先复用已知修复 worktree 和分支，对账前不要新建第二份修复。发布前重新查询远端 base；若已偏离记录的 base SHA，停止并按新 base 重新判断缺口。push 前用 `git ls-remote --exit-code` 查询已核实 push URL 上的精确分支 ref。返回 0 且 SHA 与本地提交相同表示已推送；返回 2 表示不存在，可向该 remote/ref 正常显式 push。SHA 不同、响应异常或其他退出状态均阻止发布。绝不 force push。push 后再次查询并要求 SHA 与本地一致；结果不明则停止发布并保留 worktree。
-8. 创建 review 前在明确的目标项目中查询 open GitHub PR 或 GitLab MR，以 head/source branch 和 base/target branch 过滤，并核对返回的项目及源 owner，确认分页未遗漏匹配项。精确匹配即为已有 review；查询失败或不完整不等于空结果。只有成功且完整的查询确认无匹配时才创建。GitHub 使用 `gh pr create --repo <project> --head <branch> --base <base>` 并明确 title/body，避免 CLI 隐式 fork 或 push。GitLab 使用 `glab mr create --repo <project> --source-branch <branch> --target-branch <base> --title ... --description ... --yes`，不用 `--fill`、`--push` 或 `--create-source-branch`，且源分支须已确认推送。源与目标项目不同时停止。
-9. create 成功或返回不确定错误后，都再次查询同一个精确 open review。确认存在则报告 URL；查询失败或无精确匹配时保留分支、worktree、commit 和命令结果，不盲目重试 create。尚无修复提交的 clean worktree 或已确认发布成功的 clean worktree 可用 `git worktree remove` 移除。有未提交 patch、已提交未推送或远端结果不明时保留 worktree，报告绝对路径、分支、已有 commit 和恢复办法。不要用文件系统删除 worktree，也不要丢弃其中内容。
+1. 准备 worktree 时先读[目标与 worktree 检查](references/update-workflow.md#target-and-worktree-checks)。查询选定 push remote 上的每个 `baseBranchCandidates` 候选分支及默认分支。Catalog 候选只是线索。写入前将选定分支解析为精确 SHA。`auto` 在默认分支不明或选定 base 与默认分支不一致时停止。`ask` 使用非默认 base 需要当前用户明确授权并指明该 base。记录 remote、项目、base ref 和 SHA。base 或 remote 状态不明时停止修复。
+2. 新建修复时，从精确的 base SHA 使用 `git worktree add -b`，指定唯一临时目录和未占用的描述性分支名。
+3. 根据已核实的 base 判断缺口是否仍存在，再在修复 worktree 中核对目标文档。使用仓库内的文档源路径，排除符号链接和来源不明的生成输出。若缺口已修复，返回 `already_fixed_upstream` 并安全移除 clean worktree。
+4. 做最小的纯文档改动。若文档由 GitLab CI 或脚本生成，编辑已知的生成源文件。
+5. 检查 `git status --short --untracked-files=all` 和 `git diff`。发现代码或无关文件改动时停止并报告。有完整发布授权或有效 `auto` 策略时，只暂存目标文档源，检查 `git diff --cached` 和 `git diff --cached --check` 后提交。
+6. 按[发布参考](references/update-workflow.md#remote-reconciliation-and-review-creation)核对推送状态与精确匹配的 PR/MR，确认 review 后报告 URL。
+7. 只在尚无修复提交或已确认发布，且 worktree 干净时使用 `git worktree remove`。有未提交 patch、已提交未推送或远端结果不明时保留 worktree，并报告绝对路径、分支、已有 commit 和恢复办法。
 
 ## 安全规则
 

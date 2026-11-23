@@ -214,6 +214,7 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual(
             (target / "SKILL.md").read_bytes(), (SKILL / "SKILL.zh.md").read_bytes()
         )
+        self.assertTrue((target / "references/update-workflow.md").is_file())
         self.assertIn(
             "allow_implicit_invocation: false",
             (target / "agents/openai.yaml").read_text(),
@@ -312,6 +313,7 @@ class InstallerTests(unittest.TestCase):
             (target / "SKILL.md").read_bytes(), (SKILL / "SKILL.md").read_bytes()
         )
         self.assertTrue((target / "references/setup.md").exists())
+        self.assertTrue((target / "references/update-workflow.md").is_file())
 
     def test_piped_installer_without_repo_exits_when_interactive_input_is_unavailable(
         self,

@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SKILL = ROOT / "skills/engineering/docmate" / "SKILL.md"
 SKILL_ZH = ROOT / "skills/engineering/docmate" / "SKILL.zh.md"
 DESCRIPTION_PROMPT = SKILL.parent / "references/fill-catalog-descriptions.md"
+REPAIR_REFERENCE = SKILL.parent / "references/update-workflow.md"
 
 
 class SkillContentTests(unittest.TestCase):
@@ -125,7 +126,7 @@ class SkillContentTests(unittest.TestCase):
         assert "defaults.update.mode = off" in content
         assert "already_fixed_upstream" in content
         assert (
-            "do not ask again if the current user already confirmed its full listed scope"
+            "do not ask again before the listed edit, commit, push, and PR/MR steps"
             in content
         )
         assert "docmate_update.sh" not in content
@@ -163,36 +164,50 @@ class SkillContentTests(unittest.TestCase):
         ):
             assert rule in chinese
 
-    def test_repair_publication_requires_reconciliation_in_all_templates(self):
+    def test_repair_templates_use_reference_for_publication_and_recovery(self):
         english = SKILL.read_text()
         chinese = SKILL_ZH.read_text()
 
-        assert english == SKILL.read_text()
+        for content in (english, chinese):
+            assert (
+                "(references/update-workflow.md#target-and-worktree-checks)" in content
+            )
+            assert (
+                "(references/update-workflow.md#remote-reconciliation-and-review-creation)"
+                in content
+            )
+            assert "(references/update-workflow.md)" not in content
         for rule in (
             "reuse the known repair worktree and branch",
-            "git ls-remote --exit-code",
-            "A different SHA, malformed response, or any other exit status",
-            "Never force push",
-            "a failed or incomplete query is not an empty result",
-            "gh pr create --repo <project> --head <branch> --base <base>",
-            "glab mr create --repo <project> --source-branch <branch> --target-branch <base>",
+            "Check any unresolved push or PR/MR outcome",
+            "Recheck the gap against the verified base",
             "stop and report a blocker for a fork",
-            "Query the same exact open review after create",
-            "do not blindly retry create",
+            "Report the URL when the review is confirmed",
         ):
             assert rule in english
         for rule in (
             "复用已知修复 worktree 和分支",
-            "git ls-remote --exit-code",
-            "绝不 force push",
-            "查询失败或不完整不等于空结果",
-            "gh pr create --repo <project> --head <branch> --base <base>",
-            "glab mr create --repo <project> --source-branch <branch> --target-branch <base>",
+            "若 push 或 PR/MR 结果未确认，先按第 6 步的参考查询状态",
+            "根据已核实的 base 判断缺口是否仍存在",
             "遇到 fork 或项目映射不明时停止",
-            "create 成功或返回不确定错误后，都再次查询",
-            "不盲目重试 create",
+            "确认 review 后报告 URL",
         ):
             assert rule in chinese
+
+        reference = " ".join(REPAIR_REFERENCE.read_text().split())
+        for rule in (
+            "Requery the remote base immediately before publication",
+            "git ls-remote --exit-code",
+            "A different SHA, malformed output, or any other exit status means stop",
+            "do not force push",
+            "require the exact local SHA before touching the review provider",
+            "Only a successful, complete query with no exact match permits create",
+            'gh pr create --repo "$project" --base "$base_branch" --head "$branch"',
+            'glab mr create --repo "$project" --source-branch "$branch"',
+            "Run the same open-review query again even if create exits nonzero",
+            "Do not blindly retry create",
+        ):
+            assert rule in reference
 
     def test_skill_has_no_internal_project_terms(self):
         content = SKILL.read_text()
