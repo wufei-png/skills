@@ -42,7 +42,7 @@ Coverage proves execution, not defect detection. Counts, pass rates, test-level 
 
 Start with static inspection. Run only the smallest existing command needed to confirm a concrete concern about execution, isolation, order, time, randomness, or reproducibility.
 
-Do not install dependencies, run destructive commands, accept changed output, update snapshots, golden files, or fixtures, or run the full suite, coverage, or mutation testing by default. Record each command, result, and cache or temporary artifact. If safe execution is unavailable, keep findings evidence-based and state the limitation.
+Do not install dependencies, run destructive commands, accept changed output, or run the full suite, coverage, or mutation testing by default. Record each command, result, and cache or temporary artifact. If safe execution is unavailable, keep findings evidence-based and state the limitation.
 
 ## Admit findings
 

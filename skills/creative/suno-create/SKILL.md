@@ -27,13 +27,13 @@ Use the first path that can set and read back every requested field:
 
 The [macOS CUA adapter](scripts/suno-cua-batch.mjs) prepares and reads back Advanced v6 vocal and instrumental packages. `prepare()` and `read()` stop before Create. The caller enforces the approved count and spend, durably arms a ledger, clicks Create once, and reconciles candidate IDs and spend.
 
-If a path proves incapable before Create, select the next capable path. If Create was attempted or its outcome is ambiguous, stop and reconcile before changing paths.
+If Create was attempted or its outcome is ambiguous, [reconcile it](#reconcile-before-retrying) before switching paths.
 
 ## Submit serially
 
 1. Identify the in-scope Create page by its current URL and visible account context. Inspect account readiness, cost, model options, and controls before changing the form. For direct browser interaction, use visible semantic labels or fresh element references after navigation or re-rendering. Dismiss only overlays that block the task.
 2. Normalize slider values only from observed transport schemas. Do not assume that UI and CLI scales match.
-3. For every package, set and read back title, prompt or lyrics, style, exclusions, instrumental or vocal choice, model, duration, vocal gender, official Max Mode, and each requested influence or reference control.
+3. For each package, set and read back all specified form fields.
 4. Before each Create, check the package's verified cost against the remaining authorization.
 5. Trigger Create exactly once per authorized package, serially.
 6. Capture the submission state, returned candidate IDs or URLs, observed spend when available, and enough package identity to reconcile every attempt.

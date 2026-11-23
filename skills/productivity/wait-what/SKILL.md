@@ -4,4 +4,4 @@ description: Re-explain a point the user did not understand, with the missing co
 disable-model-invocation: true
 ---
 
-Wait, I don't understand where you've got to here. Re-pitch that: give me a little bit of context. Use the main language of the current conversation. Keep sentences short, use familiar words, and keep project terms consistent.
+Re-explain the point with the missing context. Use the main language of the current conversation. Keep sentences short, use familiar words, and keep project terms consistent.

@@ -19,7 +19,7 @@ Review generated or edited raster artwork against the user's visual intent. For 
 - Consult the applicable portions of [material prompts](references/material-prompts.md) when useful.
 - Describe the desired surface and highlight organization positively before adding concise avoidance instructions. Use broad tonal masses where the style calls for them; keep expressive detail where it serves the image.
 - Apply constraints to the relevant material or region. Do not attach the same scratch, grain, sparkle, or paper-gap treatment to every surface.
-- For painterly detail-density feedback, distinguish brush width, mark count, and fine surface texture. Use the optional brush-widening module only when widening is desired; treat relative width factors as visual targets and preserve the selected style's focal accents.
+- For painterly detail-density feedback, distinguish brush width, mark count, and fine texture. Use the [widening template](references/material-prompts.md#optional-brush-width-increase) only when wider strokes are intended.
 - Preserve requested stylistic texture, stars, catchlights, foam, or other intentional bright marks. Visual cleanliness must serve the artwork rather than determine its style.
 - For a new scene in a selected style, start from its selected reference rather than chaining unrelated previous variations. For an explicit local correction, attach that exact version as the edit target.
 

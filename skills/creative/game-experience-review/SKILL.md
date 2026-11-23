@@ -16,7 +16,7 @@ Follow the requested task; default to `review`. Combine tasks only when requeste
 | --- | --- |
 | `review` | Assess a game or representative section and recommend supported improvements. |
 | `plan` | Design a focused playtest; use existing material to frame questions, without adding an unsolicited game critique. |
-| `compare` | Compare named builds at matched moments and conditions; report unmatched coverage separately. |
+| `compare` | Compare named builds at matched moments and conditions. |
 
 Resolve the target, audience, intended experience, and question from the request and current project guidance. Record the source/build or working-tree state, evidence versions, and relevant settings; do not relabel old evidence as current.
 
@@ -45,12 +45,12 @@ Only for a requested blind exercise, restrict access and record expectations bef
 
 ## Synthesize
 
-Verify cited observations and investigate causes rather than automatically adopting a player's proposed fix. Merge common causes; preserve disagreement and effective choices. Separate observations from interpretations, risks, preferences, and hypotheses. Prioritize experience impact and evidence confidence separately; several agents are not several player samples. Do not force findings, resolve taste by voting, or treat deliberate uncertainty as a defect.
+Verify cited observations and investigate causes rather than automatically adopting a player's proposed fix. Merge common causes; preserve disagreement and effective choices. Separate observations from interpretations, risks, preferences, and hypotheses. Prioritize experience impact and evidence confidence separately; several agents are not several player samples. Do not resolve taste by voting or treat deliberate uncertainty as a defect. No supported issue is a valid result.
 
 Return a concise result in the user's language, with scope, versions, perspectives, evidence, and limits:
 
-- **Review:** Preserve effective moments; explain supported issues with locators, observation versus interpretation, impact/confidence, smallest useful change, tradeoff, and retest. No supported issue is a valid result.
+- **Review:** Preserve effective moments; explain supported issues with locators, observation versus interpretation, impact/confidence, smallest useful change, tradeoff, and retest.
 - **Plan:** Give participants and prior knowledge, tasks, success/failure behavior signals, neutral debrief questions, and outcomes that would change the decision.
-- **Compare:** Explain supported differences and unmatched coverage, preserving the same evidence limits for both builds.
+- **Compare:** Explain supported differences and report unmatched coverage separately. Apply the same evidence limits to both builds.
 
 End with up to three next actions and unresolved questions. Propose focused human checks where needed; do not fabricate reactions or generalize a short review to the whole game.

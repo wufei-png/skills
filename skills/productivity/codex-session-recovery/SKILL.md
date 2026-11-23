@@ -13,7 +13,6 @@ Recover access to local Codex history without mutating live state by default.
 - Read local Codex JSONL only.
 - Exclude archived and subagent sessions unless requested. Show only short prompt snippets unless the user requests more.
 - Never edit `$CODEX_HOME`, SQLite-backed state, rollout files, or provider or account metadata. Never copy or import JSONL into live Codex state.
-- Do not create or manage Desktop threads unless the user explicitly requests Desktop visibility. A Codex Desktop context is not enough.
 
 ## Find sessions
 
@@ -32,4 +31,4 @@ The index or transcript filename provides the canonical thread id. Other observe
 
 ## Desktop visibility
 
-A Codex Desktop context is not enough. When the user explicitly requests Desktop visibility and the candidate is unique or already selected, follow `references/desktop.md`. If the candidate is ambiguous, ask the user to choose first. Otherwise remain CLI-first.
+Use CLI recovery by default. Create or manage Desktop threads only for explicit visibility requests. When the requested session is unique or user-selected, follow [Desktop visibility](references/desktop.md). If the session is ambiguous, ask the user to choose.

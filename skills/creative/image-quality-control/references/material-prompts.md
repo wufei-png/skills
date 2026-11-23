@@ -46,7 +46,7 @@ Avoid fixed highlight-band counts by default to prevent mechanical repetition.
 
 ### Optional brush-width increase
 
-Use this module when the user identifies overly fine brushwork or asks to widen it. Brush scale, mark count, and fine texture are separate controls. Include an approximate factor only when the user provides one. Merge distracting small marks only when lower density fits the user's intent.
+Include an approximate factor only when the user provides one. Merge distracting small marks only when lower density fits the user's intent. Preserve the selected style's focal accents.
 
 ```text
 Repaint the same scene with connected brush marks wider than in the edit
