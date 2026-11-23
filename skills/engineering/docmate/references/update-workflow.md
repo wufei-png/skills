@@ -116,18 +116,15 @@ diff and keeps the worktree for the user's review.
 Remove a worktree with `git worktree remove <path>` only when it is clean before
 any repair commit, or after publication is confirmed. If a patch is uncommitted, a
 commit is unpushed, or the remote outcome is uncertain, keep the worktree and
-report its absolute path, branch, commit if any, and the next command or check
-needed to resume. Use `git worktree` for removal; do not delete its directory
-directly. A failed setup may leave an empty temporary directory, which can be
-removed with `rmdir` only after confirming Git did not register it. Never
-clean, reset, or stash the user's main worktree.
+report its absolute path, branch, and commit if any. Use `git worktree` for
+removal. Do not delete its directory directly. A failed setup may leave an empty
+temporary directory, which can be removed with `rmdir` only after confirming Git
+did not register it. Never clean, reset, or stash the user's main worktree.
 
 ## Remote reconciliation and review creation
 
-Recover a known repair from its existing worktree and branch. Do not start a
-new branch or repeat the edit before reconciling the known commit. Requery the
-remote base immediately before publication; if its SHA changed from the
-recorded `base_sha`, stop and reassess the target gap against the new base. Use
+Requery the remote base immediately before publication. If its SHA changed from
+the recorded `base_sha`, stop and reassess the target gap against the new base. Use
 the same verified push URL, project, base, and local commit recorded for the
 repair. Source and target projects must be the same verified project; stop for
 a fork even when its mapping is known. A preview has already stopped before
@@ -197,7 +194,7 @@ Run the same open-review query again even if create exits nonzero or returns a
 URL. A create error can occur after the remote review is created. If the exact
 review is visible, report its URL; if query fails or has no exact match, keep
 the worktree and branch and report the local commit, push SHA, create output,
-and next reconciliation query. Do not blindly retry create. Only after the
+and query result, then stop. Do not blindly retry create. Only after the
 review and remote commit are confirmed may a clean worktree be removed with
 `git worktree remove`; keeping the local branch makes the published repair
 traceable. This command sequence recognizes known retries but does not promise

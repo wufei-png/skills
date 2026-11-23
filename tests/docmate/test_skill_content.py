@@ -164,7 +164,7 @@ class SkillContentTests(unittest.TestCase):
         ):
             assert rule in chinese
 
-    def test_repair_templates_use_reference_for_publication_and_recovery(self):
+    def test_repair_templates_use_reference_for_publication(self):
         english = SKILL.read_text()
         chinese = SKILL_ZH.read_text()
 
@@ -178,16 +178,12 @@ class SkillContentTests(unittest.TestCase):
             )
             assert "(references/update-workflow.md)" not in content
         for rule in (
-            "reuse the known repair worktree and branch",
-            "Check any unresolved push or PR/MR outcome",
             "Recheck the gap against the verified base",
             "stop and report a blocker for a fork",
             "Report the URL when the review is confirmed",
         ):
             assert rule in english
         for rule in (
-            "复用已知修复 worktree 和分支",
-            "若 push 或 PR/MR 结果未确认，先按第 6 步的参考查询状态",
             "根据已核实的 base 判断缺口是否仍存在",
             "遇到 fork 或项目映射不明时停止",
             "确认 review 后报告 URL",

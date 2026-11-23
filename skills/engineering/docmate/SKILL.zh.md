@@ -86,15 +86,15 @@ Blockers: <missing auth, ambiguous target docs, ambiguous remote, or none>
 
 ## 文档修复流程
 
-以缺口报告为修复依据。恢复时复用已知修复 worktree 和分支。若 push 或 PR/MR 结果未确认，先按第 6 步的参考查询状态。修复无需 subagent。
+以缺口报告为修复依据。修复无需 subagent。
 
 1. 准备 worktree 时先读[目标与 worktree 检查](references/update-workflow.md#target-and-worktree-checks)。查询选定 push remote 上的每个 `baseBranchCandidates` 候选分支及默认分支。Catalog 候选只是线索。写入前将选定分支解析为精确 SHA。`auto` 在默认分支不明或选定 base 与默认分支不一致时停止。`ask` 使用非默认 base 需要当前用户明确授权并指明该 base。记录 remote、项目、base ref 和 SHA。base 或 remote 状态不明时停止修复。
-2. 新建修复时，从精确的 base SHA 使用 `git worktree add -b`，指定唯一临时目录和未占用的描述性分支名。
+2. 从精确的 base SHA 使用 `git worktree add -b`，指定唯一临时目录和未占用的描述性分支名。
 3. 根据已核实的 base 判断缺口是否仍存在，再在修复 worktree 中核对目标文档。使用仓库内的文档源路径，排除符号链接和来源不明的生成输出。若缺口已修复，返回 `already_fixed_upstream` 并安全移除 clean worktree。
 4. 做最小的纯文档改动。若文档由 GitLab CI 或脚本生成，编辑已知的生成源文件。
 5. 检查 `git status --short --untracked-files=all` 和 `git diff`。发现代码或无关文件改动时停止并报告。有完整发布授权或有效 `auto` 策略时，只暂存目标文档源，检查 `git diff --cached` 和 `git diff --cached --check` 后提交。
 6. 按[发布参考](references/update-workflow.md#remote-reconciliation-and-review-creation)核对推送状态与精确匹配的 PR/MR，确认 review 后报告 URL。
-7. 只在尚无修复提交或已确认发布，且 worktree 干净时使用 `git worktree remove`。有未提交 patch、已提交未推送或远端结果不明时保留 worktree，并报告绝对路径、分支、已有 commit 和恢复办法。
+7. 只在尚无修复提交或已确认发布，且 worktree 干净时使用 `git worktree remove`。有未提交 patch、已提交未推送或远端结果不明时保留 worktree，并报告绝对路径、分支和已有 commit。
 
 ## 安全规则
 
