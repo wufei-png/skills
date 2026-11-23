@@ -19,7 +19,7 @@ Review generated or edited raster artwork against the user's visual intent. For 
 - Consult the applicable portions of [material prompts](references/material-prompts.md) when useful.
 - Describe the desired surface and highlight organization positively before adding concise avoidance instructions. Use broad tonal masses where the style calls for them; keep expressive detail where it serves the image.
 - Apply constraints to the relevant material or region. Do not attach the same scratch, grain, sparkle, or paper-gap treatment to every surface.
-- For painterly detail-density feedback, distinguish brush width, mark count, and fine texture. Use the [widening template](references/material-prompts.md#optional-brush-width-increase) only when wider strokes are intended.
+- Treat stroke width, mark count, and fine texture as separate choices when adjusting brushwork. Use the [brush-width template](references/material-prompts.md#brush-width-adjustment) for width changes.
 - Preserve requested stylistic texture, stars, catchlights, foam, or other intentional bright marks. Visual cleanliness must serve the artwork rather than determine its style.
 - For a new scene in a selected style, start from its selected reference rather than chaining unrelated previous variations. For an explicit local correction, attach that exact version as the edit target.
 
@@ -28,7 +28,7 @@ Review generated or edited raster artwork against the user's visual intent. For 
 1. Inspect the actual output at thumbnail and original resolution; use [visual review](references/visual-review.md) when useful. A prompt requirement is a target, not evidence that the output achieved it.
 2. If a defect materially harms the artwork, identify its region, material, and appearance. Distinguish unwanted isolated specks from necessary light, texture, or deliberate abstraction.
 3. When a correction is requested, make a targeted follow-up that states both the correction and the invariants. Avoid expanding the edit into a general style redesign. Reference-based generation is not guaranteed to preserve pixels outside the named region.
-4. After a correction, compare the whole images and matching native-resolution details. Check whether apparent cleanliness came with lost brushwork, plastic surfaces, weakened lighting, changed identity, or overly regular highlight placement.
+4. Compare the corrected image with its edit target. Check the full images and inspect matching areas at original resolution. Verify the requested change and look for lost brushwork, plastic surfaces, weakened lighting, changed identity, or overly regular highlights.
 5. Keep a promising image with an explicit limitation when the remaining issue is an aesthetic tradeoff. Stop repeated smoothing when it weakens the chosen style; retain alternatives for user judgment.
 
 Use visual inspection for this workflow. Do not require automated speckle detection, quantitative noise thresholds, or candidate-count targets.

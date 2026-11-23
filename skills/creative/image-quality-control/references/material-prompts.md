@@ -1,6 +1,6 @@
 # Material-specific prompt modules
 
-Use only the module appropriate to the image. Replace bracketed fields with the actual scene and material. These are starting points for visual judgment, not universally validated denoising settings.
+Use the module that fits the image and fill in its bracketed fields.
 
 ## Shared structure
 
@@ -30,34 +30,33 @@ For an edit, state the framing and relevant existing features, such as material 
 
 ## Painterly oil, pastel and opaque paint
 
-The selected artwork determines how loose, broken and tactile the painting should remain. Use its brushwork as the reference level.
+Match the selected reference's looseness.
 
 ```text
 Preserve the selected reference's palette, color relationships, directional
 brushwork and tactile irregular edges. Organize [water / fabric / background]
-into connected painted planes with varied broad marks. Group distracting
-tiny light fragments into a few irregular highlight passages along the same
-light direction. Keep variation in length, spacing and broken edges, with
-substantial painted interiors. Preserve intentional dry-brush breaks and
-focal accents; avoid a uniform microtexture layer or global smoothing.
+into connected painted planes with varied marks at the reference's stroke
+scale. Group distracting tiny light fragments into a few irregular highlight
+passages along the same light direction. Keep variation in length, spacing
+and broken edges, with substantial painted interiors. Preserve intentional
+dry-brush breaks and focal accents. Avoid a uniform microtexture layer or
+global smoothing.
 ```
 
 Avoid fixed highlight-band counts by default to prevent mechanical repetition.
 
-### Optional brush-width increase
+### Brush-width adjustment
 
-Include an approximate factor only when the user provides one. Merge distracting small marks only when lower density fits the user's intent. Preserve the selected style's focal accents.
+Use a width factor only when the user supplies one. Treat it as a visual target. Merge distracting marks only when the edit calls for fewer marks.
 
 ```text
-Repaint the same scene with connected brush marks wider than in the edit
-target at the same image size. Model existing elements as coherent masses
-appropriate to their materials. Keep focal objects readable. Preserve the
-intended mark density, fine textures, varied stroke directions and selected
-bristled edges. Avoid adding unwanted stipple, scratches or white pinholes.
-Preserve composition, palette and light; widen strokes rather than blur them.
+At the same image size, repaint [region] with [wider / narrower] strokes than
+in the edit target. Keep painted forms coherent for their materials and
+stroke edges legible. Preserve the intended mark count, fine texture, varied
+stroke directions, bristled edges and focal accents. Keep focal objects
+readable and preserve composition, palette and light. Avoid adding unwanted
+stipple, scratches or white pinholes.
 ```
-
-Any requested factor is a qualitative target, not a guaranteed pixel measurement. Use the exact problem image as the edit target, compare matching native details, and describe the achieved change honestly. Do not apply a requested change to unrelated images.
 
 ## Matte clay, plaster and sculptural architecture
 

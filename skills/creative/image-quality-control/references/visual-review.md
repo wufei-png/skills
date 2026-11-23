@@ -17,10 +17,9 @@ Review actual artwork; do not convert this guide into a mandatory numerical scor
 
 ## When comparing a correction
 
-- Compare the full images and matching native-resolution material details.
-- Check for changes to identity, composition, color, light paths, silhouette, or important negative spaces.
-- Look for plastic smoothing, lost transparency, weak volume, or mechanically spaced highlight bands.
-- Treat a reduction in visible small marks as useful only when the artwork improves or retains its intended appeal.
+- For brushwork edits, check for unintended changes to stroke width, mark count, or fine texture.
+- Check for changes to composition, color, light paths, silhouette, or important negative spaces.
+- Look for lost transparency, weak volume, or mechanically spaced highlight bands.
 - If a targeted prompt also changes other regions, record the drift; do not claim exact pixel preservation.
 
 ## Record a concise outcome
