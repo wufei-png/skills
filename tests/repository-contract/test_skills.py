@@ -168,9 +168,11 @@ class SkillRepositoryContractTest(unittest.TestCase):
             ),
             "productivity/sanitize-artifacts": (
                 "Do not treat every dirty or recently viewed file as authorized scope",
-                "This is not a general security, malware, or data-loss-prevention audit",
+                "Remove production residue from visible content and, when applicable, "
+                "hidden content.",
                 "required disclosures",
                 "available tools could not inspect",
+                "Do not claim an exhaustive security or privacy scan.",
             ),
         }
         for relative, required_phrases in required_by_skill.items():
